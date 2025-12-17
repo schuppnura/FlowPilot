@@ -4,23 +4,34 @@ This guide explains how to enable authentication and TLS for FlowPilot services.
 
 ## Overview
 
-By default, FlowPilot runs in **demo mode** with:
-- ❌ No bearer token authentication on APIs
-- ❌ Self-signed certificates
-- ❌ HTTP between internal services
-- ❌ Default credentials
+By default, FlowPilot runs in **secure mode** with:
+- ✅ Bearer token authentication ENABLED on all APIs (except /health)
+- ✅ TLS for Keycloak (self-signed certificates for demo)
+- ⚠️ HTTP between internal Docker services (add TLS for production)
+- ⚠️ Default credentials (must change for production)
 
-For production or security testing, follow this guide to enable proper security.
+For production deployment, follow this guide for additional hardening.
 
-## Enabling Bearer Token Authentication
+### Disabling Authentication (Development Only)
 
-### Step 1: Set Environment Variables
-
-Add to your `docker-compose.yml` or `.env` file:
+To disable authentication for local development/testing:
 
 ```yaml
 environment:
-  # Enable authentication
+  AUTH_ENABLED: "false"
+```
+
+**Warning**: Only disable authentication in secure, isolated development environments.
+
+## Bearer Token Authentication
+
+### Current State
+
+Authentication is **ENABLED by default** with these settings:
+
+```yaml
+environment:
+  # Authentication enabled by default
   AUTH_ENABLED: "true"
   
   # Keycloak configuration

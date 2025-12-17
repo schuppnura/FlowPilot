@@ -2,15 +2,22 @@ openapi: 3.0.3
 info:
   title: FlowPilot Services API
   version: "0.9.0"
+  description: >
+    FlowPilot domain services API (workflow system-of-record).
+    
+    **Security**: All endpoints (except /health) require bearer token authentication.
 servers:
-  - url: http://127.0.0.1:8003
-    description: Host access (desktop app)
-  - url: http://flowpilot-services-api:8000
-    description: Docker network access (agent-runner)
+  - url: https://127.0.0.1:8003
+    description: Host access - TLS required
+  - url: https://flowpilot-services-api:8000
+    description: Docker network access - TLS required
+security:
+  - BearerAuth: []
 paths:
   /health:
     get:
       summary: Health check
+      security: []  # No authentication required for health check
       responses:
         "200":
           description: OK
@@ -332,3 +339,14 @@ components:
         status:
           type: string
       required: [trip_id, item_id, dry_run, result, status]
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        JWT bearer token obtained from Keycloak.
+        Service-to-service calls use client credentials grant.
+        
+        Example: `Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...`

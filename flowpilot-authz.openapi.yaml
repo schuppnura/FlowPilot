@@ -5,15 +5,20 @@ info:
   description: >
     Authorization service with PDP façade, PIP enrichment, and ***REMOVED*** adapter.
     Implements AuthZEN-like request structure with progressive profiling support.
+    
+    **Security**: All endpoints (except /health) require bearer token authentication.
 servers:
-  - url: http://127.0.0.1:8002
-    description: Host access
-  - url: http://flowpilot-authz-api:8002
-    description: Docker network access
+  - url: https://127.0.0.1:8002
+    description: Host access (TLS required)
+  - url: https://flowpilot-authz-api:8002
+    description: Docker network access (TLS required)
+security:
+  - BearerAuth: []
 paths:
   /health:
     get:
       summary: Health check
+      security: []  # No authentication required for health check
       responses:
         "200":
           description: OK
@@ -29,6 +34,8 @@ paths:
   /v1/evaluate:
     post:
       summary: Evaluate authorization decision (AuthZEN-like)
+      security:
+        - BearerAuth: []
       description: >
         Evaluates whether a subject (agent or user) may perform an action on a resource.
         Uses AuthZEN-like structure with subject/action/resource/context/options.
@@ -448,3 +455,14 @@ components:
           additionalProperties:
             type: boolean
       required: [presence]
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        JWT bearer token obtained from Keycloak.
+        Service-to-service calls use client credentials grant.
+        
+        Example: `Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...`

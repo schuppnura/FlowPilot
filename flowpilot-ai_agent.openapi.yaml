@@ -2,13 +2,20 @@ openapi: 3.0.3
 info:
   title: Agent Runner API
   version: "0.1.0"
+  description: >
+    Agent runner for workflow execution with per-item authorization.
+    
+    **Security**: All endpoints (except /health) require bearer token authentication.
 servers:
-  - url: http://127.0.0.1:8004
-    description: Host access (desktop app)
+  - url: https://127.0.0.1:8004
+    description: Host access - TLS required
+security:
+  - BearerAuth: []
 paths:
   /health:
     get:
       summary: Health check
+      security: []  # No authentication required for health check
       responses:
         "200":
           description: OK
@@ -233,3 +240,14 @@ components:
           items:
             $ref: "#/components/schemas/AgentRunItemResult"
       required: [run_id, workflow_id, principal_sub, dry_run, results]
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        JWT bearer token obtained from Keycloak.
+        Service-to-service calls use client credentials grant.
+        
+        Example: `Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...`

@@ -153,7 +153,7 @@ def create_auth_validator_from_env() -> BearerTokenValidator:
     Create a bearer token validator from environment variables.
 
     Environment variables:
-        AUTH_ENABLED: Set to "true" to enable authentication (default: false for demo)
+        AUTH_ENABLED: Set to "false" to disable authentication (default: true for security)
         KEYCLOAK_URL: Keycloak base URL (default: https://localhost:8443)
         KEYCLOAK_REALM: Keycloak realm (default: flowpilot)
         KEYCLOAK_CLIENT_ID: Client ID for introspection (default: flowpilot-agent)
@@ -162,7 +162,7 @@ def create_auth_validator_from_env() -> BearerTokenValidator:
     Returns:
         Configured bearer token validator
     """
-    enabled = os.environ.get("AUTH_ENABLED", "false").lower() == "true"
+    enabled = os.environ.get("AUTH_ENABLED", "true").lower() == "true"
     keycloak_url = os.environ.get("KEYCLOAK_URL", "https://localhost:8443")
     realm = os.environ.get("KEYCLOAK_REALM", "flowpilot")
     client_id = os.environ.get("KEYCLOAK_CLIENT_ID", "flowpilot-agent")

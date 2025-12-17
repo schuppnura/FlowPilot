@@ -89,23 +89,23 @@ When deploying FlowPilot in production:
 
 ### Demo/Development Environment Warnings
 
-⚠️ **The default configuration is NOT production-ready:**
+⚠️ **The default configuration requires additional hardening for production:**
 
-- Self-signed certificates are used
-- Default credentials (admin/admin for Keycloak)
-- No rate limiting
-- Simplified token validation
-- Services exposed on localhost without authentication
+- Self-signed certificates are used (replace with CA-signed certs)
+- Default credentials (admin/admin for Keycloak - must be changed)
+- Default client secret in docker-compose (must be regenerated)
+- No rate limiting configured
+- Services exposed on localhost
 
-**Never use demo credentials or self-signed certificates in production.**
+**Authentication is ENABLED by default. To disable for local dev/testing, set AUTH_ENABLED=false**
 
 ## Known Limitations
 
-- Demo setup uses self-signed TLS certificates
+- Demo setup uses self-signed TLS certificates for Keycloak
 - Default Keycloak realm includes test users with simple passwords
-- No rate limiting configured by default
-- Token validation in demo is simplified
-- Services communicate over plain HTTP internally (docker network)
+- No rate limiting configured by default  
+- Services communicate over HTTP internally in Docker network (TLS termination at ingress recommended)
+- Client secret visible in docker-compose.yml (use secrets management in production)
 
 ## Security Features
 
