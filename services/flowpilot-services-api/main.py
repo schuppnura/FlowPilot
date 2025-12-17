@@ -5,10 +5,11 @@ import os
 from typing import Any, Dict, Optional
 
 import uvicorn
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from pydantic import BaseModel
 
 from core import FlowPilotService
+from shared_auth import bearer_scheme, verify_token
 from utils import load_json_object, merge_config, parse_positive_int, validate_non_empty_string
 
 
@@ -163,13 +164,15 @@ def create_app(config: Dict[str, Any]) -> FastAPI:
     service.load_templates()
     api.state.service = service
 
+    # Health check - no auth required
     api.add_api_route("/health", handle_get_health, methods=["GET"])
 
-    api.add_api_route("/v1/trip-templates", handle_get_trip_templates, methods=["GET"])
-    api.add_api_route("/v1/trips", handle_post_trips, methods=["POST"])
-    api.add_api_route("/v1/trips/{trip_id}", handle_get_trip, methods=["GET"])
-    api.add_api_route("/v1/trips/{trip_id}/itinerary", handle_get_itinerary, methods=["GET"])
-    api.add_api_route("/v1/trips/{trip_id}/itinerary-items/{item_id}/execute", handle_post_execute_itinerary_item, methods=["POST"])
+    # All other endpoints require authentication
+    api.add_api_route("/v1/trip-templates", handle_get_trip_templates, methods=["GET"], dependencies=[Depends(bearer_scheme)])
+    api.add_api_route("/v1/trips", handle_post_trips, methods=["POST"], dependencies=[Depends(bearer_scheme)])
+    api.add_api_route("/v1/trips/{trip_id}", handle_get_trip, methods=["GET"], dependencies=[Depends(bearer_scheme)])
+    api.add_api_route("/v1/trips/{trip_id}/itinerary", handle_get_itinerary, methods=["GET"], dependencies=[Depends(bearer_scheme)])
+    api.add_api_route("/v1/trips/{trip_id}/itinerary-items/{item_id}/execute", handle_post_execute_itinerary_item, methods=["POST"], dependencies=[Depends(bearer_scheme)])
 
     return api
 

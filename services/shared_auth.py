@@ -7,10 +7,10 @@ Provides bearer token validation using Keycloak introspection.
 from __future__ import annotations
 
 import os
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 import requests
-from fastapi import HTTPException, Request, status
+from fastapi import HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 
@@ -97,55 +97,23 @@ class BearerTokenValidator:
         return token_info
 
 
-class BearerAuthMiddleware:
-    """FastAPI dependency for bearer token authentication."""
+# Global bearer scheme for FastAPI
+bearer_scheme = HTTPBearer(auto_error=True)
 
-    def __init__(self, validator: BearerTokenValidator, require_auth: bool = True):
-        """
-        Initialize the auth middleware.
+# Global validator instance
+_validator_instance = None
 
-        Args:
-            validator: Token validator instance
-            require_auth: Whether to require authentication (set to False for health endpoints)
-        """
-        self.validator = validator
-        self.require_auth = require_auth
-        self.bearer_scheme = HTTPBearer(auto_error=require_auth)
+def get_validator():
+    """Get the global validator instance."""
+    global _validator_instance
+    if _validator_instance is None:
+        _validator_instance = create_auth_validator_from_env()
+    return _validator_instance
 
-    async def __call__(
-        self, request: Request, credentials: Optional[HTTPAuthorizationCredentials] = None
-    ) -> Optional[Dict[str, Any]]:
-        """
-        Validate bearer token from request.
-
-        Args:
-            request: FastAPI request
-            credentials: HTTP bearer credentials
-
-        Returns:
-            Token info if valid, None if auth not required
-
-        Raises:
-            HTTPException: If authentication fails
-        """
-        # Skip auth for health check
-        if request.url.path in ["/health", "/docs", "/openapi.json", "/redoc"]:
-            return None
-
-        if not self.require_auth:
-            return None
-
-        if credentials is None:
-            credentials = await self.bearer_scheme(request)
-
-        if credentials is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Missing authorization header",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
-        return self.validator.validate_token(credentials.credentials)
+def verify_token(credentials: HTTPAuthorizationCredentials) -> Dict[str, Any]:
+    """Verify bearer token - use as FastAPI dependency."""
+    validator = get_validator()
+    return validator.validate_token(credentials.credentials)
 
 
 def create_auth_validator_from_env() -> BearerTokenValidator:

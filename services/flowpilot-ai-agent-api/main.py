@@ -5,10 +5,11 @@ import os
 from typing import Any, Dict, Optional
 
 import uvicorn
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from pydantic import BaseModel
 
 from core import execute_workflow_run, normalize_workflow_id
+from shared_auth import bearer_scheme, verify_token
 from utils import load_json_object, merge_config, parse_positive_int, validate_non_empty_string
 
 
@@ -95,9 +96,12 @@ def create_app(config: Dict[str, Any]) -> FastAPI:
     api = FastAPI(title="Agent Runner API", version="0.7.1")
     api.state.config = config
 
+    # Health check - no auth required
     api.add_api_route("/health", handle_get_health, methods=["GET"])
-    api.add_api_route("/v1/workflow-runs", handle_post_workflow_runs, methods=["POST"])
-    api.add_api_route("/v1/agent-runs", handle_post_agent_runs, methods=["POST"])
+    
+    # All other endpoints require authentication
+    api.add_api_route("/v1/workflow-runs", handle_post_workflow_runs, methods=["POST"], dependencies=[Depends(bearer_scheme)])
+    api.add_api_route("/v1/agent-runs", handle_post_agent_runs, methods=["POST"], dependencies=[Depends(bearer_scheme)])
 
     return api
 

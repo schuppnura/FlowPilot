@@ -5,13 +5,14 @@ import os
 from typing import Any, Dict, Optional
 
 import uvicorn
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from core import (
     AuthzService,
     EvaluateResponseModel,
 )
+from shared_auth import bearer_scheme, verify_token
 from utils import load_json_object, merge_config, parse_positive_float, parse_positive_int, validate_non_empty_string
 
 
@@ -244,15 +245,17 @@ def create_app(config: Dict[str, Any]) -> FastAPI:
     api.state.config = config
     api.state.service = AuthzService(config=config)
 
+    # Health check - no auth required
     api.add_api_route("/health", handle_get_health, methods=["GET"])
 
-    api.add_api_route("/v1/evaluate", handle_post_evaluate, methods=["POST"])
+    # All other endpoints require authentication
+    api.add_api_route("/v1/evaluate", handle_post_evaluate, methods=["POST"], dependencies=[Depends(bearer_scheme)])
 
-    api.add_api_route("/v1/profiles/{principal_sub}", handle_get_profile, methods=["GET"])
-    api.add_api_route("/v1/profiles/{principal_sub}/policy-parameters", handle_get_policy_parameters, methods=["GET"])
-    api.add_api_route("/v1/profiles/{principal_sub}/policy-parameters", handle_patch_policy_parameters, methods=["PATCH"])
-    api.add_api_route("/v1/profiles/{principal_sub}/identity-presence", handle_get_identity_presence, methods=["GET"])
-    api.add_api_route("/v1/profiles/{principal_sub}/identity-presence", handle_patch_identity_presence, methods=["PATCH"])
+    api.add_api_route("/v1/profiles/{principal_sub}", handle_get_profile, methods=["GET"], dependencies=[Depends(bearer_scheme)])
+    api.add_api_route("/v1/profiles/{principal_sub}/policy-parameters", handle_get_policy_parameters, methods=["GET"], dependencies=[Depends(bearer_scheme)])
+    api.add_api_route("/v1/profiles/{principal_sub}/policy-parameters", handle_patch_policy_parameters, methods=["PATCH"], dependencies=[Depends(bearer_scheme)])
+    api.add_api_route("/v1/profiles/{principal_sub}/identity-presence", handle_get_identity_presence, methods=["GET"], dependencies=[Depends(bearer_scheme)])
+    api.add_api_route("/v1/profiles/{principal_sub}/identity-presence", handle_patch_identity_presence, methods=["PATCH"], dependencies=[Depends(bearer_scheme)])
 
     return api
 
