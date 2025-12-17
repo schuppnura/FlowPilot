@@ -31,11 +31,19 @@ final class AppState: ObservableObject {
     )
     
     // Domain-specific client name can remain for now; AppState treats it as a generic workflow backend.
-    let workflowClient = FlowPilotApiClient()
-    let agentRunnerClient = FlowPilotAIAgentApiClient()
+    // Clients are initialized lazily to capture self reference for token provider
+    lazy var workflowClient: FlowPilotApiClient = {
+        FlowPilotApiClient(accessTokenProvider: { [weak self] in self?.accessToken })
+    }()
+    
+    lazy var agentRunnerClient: FlowPilotAIAgentApiClient = {
+        FlowPilotAIAgentApiClient(accessTokenProvider: { [weak self] in self?.accessToken })
+    }()
     
     // Profile API is now embedded into authz-api; keep it as an AuthZ client.
-    let authzClient = AuthzApiClient(baseUrl: AppConfig.authzBaseUrl)
+    lazy var authzClient: AuthzApiClient = {
+        AuthzApiClient(baseUrl: AppConfig.authzBaseUrl, accessTokenProvider: { [weak self] in self?.accessToken })
+    }()
     
     func clearError() {
         // Clear error state; why: keep UI feedback current; side effect: mutates published state.

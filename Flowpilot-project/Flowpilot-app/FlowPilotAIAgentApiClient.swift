@@ -3,11 +3,13 @@ import Foundation
 final class FlowPilotAIAgentApiClient {
     private let baseUrl: URL
     private let urlSession: URLSession
+    private let accessTokenProvider: () -> String?
 
-    init(baseUrl: URL = AppConfig.agentRunnerBaseUrl, urlSession: URLSession = .shared) {
+    init(baseUrl: URL = AppConfig.agentRunnerBaseUrl, urlSession: URLSession = .shared, accessTokenProvider: @escaping () -> String? = { nil }) {
         // Initialize client with a base URL; why: keep endpoint routing explicit and testable; side effect: none.
         self.baseUrl = baseUrl
         self.urlSession = urlSession
+        self.accessTokenProvider = accessTokenProvider
     }
 
     func runAgent(workflowId: String, principalSub: String, dryRun: Bool) async throws -> AgentRunResponse {
@@ -16,6 +18,10 @@ final class FlowPilotAIAgentApiClient {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        if let token = accessTokenProvider(), !token.isEmpty {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
 
         let payload = AgentRunRequest(workflow_id: workflowId, principal_sub: principalSub, dry_run: dryRun)
         request.httpBody = try JSONEncoder().encode(payload)

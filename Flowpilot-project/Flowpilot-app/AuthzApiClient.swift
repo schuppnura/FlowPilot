@@ -6,10 +6,10 @@ final class AuthzApiClient {
     private let accessTokenProvider: () -> String?
 
     /// Backward compatible initializer (previously took a baseUrl string).
-    init(baseUrl: String, urlSession: URLSession = .shared) {
+    init(baseUrl: String, urlSession: URLSession = .shared, accessTokenProvider: @escaping () -> String? = { nil }) {
         self.baseUrl = URL(string: baseUrl) ?? AppConfig.authzBaseUrlUrl
         self.urlSession = urlSession
-        self.accessTokenProvider = { nil }
+        self.accessTokenProvider = accessTokenProvider
     }
 
     init(

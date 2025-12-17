@@ -20,11 +20,13 @@ enum ApiClientError: Error, LocalizedError {
 final class FlowPilotApiClient {
     private let baseUrl: URL
     private let urlSession: URLSession
+    private let accessTokenProvider: () -> String?
 
-    init(baseUrl: URL = AppConfig.servicesBaseUrl, urlSession: URLSession = .shared) {
+    init(baseUrl: URL = AppConfig.servicesBaseUrl, urlSession: URLSession = .shared, accessTokenProvider: @escaping () -> String? = { nil }) {
         // Initialize client with a base URL; why: keep endpoint routing explicit and testable; side effect: none.
         self.baseUrl = baseUrl
         self.urlSession = urlSession
+        self.accessTokenProvider = accessTokenProvider
     }
 
     func fetchTemplates() async throws -> [TripTemplate] {
@@ -32,6 +34,10 @@ final class FlowPilotApiClient {
         let url = baseUrl.appendingPathComponent("/v1/trip-templates")
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
+        
+        if let token = accessTokenProvider(), !token.isEmpty {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
 
         let (data, response) = try await urlSession.data(for: request)
         let http = try requireHttpResponse(response: response, data: data)
@@ -49,6 +55,10 @@ final class FlowPilotApiClient {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        if let token = accessTokenProvider(), !token.isEmpty {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
 
         let payload = LoadTemplateRequest(template_id: templateId, principal_sub: principalSub)
         request.httpBody = try JSONEncoder().encode(payload)
