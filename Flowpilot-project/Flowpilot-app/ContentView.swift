@@ -14,10 +14,7 @@ struct ContentView: View {
             Spacer()
         }
         .padding(16)
-        .task {
-            // Auto-load templates on first render; why: remove user button and keep app domain-agnostic.
-            await state.loadWorkflowTemplates(forceReload: false)
-        }
+        // Note: Templates are loaded automatically after sign-in (see AppState.signIn)
     }
     
     private var identityPanel: some View {
