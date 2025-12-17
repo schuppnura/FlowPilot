@@ -33,8 +33,48 @@ SQL_INJECTION_PATTERNS = [
     r"('.*OR.*'=')",                # String-based OR
 ]
 
+# XSS (Cross-Site Scripting) patterns
+XSS_PATTERNS = [
+    r"<script[^>]*>.*?</script>",   # Script tags
+    r"javascript:",                  # javascript: protocol
+    r"on\w+\s*=",                   # Event handlers (onclick, onerror, etc.)
+    r"<iframe[^>]*>",                # iframes
+    r"<embed[^>]*>",                 # embed tags
+    r"<object[^>]*>",                # object tags
+    r"<img[^>]*onerror",             # img with onerror
+    r"<svg[^>]*onload",              # svg with onload
+    r"expression\s*\(",             # CSS expression
+    r"vbscript:",                    # vbscript: protocol
+    r"data:text/html",               # data URL with HTML
+]
+
+# Command injection patterns
+COMMAND_INJECTION_PATTERNS = [
+    r"[;&|]\s*\w+",                 # Command chaining (;, &, |)
+    r"\$\([^)]+\)",                 # Command substitution $()
+    r"`[^`]+`",                      # Backtick command substitution
+    r"\|\s*\w+",                    # Pipe to command
+    r">\s*[/\w]",                   # Output redirection
+    r"<\s*[/\w]",                   # Input redirection
+    r"&&\s*\w+",                     # AND command chaining
+    r"\|\|\s*\w+",                  # OR command chaining
+]
+
+# Path traversal patterns
+PATH_TRAVERSAL_PATTERNS = [
+    r"\.\./",                        # Parent directory
+    r"\.\.\\",                      # Parent directory (Windows)
+    r"%2e%2e/",                      # URL encoded ..
+    r"%2e%2e\\",                    # URL encoded .. (Windows)
+    r"\.\.%2f",                      # Mixed encoding
+    r"\.\.%5c",                      # Mixed encoding (Windows)
+]
+
 # Compile patterns for performance
 SQL_INJECTION_REGEX = re.compile("|".join(SQL_INJECTION_PATTERNS), re.IGNORECASE)
+XSS_REGEX = re.compile("|".join(XSS_PATTERNS), re.IGNORECASE)
+COMMAND_INJECTION_REGEX = re.compile("|".join(COMMAND_INJECTION_PATTERNS))
+PATH_TRAVERSAL_REGEX = re.compile("|".join(PATH_TRAVERSAL_PATTERNS), re.IGNORECASE)
 
 # Maximum string field length (characters)
 MAX_STRING_LENGTH = 10000
@@ -94,6 +134,51 @@ def detect_sql_injection(value: str) -> bool:
     return bool(SQL_INJECTION_REGEX.search(value))
 
 
+def detect_xss(value: str) -> bool:
+    """
+    Detect potential XSS (Cross-Site Scripting) attempts.
+    
+    Args:
+        value: String to check for XSS patterns
+        
+    Returns:
+        True if suspicious patterns detected, False otherwise
+    """
+    if not isinstance(value, str):
+        return False
+    return bool(XSS_REGEX.search(value))
+
+
+def detect_command_injection(value: str) -> bool:
+    """
+    Detect potential command injection attempts.
+    
+    Args:
+        value: String to check for command injection patterns
+        
+    Returns:
+        True if suspicious patterns detected, False otherwise
+    """
+    if not isinstance(value, str):
+        return False
+    return bool(COMMAND_INJECTION_REGEX.search(value))
+
+
+def detect_path_traversal(value: str) -> bool:
+    """
+    Detect potential path traversal attempts.
+    
+    Args:
+        value: String to check for path traversal patterns
+        
+    Returns:
+        True if suspicious patterns detected, False otherwise
+    """
+    if not isinstance(value, str):
+        return False
+    return bool(PATH_TRAVERSAL_REGEX.search(value))
+
+
 def sanitize_string(value: str, max_length: int = MAX_STRING_LENGTH) -> str:
     """
     Sanitize and validate string input.
@@ -111,13 +196,22 @@ def sanitize_string(value: str, max_length: int = MAX_STRING_LENGTH) -> str:
     if not isinstance(value, str):
         return value
     
-    # Check for SQL injection
+    # Check length first (fast check)
+    if len(value) > max_length:
+        raise ValueError(f"Input too long. Maximum length: {max_length} characters")
+    
+    # Check for injection attacks
     if detect_sql_injection(value):
         raise ValueError("Input contains potentially dangerous SQL patterns")
     
-    # Check length
-    if len(value) > max_length:
-        raise ValueError(f"Input too long. Maximum length: {max_length} characters")
+    if detect_xss(value):
+        raise ValueError("Input contains potentially dangerous XSS patterns")
+    
+    if detect_command_injection(value):
+        raise ValueError("Input contains potentially dangerous command injection patterns")
+    
+    if detect_path_traversal(value):
+        raise ValueError("Input contains potentially dangerous path traversal patterns")
     
     return value
 
