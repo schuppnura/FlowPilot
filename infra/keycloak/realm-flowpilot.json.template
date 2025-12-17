@@ -12,7 +12,7 @@
       "credentials": [
         {
           "type": "password",
-          "value": "demo",
+          "value": "DEMO_USER_PASSWORD_HERE",
           "temporary": false
         }
       ]
@@ -46,7 +46,7 @@
       "serviceAccountsEnabled": true,
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
-      "secret": "DbUpdfiTCgA1GnYlgPduhQDv84R3t65q"
+      "secret": "KEYCLOAK_CLIENT_SECRET_HERE"
     }
   ]
 }

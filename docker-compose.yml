@@ -3,8 +3,8 @@ services:
     image: quay.io/keycloak/keycloak:26.4.7
     command: ["start-dev", "--import-realm"]
     environment:
-      KC_BOOTSTRAP_ADMIN_USERNAME: admin
-      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
 
       # Hostname v2 (frontend URL shown in OIDC discovery / issuer)
       KC_HOSTNAME: https://localhost:8443
@@ -63,7 +63,7 @@ services:
       KEYCLOAK_URL: "https://keycloak:8443"
       KEYCLOAK_REALM: "flowpilot"
       KEYCLOAK_CLIENT_ID: "flowpilot-agent"
-      KEYCLOAK_CLIENT_SECRET: "DbUpdfiTCgA1GnYlgPduhQDv84R3t65q"
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
       KEYCLOAK_VERIFY_SSL: "false"
     ports:
       - "8002:8002"
@@ -83,7 +83,7 @@ services:
 
       KEYCLOAK_TOKEN_URL: https://keycloak:8443/realms/flowpilot/protocol/openid-connect/token
       AGENT_CLIENT_ID: flowpilot-agent
-      AGENT_CLIENT_SECRET: DbUpdfiTCgA1GnYlgPduhQDv84R3t65q
+      AGENT_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
 
       VERIFY_TRAVELER_TOKEN: "false"
 
@@ -92,7 +92,7 @@ services:
       KEYCLOAK_URL: "https://keycloak:8443"
       KEYCLOAK_REALM: "flowpilot"
       KEYCLOAK_CLIENT_ID: "flowpilot-agent"
-      KEYCLOAK_CLIENT_SECRET: "DbUpdfiTCgA1GnYlgPduhQDv84R3t65q"
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
       KEYCLOAK_VERIFY_SSL: "false"
     command: ["python", "main.py", "--host", "0.0.0.0", "--port", "8000"]
     ports:
@@ -118,7 +118,7 @@ services:
       KEYCLOAK_URL: "https://keycloak:8443"
       KEYCLOAK_REALM: "flowpilot"
       KEYCLOAK_CLIENT_ID: "flowpilot-agent"
-      KEYCLOAK_CLIENT_SECRET: "DbUpdfiTCgA1GnYlgPduhQDv84R3t65q"
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
       KEYCLOAK_VERIFY_SSL: "false"
     ports:
       - "8003:8000"

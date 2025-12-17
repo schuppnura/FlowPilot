@@ -104,12 +104,24 @@ celerybeat.pid
 
 # Environments
 .env
+.env.local
+.env.*.local
 .venv
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
+
+# Secrets and credentials
+*.secret
+*.key
+*.pem
+!infra/keycloak/certs/*.pem
+!infra/***REMOVED***/certs/*.pem
+secrets/
+.secrets/
+infra/keycloak/realm-flowpilot.json
 
 # Spyder project settings
 .spyderproject

@@ -78,18 +78,31 @@ docker compose version
 
 ### Quick start
 
-1) Build & start
+1) Setup secrets
+```bash
+# Copy example environment file
+cp .env.example .env
+
+# Edit .env with your own secrets (or use defaults for development)
+# For production, generate strong secrets:
+# openssl rand -hex 32
+
+# Generate Keycloak realm configuration with your secrets
+./scripts/generate-realm-config.sh
+```
+
+2) Build & start
 ```bash
 docker compose up -d --build
 ```
 
-2) Verify
+3) Verify
 ```bash
 docker ps
 ```
 You should see containers for Keycloak (8080/8443), ***REMOVED*** (9080, 9292, 9393–9395, 9494), AuthZ API (8002), Services API (8003), and AI Agent API (8004).
 
-3) Logs
+4) Logs
 ```bash
 # all services
 docker compose logs
@@ -97,10 +110,22 @@ docker compose logs
 docker compose logs flowpilot-services-api
 ```
 
-4) Stop
+5) Stop
 ```bash
 docker compose down
 ```
+
+### Security note
+**IMPORTANT**: The repository includes development/demo secrets in `.env` for convenience. These are:
+- ❌ NOT secure for production
+- ❌ NOT suitable for public deployments
+- ✅ OK for local development and demos
+
+Before deploying or sharing:
+1. Generate new secrets: `openssl rand -hex 32`
+2. Update `.env` with strong secrets
+3. Regenerate realm config: `./scripts/generate-realm-config.sh`
+4. Never commit `.env` or `realm-flowpilot.json` with real secrets
 
 ### Service endpoints
 - Keycloak: https://localhost:8443 (bootstrap admin: admin/admin)
