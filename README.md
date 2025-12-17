@@ -105,9 +105,13 @@ docker compose up -d --build
 
 4) Load ***REMOVED*** manifest (required for authorization)
 ```bash
+# Run this AFTER docker compose is up
 ***REMOVED*** directory set manifest infra/***REMOVED***/cfg/flowpilot-manifest.yaml \
   --plaintext --host localhost:9292
 ```
+
+Note: This step requires the ***REMOVED*** CLI and must be run after services start.
+It only needs to be done once (manifest persists in ***REMOVED*** database).
 
 5) Verify
 ```bash
