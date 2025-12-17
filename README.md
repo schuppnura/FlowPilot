@@ -156,6 +156,30 @@ All services enforce bearer token authentication by default (`AUTH_ENABLED=true`
 - Service-to-service: AI agent obtains service token via client credentials grant, includes in calls to services API
 - Token validation: All services validate tokens via Keycloak introspection endpoint
 
+### Input Sanitization
+All services include comprehensive input validation and injection attack prevention:
+
+**Automatic protections:**
+- Request body size limit: 1MB (HTTP 413 if exceeded)
+- String length limit: 10,000 characters per field
+- Connection limits: 100 concurrent, 10k max requests per worker
+- Keep-alive timeout: 5 seconds
+
+**Injection attack detection:**
+- **SQL injection**: UNION, DROP, INSERT, DELETE, UPDATE, OR/AND attacks
+- **XSS (Cross-Site Scripting)**: Script tags, event handlers, javascript: protocol
+- **Command injection**: Shell command chaining, substitution, redirection
+- **Path traversal**: ../ directory access, URL encoding variants
+
+**Configuration:**
+```bash
+# Customize limits in .env
+MAX_REQUEST_SIZE_MB=1      # Request body size in MB
+MAX_STRING_LENGTH=10000    # Max characters per string field
+```
+
+All input is validated before processing. Attacks are rejected with specific error messages.
+
 See `docs/SECURITY_SETUP.md` for hardening recommendations and `SECURITY.md` for vulnerability reporting.
 
 ---
