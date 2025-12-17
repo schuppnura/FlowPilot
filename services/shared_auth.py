@@ -125,7 +125,7 @@ def create_auth_validator_from_env() -> BearerTokenValidator:
         KEYCLOAK_URL: Keycloak base URL (default: https://localhost:8443)
         KEYCLOAK_REALM: Keycloak realm (default: flowpilot)
         KEYCLOAK_CLIENT_ID: Client ID for introspection (default: flowpilot-agent)
-        KEYCLOAK_CLIENT_SECRET: Client secret for introspection
+        KEYCLOAK_CLIENT_SECRET: Client secret for introspection (REQUIRED)
 
     Returns:
         Configured bearer token validator
@@ -134,7 +134,10 @@ def create_auth_validator_from_env() -> BearerTokenValidator:
     keycloak_url = os.environ.get("KEYCLOAK_URL", "https://localhost:8443")
     realm = os.environ.get("KEYCLOAK_REALM", "flowpilot")
     client_id = os.environ.get("KEYCLOAK_CLIENT_ID", "flowpilot-agent")
-    client_secret = os.environ.get("KEYCLOAK_CLIENT_SECRET", "DbUpdfiTCgA1GnYlgPduhQDv84R3t65q")
+    client_secret = os.environ.get("KEYCLOAK_CLIENT_SECRET", "")
+    
+    if enabled and not client_secret:
+        raise ValueError("KEYCLOAK_CLIENT_SECRET environment variable is required when AUTH_ENABLED=true")
 
     return BearerTokenValidator(
         keycloak_url=keycloak_url,

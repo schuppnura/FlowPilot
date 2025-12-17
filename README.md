@@ -116,16 +116,27 @@ docker compose down
 ```
 
 ### Security note
-**IMPORTANT**: The repository includes development/demo secrets in `.env` for convenience. These are:
-- ❌ NOT secure for production
-- ❌ NOT suitable for public deployments
-- ✅ OK for local development and demos
+**IMPORTANT**: The default configuration is for **DEVELOPMENT ONLY**. Before production:
 
-Before deploying or sharing:
-1. Generate new secrets: `openssl rand -hex 32`
-2. Update `.env` with strong secrets
-3. Regenerate realm config: `./scripts/generate-realm-config.sh`
-4. Never commit `.env` or `realm-flowpilot.json` with real secrets
+**Critical security issues in development mode:**
+- ❌ Keycloak runs in development mode (reduced security)
+- ❌ SSL verification disabled (vulnerable to MITM attacks)
+- ❌ All service ports exposed to host (attack surface)
+- ❌ Self-signed certificates (not trusted)
+- ❌ Demo passwords included
+
+**For production deployment:**
+1. Use production compose: `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d`
+2. Generate strong secrets: `openssl rand -hex 32`
+3. Obtain valid SSL certificates (Let's Encrypt, etc.)
+4. Enable SSL verification: `KEYCLOAK_VERIFY_SSL=true` in `.env`
+5. Use reverse proxy with rate limiting
+6. Review [docs/PRODUCTION_SECURITY.md](docs/PRODUCTION_SECURITY.md)
+
+**Never commit:**
+- `.env` file with real secrets
+- `realm-flowpilot.json` with production credentials
+- Private keys or certificates
 
 ### Service endpoints
 - Keycloak: https://localhost:8443 (bootstrap admin: admin/admin)
