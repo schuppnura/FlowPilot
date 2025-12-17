@@ -1,0 +1,231 @@
+FlowPilot Demo
+
+Agentic Workflows with AuthZEN-style PEP/PDP Boundary, ReBAC Delegation, and Progressive Profiling
+
+What this is
+
+FlowPilot is a reference demo that validates a reusable authorization and delegation architecture for “agentic” workflow execution across domains (travel today; nursing later).
+
+It demonstrates:
+	•	A domain backend that owns workflow state (system of record) and enforces authorization as a PEP.
+	•	A dedicated AuthZ service that acts as PDP façade + PIP (enrichment) + adapter to the underlying PDP engine.
+	•	A ReBAC-capable PDP (***REMOVED***) used to evaluate relationship-based delegation and permissions.
+	•	An OSS IdP (Keycloak) with OIDC Authorization Code + PKCE for the desktop client.
+	•	A workflow “agent-runner” that executes workflow items item-by-item to produce mixed allow/deny outcomes in a single run.
+	•	Strict privacy discipline: no PII exposure to the LLM and no PII handling in the domain backend beyond sub (UUID).
+
+The codebase is organized so most components are domain-agnostic. Domain-specific behavior is isolated in the domain service and its templates.
+
+⸻
+
+Target architecture
+
+Components
+	1.	Desktop client (today macOS; later iOS)
+	•	Collects user intent (NLP later; structured forms now)
+	•	Creates workflows from templates
+	•	Triggers the agent-runner in dry_run mode and inspects results
+	•	Authenticates via OIDC Authorization Code + PKCE
+	2.	Domain backend (travel demo today)
+	•	Service name: domain-travel-api
+	•	System-of-record for workflow state:
+	•	workflows, items, history, execution status, audit metadata
+	•	PEP responsibilities:
+	•	builds minimal AuthZEN-style decision input
+	•	calls workflow-authz-api for authorization
+	•	enforces “no side effects” in dry_run=true mode
+	3.	Authorization service
+	•	Service name: workflow-authz-api
+	•	Responsibilities:
+	•	acts as PIP: fetches preferences/profile attributes (and later PII presence flags) keyed by sub
+	•	acts as PDP façade: provides a stable evaluation API to domain services
+	•	acts as adapter: translates from AuthZEN-style input to ***REMOVED*** Directory/Authorizer calls
+	•	returns decisions with reason codes and advice (progressive profiling)
+	4.	Agent runner
+	•	Service name: workflow-agent-runner-api
+	•	Responsibilities:
+	•	loads a workflow’s current worklist from the domain backend
+	•	iterates item-by-item using the domain “execute item” endpoint
+	•	aggregates per-item outcomes into a run result
+	•	Agentic principle:
+	•	does not “pick the first bookable item”
+	•	operates on authoritative domain state and produces a traceable audit trail
+	5.	Identity provider
+	•	Service: Keycloak (open source)
+	•	OIDC Authorization Code + PKCE for the desktop client
+	•	Service account credentials for the agent identity (server-side)
+	6.	PDP
+	•	Service: ***REMOVED***
+	•	Directory expresses relationships (ReBAC tuples)
+	•	Evaluation checks:
+	•	“can this agent act on behalf of this principal?”
+	•	“is this workflow item executable given relations and resource facts?”
+	•	Phase 1: minimal types + relations used for check calls
+	•	Phase 2+: expand policy and move more logic from stubs into ***REMOVED***
+
+⸻
+
+Key design rules and constraints
+
+Authorization and delegation
+	•	***REMOVED*** is the PDP.
+	•	Domain services never embed authorization logic. They externalize it via the AuthZ service.
+	•	Two-token pattern:
+	•	Actor: the agent identity (service account / agent token)
+	•	Principal: the end-user sub (passed as contextual principal when acting on behalf)
+	•	Do not trust asserted principals:
+	•	principal spoof / wrong owner must deny deterministically with explicit reason codes.
+
+Privacy and LLM safety
+	•	LLM never receives PII (name/email/phone/address).
+	•	LLM never receives stable identifiers (like sub) that could link preferences to a person.
+	•	Domain backend (domain-travel-api) stores no PII beyond sub.
+	•	Long-term memory lives outside the LLM:
+	•	workflow/trip history in domain backend (keyed by sub)
+	•	preferences/policy params in a dedicated store accessible via AuthZ enrichment
+
+Progressive profiling
+	•	Minimal registration to get started.
+	•	If dry_run=false and required fields for a real-world action are missing:
+	•	deny, with advice listing required profile fields.
+	•	If dry_run=true:
+	•	allow can be recommended (policy choice), but still return advice listing what would block production execution.
+
+dry_run=true semantics
+	•	Domain backend must still do full authorization evaluation.
+	•	Domain backend must not perform irreversible side effects.
+	•	Agent-runner can demonstrate “simulation mode” for travelers and for production safety.
+
+⸻
+
+Preferences: ABAC-like parameters vs ReBAC relationships
+
+FlowPilot models two orthogonal dimensions:
+	1.	Structured attributes (policy parameters / ABAC-like)
+	•	Example: language, budget ranges, dietary constraints, risk tolerance, delivery address
+	•	Stored in a profile store keyed by sub
+	•	Injected into authorization context by workflow-authz-api
+	2.	Relationships (ReBAC)
+	•	Example:
+	•	user delegates planning to agent X
+	•	user shares workflow Y with spouse
+	•	agent X is assigned to agency Z (tenant scoping)
+	•	workflow item belongs_to workflow; workflow owned_by user
+	•	Represented as ***REMOVED*** Directory relations
+
+***REMOVED*** is a natural fit because evaluation can combine “what relationships exist?” with “what attributes apply?”.
+
+⸻
+
+What is the system of record?
+
+Domain backend (domain-travel-api) owns
+
+Keyed by sub and workflow IDs:
+	•	workflows and workflow items
+	•	workflow execution history and statuses
+	•	delegation grants and scopes (who can act for whom, for which workflow)
+	•	audit-friendly metadata (timestamps, request IDs, actor/principal IDs)
+
+This is domain context and is appropriate for the domain backend to own.
+
+Domain backend explicitly does not own
+	•	PII: name/email/phone/address/passport number, etc.
+	•	rich preference/profile attributes intended to be policy-governed centrally (unless explicitly duplicated for performance)
+
+Preferences live in profile store
+	•	Stored keyed by sub
+	•	Retrieved by workflow-authz-api as enrichment input
+	•	Enables a clean assertion: “domain backend is PII-free.”
+
+⸻
+
+Minimal AuthZEN-style request boundary (PEP → AuthZ)
+
+The domain backend sends a minimal decision input containing only what it directly knows:
+	•	subject: the actor identity (from caller token / agent token)
+	•	action: stable action name (e.g., booking.execute)
+	•	resource: resource type/id plus a small set of non-sensitive domain attributes
+	•	context.principal: only when acting on behalf of an end-user (two-token pattern)
+	•	context.request: request metadata (request id, channel, time)
+
+It does not send:
+	•	preferences / policy params
+	•	relationship graphs
+	•	anything requiring external lookups
+
+workflow-authz-api enriches with profile attributes and performs ***REMOVED*** checks.
+
+⸻
+
+Deny scenarios to demonstrate
+
+The demo intentionally supports strong “security moments”:
+	1.	Principal spoof / wrong owner
+	•	Same agent-run request, but workflow ownership is different.
+	•	Expected decision: deny
+	•	Reason code: workflow.not_owned_by_principal (example)
+	2.	Delegation missing or invalid
+	•	Agent attempts to act for a principal without the required relationship.
+	•	Expected decision: deny
+	•	Reason code: delegation.missing (example)
+	3.	Progressive profiling block
+	•	dry_run=false and required profile fields are missing.
+	•	Expected decision: deny with advice listing missing fields
+	•	Reason code: profile.requirements_missing (example)
+
+⸻
+
+Repository layout (end-state naming)
+
+This section describes the intended naming and isolation. (We will apply this rename next.)
+	•	services/workflow-authz-api/
+AuthZ façade + enrichment + ***REMOVED*** adapter.
+	•	services/workflow-agent-runner-api/
+Worklist execution loop; domain-agnostic.
+	•	services/domain-travel-api/
+Travel demo domain backend; domain-specific templates and endpoints.
+	•	infra/keycloak/
+Realm import and TLS assets.
+	•	infra/***REMOVED***/
+***REMOVED*** config, manifest, and persistent directory DB.
+	•	data/workflow_templates/
+Domain workflow templates (travel today).
+	•	FlowPilot Desktop App (cumbaya-demo/ in current tree)
+Desktop demo client; will be renamed to flowpilot-demo.
+
+⸻
+
+Operational notes
+
+OpenAPI specs
+
+The repo includes importable OpenAPI specs:
+	•	domain-travel-api.openapi.yaml
+	•	workflow-authz-api.openapi.yaml
+	•	workflow-agent-runner.openapi.yaml
+
+These can be loaded into Swagger UI or Postman.
+
+Bringing the stack up/down
+
+Scripts in bin/ provide convenience for:
+	•	stack up/down
+	•	logs/status
+	•	***REMOVED*** initialization (manifest load)
+
+⸻
+
+Assumptions
+	•	This is a demo stack. It prefers clarity over production hardening.
+	•	The policy vocabulary (actions/resource types/relations) is treated as a versioned contract.
+	•	***REMOVED*** policy and directory types will evolve from Phase 1 (minimal checks) to Phase 2+ (richer policy and fewer stubs).
+
+⸻
+
+Why this architecture
+	•	Keeps authorization semantics consistent across multiple domain backends.
+	•	Makes delegation explicit and independently verifiable (no trusting client assertions).
+	•	Enables safe “agentic” execution with clear auditability per workflow item.
+	•	Preserves privacy discipline by keeping PII and long-term memory out of the LLM and out of domain services.
+

@@ -1,0 +1,52 @@
+{
+  "realm": "flowpilot",
+  "enabled": true,
+  "registrationAllowed": true,
+  "loginWithEmailAllowed": false,
+  "duplicateEmailsAllowed": true,
+  "users": [
+    {
+      "username": "traveler1",
+      "enabled": true,
+      "firstName": "Demo",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo",
+          "temporary": false
+        }
+      ]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "flowpilot-desktop",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "flowpilot-demo://oauth/callback",
+        "http://localhost:9999/callback"
+      ],
+      "webOrigins": [
+        "http://localhost:9999"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    },
+    {
+      "clientId": "flowpilot-agent",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "secret": "DbUpdfiTCgA1GnYlgPduhQDv84R3t65q"
+    }
+  ]
+}

@@ -1,0 +1,79 @@
+{
+  "clientId": "cumbaya-desktop",
+  "name": "Cumbaya Desktop App",
+  "description": "Cumbaya Desktop App on MacOS",
+  "rootUrl": "",
+  "adminUrl": "",
+  "baseUrl": "",
+  "surrogateAuthRequired": false,
+  "enabled": true,
+  "alwaysDisplayInConsole": false,
+  "clientAuthenticatorType": "client-secret",
+  "redirectUris": [
+    "http://localhost:9999/callback",
+    "cumbaya-demo://oauth/callback"
+  ],
+  "webOrigins": [
+    ""
+  ],
+  "notBefore": 0,
+  "bearerOnly": false,
+  "consentRequired": false,
+  "standardFlowEnabled": true,
+  "implicitFlowEnabled": false,
+  "directAccessGrantsEnabled": false,
+  "serviceAccountsEnabled": false,
+  "publicClient": true,
+  "frontchannelLogout": false,
+  "protocol": "openid-connect",
+  "attributes": {
+    "request.object.signature.alg": "any",
+    "post.logout.redirect.uris": "cumbaya-demo://oauth/logout",
+    "oauth2.device.authorization.grant.enabled": "false",
+    "backchannel.logout.revoke.offline.tokens": "false",
+    "use.refresh.tokens": "true",
+    "realm_client": "false",
+    "oidc.ciba.grant.enabled": "false",
+    "backchannel.logout.session.required": "true",
+    "client_credentials.use_refresh_token": "false",
+    "require.pushed.authorization.requests": "false",
+    "request.object.encryption.enc": "any",
+    "pkce.code.challenge.method": "S256",
+    "dpop.bound.access.tokens": "false",
+    "id.token.as.detached.signature": "false",
+    "request.object.encryption.alg": "any",
+    "client.introspection.response.allow.jwt.claim.enabled": "false",
+    "standard.token.exchange.enabled": "false",
+    "logoUri": "https://nura.pro/",
+    "client.use.lightweight.access.token.enabled": "false",
+    "request.object.required": "not required",
+    "access.token.header.type.rfc9068": "false",
+    "tls.client.certificate.bound.access.tokens": "false",
+    "acr.loa.map": "{}",
+    "display.on.consent.screen": "false",
+    "token.response.type.bearer.lower-case": "false"
+  },
+  "authenticationFlowBindingOverrides": {},
+  "fullScopeAllowed": true,
+  "nodeReRegistrationTimeout": -1,
+  "defaultClientScopes": [
+    "web-origins",
+    "acr",
+    "roles",
+    "profile",
+    "basic",
+    "email"
+  ],
+  "optionalClientScopes": [
+    "address",
+    "phone",
+    "offline_access",
+    "organization",
+    "microprofile-jwt"
+  ],
+  "access": {
+    "view": true,
+    "configure": true,
+    "manage": true
+  }
+}

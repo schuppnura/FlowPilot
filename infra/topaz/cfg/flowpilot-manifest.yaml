@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=https://www.***REMOVED***.sh/schema/manifest.json
+---
+model:
+  version: 3
+
+types:
+  user:
+    relations:
+      delegate: agent
+
+  agent: {}
+
+  workflow:
+    relations:
+      owner: user
+    permissions:
+      # Agent can execute if the workflow owner has delegated to that agent.
+      can_execute: owner->delegate
+
+  workflow_item:
+    relations:
+      workflow: workflow
+    permissions:
+      # Delegate execution permission to the workflow’s can_execute permission.
+      can_execute: workflow->can_execute

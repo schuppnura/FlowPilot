@@ -1,0 +1,107 @@
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.4.7
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+
+      # Hostname v2 (frontend URL shown in OIDC discovery / issuer)
+      KC_HOSTNAME: https://localhost:8443
+      KC_HOSTNAME_STRICT: "false"
+
+      # Optional but useful in Docker: allows “backchannel” URLs to resolve from incoming headers
+      # (so internal callers can use https://keycloak:8443 even if the public issuer is localhost).
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+
+      KC_HTTPS_CERTIFICATE_FILE: /opt/keycloak/certs/cert.pem
+      KC_HTTPS_CERTIFICATE_KEY_FILE: /opt/keycloak/certs/key.pem
+      KC_HTTPS_PORT: 8443
+    ports:
+      - "8080:8080"
+      - "8443:8443"
+    volumes:
+      - ./infra/keycloak:/opt/keycloak/data/import:ro
+      - ./infra/keycloak/certs:/opt/keycloak/certs:ro
+
+  ***REMOVED***:
+    image: ghcr.io/aserto-dev/***REMOVED***:latest
+    platform: linux/amd64
+    command: ["run", "--config-file", "/app/cfg/config.yaml"]
+    restart: unless-stopped
+    volumes:
+      - ./infra/***REMOVED***/cfg:/app/cfg:ro
+      - ./infra/***REMOVED***/db:/db:rw
+      - ./infra/***REMOVED***/certs:/certs:rw
+    ports:
+      - "9080:8080"
+      - "9393:9393"
+      - "9292:9292"
+      - "9394:9394"
+      - "9395:9395"
+      - "9494:9494"
+
+  flowpilot-authz-api:
+    build:
+      context: .
+      dockerfile: services/flowpilot-authz-api/Dockerfile
+    environment:
+      LOG_LEVEL: info
+
+      # Domain service used for enrichment / owner lookups.
+      WORKFLOW_BASE_URL: http://flowpilot-services-api:8000
+
+      # ***REMOVED*** directory REST base.
+      ***REMOVED***_DIR_BASE: http://***REMOVED***:9393
+
+      REQUEST_TIMEOUT_SECONDS: "10"
+      ***REMOVED***_TIMEOUT_CONNECT_SECONDS: "2"
+      ***REMOVED***_TIMEOUT_READ_SECONDS: "8"
+    ports:
+      - "8002:8002"
+    command: ["python", "main.py", "--host", "0.0.0.0", "--port", "8002"]
+    depends_on:
+      - ***REMOVED***
+
+  flowpilot-ai-agent-api:
+    build:
+      context: .
+      dockerfile: services/flowpilot-ai-agent-api/Dockerfile
+    environment:
+      LOG_LEVEL: info
+
+      # Domain/workflow API base URL.
+      WORKFLOW_BASE_URL: http://flowpilot-services-api:8000
+
+      # Remove this once you confirm nothing reads it anymore.
+      # CUMBAYA_BASE_URL: http://flowpilot-services-api:8000
+
+      KEYCLOAK_TOKEN_URL: https://keycloak:8443/realms/flowpilot/protocol/openid-connect/token
+      AGENT_CLIENT_ID: flowpilot-agent
+      AGENT_CLIENT_SECRET: change_me
+
+      VERIFY_TRAVELER_TOKEN: "false"
+    command: ["python", "main.py", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8004:8000"
+    depends_on:
+      - keycloak
+      - flowpilot-services-api
+
+  flowpilot-services-api:
+    build:
+      context: .
+      dockerfile: services/flowpilot-services-api/Dockerfile
+    environment:
+      AUTHZ_BASE_URL: "http://flowpilot-authz-api:8002"
+      AGENT_SUB: "agent_flowpilot_1"
+      DOMAIN: "flowpilot"
+
+      # Templates are mounted at /data inside the container.
+      TEMPLATE_DIRECTORY: "/data/trip_templates"
+    ports:
+      - "8003:8000"
+    depends_on:
+      - flowpilot-authz-api
+    volumes:
+      - ./data:/data:ro
