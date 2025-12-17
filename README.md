@@ -78,7 +78,14 @@ docker compose version
 
 ### Quick start
 
-1) Setup secrets
+1) Install ***REMOVED*** CLI (required for authorization)
+```bash
+# Install ***REMOVED*** CLI
+brew tap aserto-dev/tap
+brew install aserto-dev/tap/***REMOVED***
+```
+
+2) Setup secrets
 ```bash
 # Copy example environment file
 cp .env.example .env
@@ -91,12 +98,18 @@ cp .env.example .env
 ./scripts/generate-realm-config.sh
 ```
 
-2) Build & start
+3) Build & start
 ```bash
 docker compose up -d --build
 ```
 
-3) Verify
+4) Load ***REMOVED*** manifest (required for authorization)
+```bash
+***REMOVED*** directory set manifest infra/***REMOVED***/cfg/flowpilot-manifest.yaml \
+  --plaintext --host localhost:9292
+```
+
+5) Verify
 ```bash
 docker ps
 ```
