@@ -12,7 +12,7 @@ from core import (
     AuthzService,
     EvaluateResponseModel,
 )
-from request_limiter import RequestSizeLimiterMiddleware, get_max_request_size
+from sanitizer import RequestSizeLimiterMiddleware, get_max_request_size
 from shared_auth import bearer_scheme, verify_token
 from utils import load_json_object, merge_config, parse_positive_float, parse_positive_int, validate_non_empty_string
 

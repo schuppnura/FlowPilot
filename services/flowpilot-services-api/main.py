@@ -9,6 +9,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from pydantic import BaseModel
 
 from core import FlowPilotService
+from sanitizer import RequestSizeLimiterMiddleware, get_max_request_size
 from shared_auth import bearer_scheme, verify_token
 from utils import load_json_object, merge_config, parse_positive_int, validate_non_empty_string
 
