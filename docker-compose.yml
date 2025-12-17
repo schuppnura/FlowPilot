@@ -40,6 +40,33 @@ services:
       - "9394:9394"
       - "9395:9395"
       - "9494:9494"
+  
+  ***REMOVED***-init:
+    image: curlimages/curl:latest
+    depends_on:
+      - ***REMOVED***
+    volumes:
+      - ./infra/***REMOVED***/cfg:/cfg:ro
+      - ./scripts:/scripts:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "Waiting for ***REMOVED*** to be ready..."
+        for i in $(seq 1 30); do
+          if curl -sf http://***REMOVED***:9393/api/v3/directory/check > /dev/null 2>&1; then
+            echo "***REMOVED*** is ready!"
+            break
+          fi
+          echo "Waiting... ($$i/30)"
+          sleep 2
+        done
+        
+        echo "Loading FlowPilot manifest..."
+        curl -X POST http://***REMOVED***:9393/api/v3/directory/model/set \
+          -H "Content-Type: application/x-yaml" \
+          --data-binary @/cfg/flowpilot-manifest.yaml \
+          && echo "Manifest loaded successfully!" \
+          || echo "Failed to load manifest (may already be loaded)"
 
   flowpilot-authz-api:
     build:

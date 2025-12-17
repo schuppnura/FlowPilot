@@ -14,6 +14,13 @@ The FlowPilot manifest (`infra/***REMOVED***/cfg/flowpilot-manifest.yaml`) defin
 
 However, this manifest needs to be loaded into ***REMOVED***'s directory before authorization checks will work.
 
+**Update**: The current ***REMOVED*** Docker image (`ghcr.io/aserto-dev/***REMOVED***:latest`) does NOT support:
+- `/api/v3/directory/model/set` endpoint (returns 404 Not Found)
+- `/api/v3/directory/objects` endpoint (returns 501 Method Not Allowed)
+- `/api/v3/directory/relations` endpoint (returns 501 Method Not Allowed)
+
+These endpoints are required for dynamic manifest loading. The **only supported method** is using the ***REMOVED*** CLI.
+
 ## The Manifest
 
 ```yaml
