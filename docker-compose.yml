@@ -107,7 +107,7 @@ services:
       dockerfile: services/flowpilot-services-api/Dockerfile
     environment:
       AUTHZ_BASE_URL: "http://flowpilot-authz-api:8002"
-      AGENT_SUB: "agent_flowpilot_1"
+      AGENT_SUB: "agent-runner"
       DOMAIN: "flowpilot"
 
       # Templates are mounted at /data inside the container.

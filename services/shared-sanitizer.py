@@ -1,12 +1,15 @@
-"""
-Input sanitization and security middleware for FastAPI services.
-
-Protects against:
-- Large payload attacks (request body size limits)
-- SQL injection attempts (dangerous pattern detection)
-- Excessive string lengths (per-field character limits)
-- Resource exhaustion (connection limits)
-"""
+# Shared Input Sanitization and Security Middleware for FlowPilot Services
+#
+# Comprehensive input validation and injection attack prevention middleware used
+# across all FlowPilot services to protect against security vulnerabilities.
+#
+# Input sanitization and security middleware for FastAPI services.
+#
+# Protects against:
+# - Large payload attacks (request body size limits)
+# - SQL injection attempts (dangerous pattern detection)
+# - Excessive string lengths (per-field character limits)
+# - Resource exhaustion (connection limits)
 
 from __future__ import annotations
 
@@ -81,25 +84,21 @@ MAX_STRING_LENGTH = 10000
 
 
 class RequestSizeLimiterMiddleware(BaseHTTPMiddleware):
-    """
-    Middleware to limit request body size.
-    
-    Protects against resource exhaustion attacks via large payloads.
-    """
+    # Middleware to limit request body size.
+    #
+    # Protects against resource exhaustion attacks via large payloads.
 
     def __init__(self, app, max_size: int = 1_048_576):  # 1 MB default
-        """
-        Initialize the request size limiter.
-        
-        Args:
-            app: FastAPI application
-            max_size: Maximum request body size in bytes (default: 1MB)
-        """
+        # Initialize the request size limiter.
+        #
+        # Args:
+        #     app: FastAPI application
+        #     max_size: Maximum request body size in bytes (default: 1MB)
         super().__init__(app)
         self.max_size = max_size
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        """Check request size before processing."""
+        # Check request size before processing.
         # Get content length from headers
         content_length = request.headers.get("content-length")
         
@@ -120,79 +119,69 @@ class RequestSizeLimiterMiddleware(BaseHTTPMiddleware):
 
 
 def detect_sql_injection(value: str) -> bool:
-    """
-    Detect potential SQL injection attempts.
-    
-    Args:
-        value: String to check for SQL injection patterns
-        
-    Returns:
-        True if suspicious patterns detected, False otherwise
-    """
+    # Detect potential SQL injection attempts.
+    #
+    # Args:
+    #     value: String to check for SQL injection patterns
+    #
+    # Returns:
+    #     True if suspicious patterns detected, False otherwise
     if not isinstance(value, str):
         return False
     return bool(SQL_INJECTION_REGEX.search(value))
 
 
 def detect_xss(value: str) -> bool:
-    """
-    Detect potential XSS (Cross-Site Scripting) attempts.
-    
-    Args:
-        value: String to check for XSS patterns
-        
-    Returns:
-        True if suspicious patterns detected, False otherwise
-    """
+    # Detect potential XSS (Cross-Site Scripting) attempts.
+    #
+    # Args:
+    #     value: String to check for XSS patterns
+    #
+    # Returns:
+    #     True if suspicious patterns detected, False otherwise
     if not isinstance(value, str):
         return False
     return bool(XSS_REGEX.search(value))
 
 
 def detect_command_injection(value: str) -> bool:
-    """
-    Detect potential command injection attempts.
-    
-    Args:
-        value: String to check for command injection patterns
-        
-    Returns:
-        True if suspicious patterns detected, False otherwise
-    """
+    # Detect potential command injection attempts.
+    #
+    # Args:
+    #     value: String to check for command injection patterns
+    #
+    # Returns:
+    #     True if suspicious patterns detected, False otherwise
     if not isinstance(value, str):
         return False
     return bool(COMMAND_INJECTION_REGEX.search(value))
 
 
 def detect_path_traversal(value: str) -> bool:
-    """
-    Detect potential path traversal attempts.
-    
-    Args:
-        value: String to check for path traversal patterns
-        
-    Returns:
-        True if suspicious patterns detected, False otherwise
-    """
+    # Detect potential path traversal attempts.
+    #
+    # Args:
+    #     value: String to check for path traversal patterns
+    #
+    # Returns:
+    #     True if suspicious patterns detected, False otherwise
     if not isinstance(value, str):
         return False
     return bool(PATH_TRAVERSAL_REGEX.search(value))
 
 
 def sanitize_string(value: str, max_length: int = MAX_STRING_LENGTH) -> str:
-    """
-    Sanitize and validate string input.
-    
-    Args:
-        value: String to sanitize
-        max_length: Maximum allowed length
-        
-    Returns:
-        Sanitized string
-        
-    Raises:
-        ValueError: If input is too long or contains suspicious patterns
-    """
+    # Sanitize and validate string input.
+    #
+    # Args:
+    #     value: String to sanitize
+    #     max_length: Maximum allowed length
+    #
+    # Returns:
+    #     Sanitized string
+    #
+    # Raises:
+    #     ValueError: If input is too long or contains suspicious patterns
     if not isinstance(value, str):
         return value
     
@@ -217,19 +206,17 @@ def sanitize_string(value: str, max_length: int = MAX_STRING_LENGTH) -> str:
 
 
 def sanitize_dict(data: dict[str, Any], max_length: int = MAX_STRING_LENGTH) -> dict[str, Any]:
-    """
-    Recursively sanitize all string values in a dictionary.
-    
-    Args:
-        data: Dictionary to sanitize
-        max_length: Maximum string length
-        
-    Returns:
-        Sanitized dictionary
-        
-    Raises:
-        ValueError: If any string is invalid
-    """
+    # Recursively sanitize all string values in a dictionary.
+    #
+    # Args:
+    #     data: Dictionary to sanitize
+    #     max_length: Maximum string length
+    #
+    # Returns:
+    #     Sanitized dictionary
+    #
+    # Raises:
+    #     ValueError: If any string is invalid
     sanitized = {}
     for key, value in data.items():
         if isinstance(value, str):
@@ -249,21 +236,17 @@ def sanitize_dict(data: dict[str, Any], max_length: int = MAX_STRING_LENGTH) -> 
 
 
 def get_max_request_size() -> int:
-    """
-    Get maximum request size from environment variable.
-    
-    Returns:
-        Maximum request size in bytes (default: 1MB)
-    """
+    # Get maximum request size from environment variable.
+    #
+    # Returns:
+    #     Maximum request size in bytes (default: 1MB)
     max_size_mb = int(os.environ.get("MAX_REQUEST_SIZE_MB", "1"))
     return max_size_mb * 1_048_576
 
 
 def get_max_string_length() -> int:
-    """
-    Get maximum string length from environment variable.
-    
-    Returns:
-        Maximum string length in characters (default: 10000)
-    """
+    # Get maximum string length from environment variable.
+    #
+    # Returns:
+    #     Maximum string length in characters (default: 10000)
     return int(os.environ.get("MAX_STRING_LENGTH", str(MAX_STRING_LENGTH)))

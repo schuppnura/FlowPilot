@@ -1,3 +1,19 @@
+# FlowPilot AuthZ API - Core Logic
+#
+# Authorization service that acts as PDP façade + PIP (enrichment) + adapter to ***REMOVED***.
+# This service enriches authorization requests with profile attributes and evaluates
+# relationship-based delegation via ***REMOVED*** (ReBAC PDP).
+#
+# Key responsibilities:
+# - Policy decision point (PDP) façade with AuthZEN-style evaluation
+# - Policy information point (PIP) for progressive profiling enrichment
+# - Anti-spoofing guardrails (workflow ownership validation)
+# - ***REMOVED*** Directory adapter for ReBAC tuple checks
+# - In-memory profile store for policy parameters and identity presence flags
+# - Action-to-relation mapping for domain-agnostic authorization
+#
+# No PII values are stored - only presence flags, non-PII policy parameters, and pseudononymous relations with worflows
+
 from __future__ import annotations
 
 import threading
@@ -200,6 +216,71 @@ class AuthzService:
             profile_store=self._profiles,
             request_body=request_body,
         )
+
+    def create_workflow_graph(self, workflow_id: str, owner_sub: str, display_name: str, properties: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        # Create workflow object and owner relation in ***REMOVED*** authorization graph
+        # why: establish workflow ownership for ReBAC authorization checks
+        # when: called by domain services when workflows are created (e.g., trip creation)
+        # graph structure: workflow --owner--> user
+        # assumptions: user object must already exist in ***REMOVED*** (created during provisioning)
+        # side effect: creates workflow object and owner relation in ***REMOVED***
+        # returns: dict with workflow_id, owner_sub, and status="created"
+        workflow_id = validate_non_empty_string(workflow_id, "workflow_id")
+        owner_sub = validate_non_empty_string(owner_sub, "owner_sub")
+        
+        # Create workflow object
+        create_***REMOVED***_object(
+            dependencies=self._dependencies,
+            object_type="workflow",
+            object_id=workflow_id,
+            display_name=display_name or workflow_id,
+            properties=properties,
+        )
+        
+        # Create owner relation: workflow --owner--> user
+        create_***REMOVED***_relation(
+            dependencies=self._dependencies,
+            object_type="workflow",
+            object_id=workflow_id,
+            relation="owner",
+            subject_type="user",
+            subject_id=owner_sub,
+        )
+        
+        return {"workflow_id": workflow_id, "owner_sub": owner_sub, "status": "created"}
+
+    def create_workflow_item_graph(self, workflow_item_id: str, workflow_id: str, display_name: str, properties: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        # Create workflow_item object and workflow relation in ***REMOVED*** authorization graph
+        # why: link items to workflows for permission inheritance via ReBAC
+        # when: called by domain services for each workflow item during workflow creation
+        # graph structure: workflow_item --workflow--> workflow
+        # assumptions: workflow object must already exist in ***REMOVED***
+        # permission chain: workflow_item.can_execute delegates to workflow.can_execute via this relation
+        # side effect: creates workflow_item object and workflow relation in ***REMOVED***
+        # returns: dict with workflow_item_id, workflow_id, and status="created"
+        workflow_item_id = validate_non_empty_string(workflow_item_id, "workflow_item_id")
+        workflow_id = validate_non_empty_string(workflow_id, "workflow_id")
+        
+        # Create workflow_item object
+        create_***REMOVED***_object(
+            dependencies=self._dependencies,
+            object_type="workflow_item",
+            object_id=workflow_item_id,
+            display_name=display_name or workflow_item_id,
+            properties=properties,
+        )
+        
+        # Create workflow relation: workflow_item --workflow--> workflow
+        create_***REMOVED***_relation(
+            dependencies=self._dependencies,
+            object_type="workflow_item",
+            object_id=workflow_item_id,
+            relation="workflow",
+            subject_type="workflow",
+            subject_id=workflow_id,
+        )
+        
+        return {"workflow_item_id": workflow_item_id, "workflow_id": workflow_id, "status": "created"}
 
     def _create_dependencies(self, config: Dict[str, Any]) -> Dependencies:
         # Create a frozen dependency bag
@@ -530,3 +611,67 @@ def check_***REMOVED***_permission(
 
     data = http_post_json(url, payload, timeouts=timeouts)
     return bool(data.get("check", False))
+
+
+def create_***REMOVED***_object(
+    dependencies: Dependencies,
+    object_type: str,
+    object_id: str,
+    display_name: str,
+    properties: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    # Create an object in ***REMOVED*** Directory
+    # why: maintain authorization graph for ReBAC permission evaluation
+    # assumptions: ***REMOVED*** Directory Writer API is available at configured endpoint
+    # side effect: network I/O, creates persistent object in ***REMOVED***
+    # returns: ***REMOVED*** API response (typically includes created_at, etag, etc.)
+    # raises: RuntimeError if ***REMOVED*** returns non-2xx status
+    url = build_url(dependencies.***REMOVED***_dir_base, "/api/v3/directory/object")
+    
+    payload: Dict[str, Any] = {
+        "object": {
+            "type": validate_non_empty_string(object_type, "object_type"),
+            "id": validate_non_empty_string(object_id, "object_id"),
+            "display_name": str(display_name) if display_name else object_id,
+            "properties": properties if isinstance(properties, dict) else {},
+        }
+    }
+    
+    connect_seconds, read_seconds = dependencies.***REMOVED***_timeouts_connect_read
+    timeouts = build_timeouts(connect_seconds=connect_seconds, read_seconds=read_seconds)
+    
+    return http_post_json(url, payload, timeouts=timeouts)
+
+
+def create_***REMOVED***_relation(
+    dependencies: Dependencies,
+    object_type: str,
+    object_id: str,
+    relation: str,
+    subject_type: str,
+    subject_id: str,
+) -> Dict[str, Any]:
+    # Create a relation (edge) in ***REMOVED*** Directory authorization graph
+    # why: establish relationships for ReBAC permission inheritance
+    # examples: workflow --owner--> user, workflow_item --workflow--> workflow, user --delegate--> agent
+    # assumptions: Both object and subject must exist in ***REMOVED*** before creating relation
+    # side effect: network I/O, creates persistent relation in ***REMOVED***
+    # returns: ***REMOVED*** API response (typically includes created_at, etag, etc.)
+    # raises: RuntimeError if ***REMOVED*** returns non-2xx status
+    url = build_url(dependencies.***REMOVED***_dir_base, "/api/v3/directory/relation")
+    
+    payload: Dict[str, Any] = {
+        "relation": {
+            "object_type": validate_non_empty_string(object_type, "object_type"),
+            "object_id": validate_non_empty_string(object_id, "object_id"),
+            "relation": validate_non_empty_string(relation, "relation"),
+            "subject_type": validate_non_empty_string(subject_type, "subject_type"),
+            "subject_id": validate_non_empty_string(subject_id, "subject_id"),
+            "subject_relation": "",
+        }
+    }
+    
+    connect_seconds, read_seconds = dependencies.***REMOVED***_timeouts_connect_read
+    timeouts = build_timeouts(connect_seconds=connect_seconds, read_seconds=read_seconds)
+    
+    return http_post_json(url, payload, timeouts=timeouts)

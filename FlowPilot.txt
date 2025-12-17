@@ -40,6 +40,7 @@ Components
 	•	acts as PIP: fetches preferences/profile attributes (and later PII presence flags) keyed by sub
 	•	acts as PDP façade: provides a stable evaluation API to domain services
 	•	acts as adapter: translates from AuthZEN-style input to ***REMOVED*** Directory/Authorizer calls
+	•	acts as graph writer: maintains workflow-user ownership relations in ***REMOVED*** Directory
 	•	returns decisions with reason codes and advice (progressive profiling)
 	4.	Agent runner
 	•	Service name: workflow-agent-runner-api

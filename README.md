@@ -8,8 +8,8 @@ FlowPilot is a reference demo that validates a reusable authorization and delega
 
 It demonstrates:
 - A domain backend that owns workflow state (system of record) and enforces authorization as a PEP.
-- A dedicated AuthZ service that acts as PDP façade + PIP (enrichment) + adapter to the underlying PDP engine.
-- A ReBAC-capable PDP (***REMOVED***) used to evaluate relationship-based delegation and permissions.
+- A dedicated AuthZ integration service that acts as PDP façade + PIP (enrichment) + graph writer; maintains workflow ownership relations in ***REMOVED*** and enriches requests with profile attributes.
+- A ReBAC-capable PDP (***REMOVED***) used to evaluate relationship-based delegation and permissions via an authorization graph.
 - An OSS IdP (Keycloak) with OIDC Authorization Code + PKCE for the desktop client.
 - A workflow “agent-runner” that executes workflow items item-by-item to produce mixed allow/deny outcomes in a single run.
 - Strict privacy discipline: no PII exposure to the LLM and no PII handling in the domain backend beyond `sub` (UUID).
@@ -23,7 +23,7 @@ Most components are domain-agnostic. Domain-specific behavior is isolated in the
 
 - Desktop client: collects intent, creates workflows, triggers dry runs, authenticates via OIDC + PKCE.
 - Domain backend (`flowpilot-services-api`): system-of-record; PEP that builds minimal decision inputs and enforces dry_run semantics.
-- Authorization service (`flowpilot-authz-api`): PIP + PDP façade; enriches with profile attrs and calls ***REMOVED***.
+- Authorization integration service (`flowpilot-authz-api`): PIP + PDP façade + graph writer; enriches with profile attrs, maintains workflow-user relations in ***REMOVED***, and evaluates permissions.
 - Agent runner (`flowpilot-ai-agent-api`): iterates workflow items against domain APIs and aggregates outcomes.
 - Identity provider: Keycloak.
 - PDP: ***REMOVED*** (Directory + Authorizer) for ReBAC tuples and checks.
@@ -31,6 +31,44 @@ Most components are domain-agnostic. Domain-specific behavior is isolated in the
 Key evaluation questions:
 - “Can this agent act on behalf of this principal?”
 - “Is this workflow item executable given relations and resource facts?”
+
+---
+
+## Authorization Graph
+
+FlowPilot uses **Relationship-Based Access Control (ReBAC)** via ***REMOVED*** to manage permissions through an authorization graph:
+
+### Graph Structure
+```
+workflow_item --workflow--> workflow --owner--> user --delegate--> agent
+```
+
+### Permission Evaluation
+When an agent attempts to execute a workflow item:
+1. Agent-runner requests: "Can `agent-runner` execute `workflow_item_123`?"
+2. ***REMOVED*** evaluates: `workflow_item.can_execute` permission
+3. Permission resolves through the chain:
+   - workflow_item links to workflow (via `workflow` relation)
+   - workflow links to user (via `owner` relation)  
+   - user links to agent (via `delegate` relation)
+4. If the complete chain exists, permission is **allowed**
+
+### Graph Maintenance
+**User/Agent Relations** (provisioning time):
+- Created by `provision_bootstrap.py` script
+- Establishes which agents can act on behalf of which users
+
+**Workflow Relations** (runtime):
+- Created automatically when workflows are created via desktop app
+- Services API calls AuthZ API's graph write endpoints:
+  - `POST /v1/graph/workflows` - creates workflow + owner relation
+  - `POST /v1/graph/workflow-items` - creates items + workflow relations
+
+### Why This Architecture?
+- **Decoupled authorization**: Domain services don't embed auth logic
+- **Verifiable delegation**: No trusting client assertions; relations are explicit
+- **Auditability**: Complete permission chain is traceable
+- **Scalability**: Authorization logic is centralized and reusable across domains
 
 ---
 
@@ -55,9 +93,9 @@ Key evaluation questions:
 
 ## Repository layout
 
-- `services/flowpilot-authz-api/` — AuthZ façade + enrichment + ***REMOVED*** adapter
+- `services/flowpilot-authz-api/` — AuthZ integration service: PDP façade, progressive profiling (PIP), and authorization graph writer (maintains workflow-user relations in ***REMOVED***)
 - `services/flowpilot-ai-agent-api/` — Worklist execution loop; domain-agnostic
-- `services/flowpilot-services-api/` — Travel demo domain backend; templates and endpoints
+- `services/flowpilot-services-api/` — Travel demo domain backend; templates, endpoints, and PEP
 - `infra/keycloak/` — Realm import and TLS assets
 - `infra/***REMOVED***/` — ***REMOVED*** config, manifest, and persistent directory DB
 - `data/trip_templates/` — Domain workflow templates (travel today)
@@ -113,13 +151,29 @@ docker compose up -d --build
 Note: This step requires the ***REMOVED*** CLI and must be run after services start.
 It only needs to be done once (manifest persists in ***REMOVED*** database).
 
-5) Verify
+5) Provision users and delegate relations (required for authorization)
+```bash
+# Bootstrap users in Keycloak and create user->agent delegate relations in ***REMOVED***
+cd flowpilot_provisioning_bootstrap
+python3 provision_bootstrap.py --csv-path users_seed.csv --config provision_config.json
+cd ..
+```
+
+This creates:
+- Users in Keycloak (with credentials from CSV)
+- User objects in ***REMOVED***
+- Agent objects in ***REMOVED***
+- Delegate relations: `user --delegate--> agent-runner`
+
+Note: The CSV file uses semicolons as delimiters and supports multiple encodings.
+
+6) Verify
 ```bash
 docker ps
 ```
 You should see containers for Keycloak (8080/8443), ***REMOVED*** (9080, 9292, 9393–9395, 9494), AuthZ API (8002), Services API (8003), and AI Agent API (8004).
 
-4) Logs
+7) Logs
 ```bash
 # all services
 docker compose logs
@@ -127,7 +181,7 @@ docker compose logs
 docker compose logs flowpilot-services-api
 ```
 
-5) Stop
+8) Stop
 ```bash
 docker compose down
 ```

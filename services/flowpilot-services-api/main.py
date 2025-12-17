@@ -1,3 +1,19 @@
+# FlowPilot Services API - FastAPI Application
+#
+# Domain backend for the travel demo. This is the system of record that owns workflow
+# state and enforces authorization as a Policy Enforcement Point (PEP).
+#
+# Key endpoints:
+# - GET /v1/trip-templates: List available trip templates
+# - POST /v1/trips: Create a new trip from a template
+# - GET /v1/trips/{trip_id}: Get trip metadata
+# - GET /v1/trips/{trip_id}/itinerary: Get trip itinerary items
+# - POST /v1/trips/{trip_id}/itinerary-items/{item_id}/execute: Execute item with AuthZ check
+# - GET /health: Health check with trip/template counts
+#
+# All endpoints (except health) require bearer token authentication.
+# Domain-specific: Travel workflows with flights, hotels, restaurants, museums, trains.
+
 from __future__ import annotations
 
 import argparse
@@ -156,7 +172,9 @@ def handle_post_execute_itinerary_item(request: Request, trip_id: str, item_id: 
 
 
 def create_app(config: Dict[str, Any]) -> FastAPI:
-    # Create the API and load templates at startup
+    # 
+    # Create FastAPI API endpoints and wire routes
+    #
     # side effect: reads filesystem for templates and stores service in app state.
     api = FastAPI(
         title="FlowPilot API",

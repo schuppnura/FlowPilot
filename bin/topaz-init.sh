@@ -9,7 +9,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
 echo ">>> Loading Cumbaya manifest into ***REMOVED***..."
-docker compose exec ***REMOVED*** ./***REMOVED*** directory set manifest -P --no-check /app/cfg/cumbaya-manifest.yaml
+docker compose exec ***REMOVED*** ./***REMOVED*** directory set manifest -P --no-check /app/cfg/flowpilot-manifest.yaml
 
 echo ">>> Verifying manifest..."
 docker compose exec ***REMOVED*** ./***REMOVED*** directory get manifest -P --no-check | head -n 15

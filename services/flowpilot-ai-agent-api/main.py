@@ -1,3 +1,16 @@
+# FlowPilot AI Agent API - FastAPI Application
+#
+# Domain-agnostic workflow execution service that executes workflow items item-by-item.
+# This agent runner is part of the FlowPilot reference architecture demonstrating
+# agentic workflows with authorization and delegation.
+#
+# Key endpoints:
+# - POST /v1/workflow-runs: Execute a complete workflow with authorization checks
+# - POST /v1/agent-runs: Backward-compatible alias for older clients
+# - GET /health: Health check endpoint
+#
+# All endpoints (except health) require bearer token authentication.
+
 from __future__ import annotations
 
 import argparse
@@ -92,7 +105,9 @@ def handle_post_agent_runs(request: Request, body: WorkflowRunRequest) -> Dict[s
 
 
 def create_app(config: Dict[str, Any]) -> FastAPI:
-    # Create the FastAPI app and attach runtime config
+    # 
+    # Create FastAPI API endpoints and wire routes
+    #
     # side effect: registers routes and handlers.
     # Note: Request body size is limited by uvicorn's --limit-max-requests parameter
     api = FastAPI(

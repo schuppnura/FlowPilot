@@ -1,3 +1,11 @@
+# FlowPilot Services API - Template Loader
+#
+# Template loading and validation utilities for the domain backend.
+# Loads workflow templates from JSON files and validates their structure.
+#
+# This is domain-specific code for the travel demo. Other domains would have
+# different template structures and validation rules.
+
 from __future__ import annotations
 
 import json

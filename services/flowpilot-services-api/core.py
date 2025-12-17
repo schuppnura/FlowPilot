@@ -1,11 +1,82 @@
+# FlowPilot Services API - Core Logic
+#
+# Domain backend for the travel demo. This is the system of record for workflow state
+# and acts as the Policy Enforcement Point (PEP) for authorization decisions.
+#
+# Key responsibilities:
+# - Workflow (trip) creation from templates
+# - Itinerary item management and state tracking
+# - Policy enforcement point (PEP) that delegates decisions to AuthZ API
+# - Dry-run semantics for workflow execution
+# - In-memory workflow storage (demo only)
+#
+# Domain-specific behavior: This service implements travel-specific workflows.
+# The other domains (nursing, logistics) have different incarnations
+# but all follow the same workflow PEP pattern.
+
 from __future__ import annotations
 
+import os
+import time
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
+
+import requests
 
 from template_loader import load_trip_templates_from_directory
 from utils import build_url, http_post_json, validate_non_empty_string
+
+# Token cache for service-to-service auth
+_token_cache: Dict[str, Any] = {}
+
+
+def get_service_token() -> Optional[str]:
+    # Get service-to-service bearer token from Keycloak using client credentials grant
+    # why: authenticate services-api when calling authz-api endpoints
+    # when: called before making requests to authz-api (evaluate, graph writes)
+    # caching: tokens are cached with 30s buffer before expiry to minimize Keycloak calls
+    # returns: JWT access token string, or None if auth is disabled
+    # side effect: network I/O to Keycloak, updates module-level token cache
+    auth_enabled = os.environ.get("AUTH_ENABLED", "true").lower() == "true"
+    if not auth_enabled:
+        return None
+    
+    # Check token cache
+    if "token" in _token_cache and "expires_at" in _token_cache:
+        if time.time() < _token_cache["expires_at"] - 30:  # 30s buffer
+            return _token_cache["token"]
+    
+    # Get new token from Keycloak
+    keycloak_url = os.environ.get("KEYCLOAK_URL", "https://keycloak:8443")
+    realm = os.environ.get("KEYCLOAK_REALM", "flowpilot")
+    client_id = os.environ.get("KEYCLOAK_CLIENT_ID", "flowpilot-agent")
+    client_secret = os.environ.get("KEYCLOAK_CLIENT_SECRET", "")
+    verify_ssl = os.environ.get("KEYCLOAK_VERIFY_SSL", "false").lower() == "true"
+    
+    token_url = f"{keycloak_url}/realms/{realm}/protocol/openid-connect/token"
+    
+    try:
+        response = requests.post(
+            token_url,
+            data={
+                "grant_type": "client_credentials",
+                "client_id": client_id,
+                "client_secret": client_secret,
+            },
+            timeout=5,
+            verify=verify_ssl,
+        )
+        
+        if response.status_code == 200:
+            token_data = response.json()
+            _token_cache["token"] = token_data["access_token"]
+            _token_cache["expires_at"] = time.time() + token_data.get("expires_in", 300)
+            return _token_cache["token"]
+    except Exception:
+        pass  # Fall through to return None
+    
+    return None
 
 
 def get_utc_now_iso() -> str:
@@ -104,6 +175,20 @@ class FlowPilotService:
             "items": items,
         }
         self._trips[trip_id] = trip
+
+        # Create workflow and workflow_item objects in ***REMOVED*** via AuthZ API
+        try:
+            self._create_workflow_graph(trip_id=trip_id, owner_sub=owner_sub, template_name=str(template.get("name", template_id)))
+            for item in items:
+                self._create_workflow_item_graph(
+                    workflow_item_id=str(item["item_id"]),
+                    workflow_id=trip_id,
+                    item_title=str(item.get("title", "")),
+                    item_kind=str(item.get("kind", "unknown")),
+                )
+        except Exception as graph_error:
+            # Log but don't fail the trip creation if graph write fails
+            print(f"Warning: Failed to create ***REMOVED*** graph for trip {trip_id}: {graph_error}")
 
         return {"trip_id": trip_id, "owner_sub": owner_sub, "created_at": created_at, "item_count": len(items)}
 
@@ -253,4 +338,67 @@ class FlowPilotService:
             "options": {"dry_run": bool(dry_run), "explain": True, "metrics": False},
         }
 
-        return http_post_json(url=url, payload=body, timeouts=(timeout_seconds, timeout_seconds))
+        # Get service token for authentication
+        token = get_service_token()
+        headers = {"Authorization": f"Bearer {token}"} if token else None
+        
+        response = requests.post(url, json=body, timeout=timeout_seconds, headers=headers, verify=False)
+        if response.status_code not in (200, 201):
+            raise RuntimeError(f"AuthZ evaluate failed: HTTP {response.status_code}: {response.text}")
+        return response.json()
+
+    def _create_workflow_graph(self, trip_id: str, owner_sub: str, template_name: str) -> None:
+        # Create workflow object and owner relation in ***REMOVED*** via AuthZ API graph write endpoint
+        # why: establish workflow ownership for ReBAC authorization checks during workflow execution
+        # when: called immediately after creating workflow in memory (in create_trip_from_template)
+        # authorization: uses service-to-service token from Keycloak client credentials
+        # endpoint: POST /v1/graph/workflows on authz-api
+        # side effect: network I/O to authz-api, which creates objects/relations in ***REMOVED***
+        # raises: RuntimeError if authz-api returns non-2xx (logged but doesn't fail workflow creation)
+        authz_base_url = validate_non_empty_string(str(self._config.get("authz_base_url", "")), "authz_base_url")
+        timeout_seconds = int(self._config.get("request_timeout_seconds", 10))
+        domain = validate_non_empty_string(str(self._config.get("domain", "")), "domain")
+
+        url = build_url(authz_base_url, "/v1/graph/workflows")
+        body: Dict[str, Any] = {
+            "workflow_id": trip_id,
+            "owner_sub": owner_sub,
+            "display_name": template_name,
+            "properties": {"domain": domain},
+        }
+        
+        # Get service token for authentication
+        token = get_service_token()
+        headers = {"Authorization": f"Bearer {token}"} if token else None
+        
+        response = requests.post(url, json=body, timeout=timeout_seconds, headers=headers, verify=False)
+        if response.status_code not in (200, 201):
+            raise RuntimeError(f"Failed to create workflow graph: HTTP {response.status_code}: {response.text}")
+
+    def _create_workflow_item_graph(self, workflow_item_id: str, workflow_id: str, item_title: str, item_kind: str) -> None:
+        # Create workflow_item object and workflow relation in ***REMOVED*** via AuthZ API graph write endpoint
+        # why: link items to parent workflow for permission inheritance via ReBAC
+        # when: called for each workflow item during workflow creation
+        # authorization: uses service-to-service token from Keycloak client credentials
+        # endpoint: POST /v1/graph/workflow-items on authz-api
+        # permission chain: workflow_item.can_execute resolves via workflow relation to workflow.can_execute
+        # side effect: network I/O to authz-api, which creates objects/relations in ***REMOVED***
+        # raises: RuntimeError if authz-api returns non-2xx (logged but doesn't fail workflow creation)
+        authz_base_url = validate_non_empty_string(str(self._config.get("authz_base_url", "")), "authz_base_url")
+        timeout_seconds = int(self._config.get("request_timeout_seconds", 10))
+
+        url = build_url(authz_base_url, "/v1/graph/workflow-items")
+        body: Dict[str, Any] = {
+            "workflow_item_id": workflow_item_id,
+            "workflow_id": workflow_id,
+            "display_name": item_title,
+            "properties": {"kind": item_kind},
+        }
+        
+        # Get service token for authentication
+        token = get_service_token()
+        headers = {"Authorization": f"Bearer {token}"} if token else None
+        
+        response = requests.post(url, json=body, timeout=timeout_seconds, headers=headers, verify=False)
+        if response.status_code not in (200, 201):
+            raise RuntimeError(f"Failed to create workflow_item graph: HTTP {response.status_code}: {response.text}")

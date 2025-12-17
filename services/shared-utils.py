@@ -1,3 +1,13 @@
+# Shared Utilities for FlowPilot Services
+#
+# Common utility functions used across all FlowPilot services including:
+# - String validation and parsing
+# - URL building and HTTP operations
+# - JSON parsing and configuration loading
+# - Timeout management
+#
+# These utilities provide consistent error handling and validation across services.
+
 from __future__ import annotations
 
 import json

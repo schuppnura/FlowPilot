@@ -1,3 +1,17 @@
+# FlowPilot AI Agent API - Core Logic
+#
+# Domain-agnostic workflow execution loop that iterates workflow items against domain APIs
+# and aggregates outcomes. This agent runner executes workflow items item-by-item to produce
+# mixed allow/deny outcomes in a single run.
+#
+# Key responsibilities:
+# - List workflow items from domain backend
+# - Execute workflow items via domain endpoints
+# - Parse and classify authorization decisions (allow/deny)
+# - Distinguish policy denials (403) from execution errors
+# - Aggregate execution results with reason codes and advice
+# - Service-to-service authentication via Keycloak client credentials
+
 from __future__ import annotations
 
 import json
@@ -22,7 +36,7 @@ class WorkflowItem:
 
 
 def get_service_token() -> str | None:
-    """Get service-to-service bearer token from Keycloak."""
+    # Get service-to-service bearer token from Keycloak.
     # Check if auth is enabled
     auth_enabled = os.environ.get("AUTH_ENABLED", "true").lower() == "true"
     if not auth_enabled:

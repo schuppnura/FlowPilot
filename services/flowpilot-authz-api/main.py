@@ -1,3 +1,18 @@
+# FlowPilot AuthZ API - FastAPI Application
+#
+# Authorization service that provides AuthZEN-style policy evaluation with progressive
+# profiling and ***REMOVED*** integration. Acts as the central authorization decision point
+# for all FlowPilot workflows.
+#
+# Key endpoints:
+# - POST /v1/evaluate: Evaluate authorization request with ***REMOVED*** and progressive profiling
+# - GET/PATCH /v1/profiles/{principal_sub}/policy-parameters: Manage non-PII policy context
+# - GET/PATCH /v1/profiles/{principal_sub}/identity-presence: Manage identity completeness flags
+# - GET /v1/profiles/{principal_sub}: Combined profile view
+# - GET /health: Health check with profile count
+#
+# All endpoints (except health) require bearer token authentication.
+
 from __future__ import annotations
 
 import argparse
@@ -113,6 +128,24 @@ class PatchPolicyParametersModel(BaseModel):
 
 class PatchIdentityPresenceModel(BaseModel):
     presence: Dict[str, bool] = Field(default_factory=dict)
+
+    model_config = {"extra": "allow"}
+
+
+class CreateWorkflowGraphModel(BaseModel):
+    workflow_id: str = Field(..., description="Workflow identifier.")
+    owner_sub: str = Field(..., description="Owner user subject (UUID).")
+    display_name: str = Field(default="", description="Human-readable workflow name.")
+    properties: Dict[str, Any] = Field(default_factory=dict, description="Optional workflow properties.")
+
+    model_config = {"extra": "allow"}
+
+
+class CreateWorkflowItemGraphModel(BaseModel):
+    workflow_item_id: str = Field(..., description="Workflow item identifier.")
+    workflow_id: str = Field(..., description="Parent workflow identifier.")
+    display_name: str = Field(default="", description="Human-readable item name.")
+    properties: Dict[str, Any] = Field(default_factory=dict, description="Optional item properties.")
 
     model_config = {"extra": "allow"}
 
@@ -238,8 +271,46 @@ def handle_get_profile(request: Request, principal_sub: str) -> Dict[str, Any]:
         raise HTTPException(status_code=400, detail=str(exception)) from exception
 
 
+def handle_post_graph_workflow(request: Request, body: CreateWorkflowGraphModel) -> Dict[str, Any]:
+    # Create workflow object and owner relation in ***REMOVED***
+    # why: establish workflow graph for ReBAC authorization
+    # side effect: creates ***REMOVED*** objects/relations.
+    service: AuthzService = request.app.state.service
+    try:
+        return service.create_workflow_graph(
+            workflow_id=body.workflow_id,
+            owner_sub=body.owner_sub,
+            display_name=body.display_name,
+            properties=body.properties,
+        )
+    except ValueError as exception:
+        raise HTTPException(status_code=400, detail=str(exception)) from exception
+    except Exception as exception:
+        raise HTTPException(status_code=500, detail=f"Failed to create workflow graph: {exception}") from exception
+
+
+def handle_post_graph_workflow_item(request: Request, body: CreateWorkflowItemGraphModel) -> Dict[str, Any]:
+    # Create workflow_item object and workflow relation in ***REMOVED***
+    # why: link items to workflows for permission inheritance
+    # side effect: creates ***REMOVED*** objects/relations.
+    service: AuthzService = request.app.state.service
+    try:
+        return service.create_workflow_item_graph(
+            workflow_item_id=body.workflow_item_id,
+            workflow_id=body.workflow_id,
+            display_name=body.display_name,
+            properties=body.properties,
+        )
+    except ValueError as exception:
+        raise HTTPException(status_code=400, detail=str(exception)) from exception
+    except Exception as exception:
+        raise HTTPException(status_code=500, detail=f"Failed to create workflow_item graph: {exception}") from exception
+
+
 def create_app(config: Dict[str, Any]) -> FastAPI:
-    # Create FastAPI app and wire routes
+    # 
+    # Create FastAPI API endpoints and wire routes
+    #
     # why: keep web layer thin and delegate to core service
     # side effect: allocates in-memory stores.
     api = FastAPI(
@@ -265,6 +336,10 @@ def create_app(config: Dict[str, Any]) -> FastAPI:
     api.add_api_route("/v1/profiles/{principal_sub}/policy-parameters", handle_patch_policy_parameters, methods=["PATCH"], dependencies=[Depends(bearer_scheme)])
     api.add_api_route("/v1/profiles/{principal_sub}/identity-presence", handle_get_identity_presence, methods=["GET"], dependencies=[Depends(bearer_scheme)])
     api.add_api_route("/v1/profiles/{principal_sub}/identity-presence", handle_patch_identity_presence, methods=["PATCH"], dependencies=[Depends(bearer_scheme)])
+
+    # Graph write endpoints for workflow/item object creation
+    api.add_api_route("/v1/graph/workflows", handle_post_graph_workflow, methods=["POST"], dependencies=[Depends(bearer_scheme)])
+    api.add_api_route("/v1/graph/workflow-items", handle_post_graph_workflow_item, methods=["POST"], dependencies=[Depends(bearer_scheme)])
 
     return api
 

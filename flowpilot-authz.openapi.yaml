@@ -3,7 +3,13 @@ info:
   title: FlowPilot AuthZ API
   version: "1.0.0"
   description: >
-    Authorization service with PDP façade, PIP enrichment, and ***REMOVED*** adapter.
+    Authorization integration service with PDP façade, PIP enrichment, and authorization graph writer.
+    
+    **Responsibilities**:
+    - Policy evaluation via ***REMOVED*** (PDP façade)
+    - Progressive profiling enrichment (PIP)
+    - Authorization graph maintenance (workflow-user relations in ***REMOVED***)
+    
     Implements AuthZEN-like request structure with progressive profiling support.
     
     **Security**: All endpoints (except /health) require bearer token authentication.
@@ -246,6 +252,114 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /v1/graph/workflows:
+    post:
+      summary: Create workflow graph (object + owner relation)
+      description: >
+        Creates a workflow object in ***REMOVED*** and establishes the owner relation to a user.
+        This endpoint is called by domain services when workflows are created.
+        
+        **Graph structure**: `workflow --owner--> user`
+        
+        **Use case**: Domain services call this when creating workflows to establish
+        the ownership relation needed for ReBAC authorization.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWorkflowGraphRequest"
+            examples:
+              createWorkflow:
+                value:
+                  workflow_id: t_4a6455a3
+                  owner_sub: 1460e175-74f9-43af-aac3-7b4fc0547f05
+                  display_name: Paris Weekend Trip
+                  properties:
+                    domain: flowpilot
+                    template_id: paris-weekend
+      responses:
+        "200":
+          description: Workflow graph created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GraphCreateResponse"
+              examples:
+                success:
+                  value:
+                    workflow_id: t_4a6455a3
+                    owner_sub: 1460e175-74f9-43af-aac3-7b4fc0547f05
+                    status: created
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Failed to create ***REMOVED*** objects/relations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/graph/workflow-items:
+    post:
+      summary: Create workflow item graph (object + workflow relation)
+      description: >
+        Creates a workflow_item object in ***REMOVED*** and links it to a workflow.
+        This endpoint is called by domain services for each workflow item.
+        
+        **Graph structure**: `workflow_item --workflow--> workflow`
+        
+        **Use case**: Domain services call this when creating workflow items to link
+        them to their parent workflow for permission inheritance.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWorkflowItemGraphRequest"
+            examples:
+              createWorkflowItem:
+                value:
+                  workflow_item_id: i_f032d0a2
+                  workflow_id: t_4a6455a3
+                  display_name: Book flight to Paris
+                  properties:
+                    kind: flight
+                    title: CDG-ORY roundtrip
+      responses:
+        "200":
+          description: Workflow item graph created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GraphCreateResponse"
+              examples:
+                success:
+                  value:
+                    workflow_item_id: i_f032d0a2
+                    workflow_id: t_4a6455a3
+                    status: created
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Failed to create ***REMOVED*** objects/relations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthResponse:
@@ -458,6 +572,72 @@ components:
           additionalProperties:
             type: boolean
       required: [presence]
+
+    # Graph write models
+    CreateWorkflowGraphRequest:
+      type: object
+      description: Request to create workflow object and owner relation in ***REMOVED***
+      properties:
+        workflow_id:
+          type: string
+          description: Workflow identifier (typically trip_id)
+          example: t_4a6455a3
+        owner_sub:
+          type: string
+          format: uuid
+          description: Owner user subject UUID from Keycloak
+          example: 1460e175-74f9-43af-aac3-7b4fc0547f05
+        display_name:
+          type: string
+          description: Human-readable workflow name
+          example: Paris Weekend Trip
+        properties:
+          type: object
+          description: Optional workflow properties (domain, template_id, etc.)
+          additionalProperties: true
+      required: [workflow_id, owner_sub]
+
+    CreateWorkflowItemGraphRequest:
+      type: object
+      description: Request to create workflow_item object and workflow relation in ***REMOVED***
+      properties:
+        workflow_item_id:
+          type: string
+          description: Workflow item identifier
+          example: i_f032d0a2
+        workflow_id:
+          type: string
+          description: Parent workflow identifier
+          example: t_4a6455a3
+        display_name:
+          type: string
+          description: Human-readable item name
+          example: Book flight to Paris
+        properties:
+          type: object
+          description: Optional item properties (kind, title, etc.)
+          additionalProperties: true
+      required: [workflow_item_id, workflow_id]
+
+    GraphCreateResponse:
+      type: object
+      description: Response from graph write operations
+      properties:
+        workflow_id:
+          type: string
+          description: Workflow ID (present for workflow creation)
+        workflow_item_id:
+          type: string
+          description: Workflow item ID (present for item creation)
+        owner_sub:
+          type: string
+          description: Owner subject UUID (present for workflow creation)
+        status:
+          type: string
+          description: Creation status
+          enum: [created]
+          example: created
+      required: [status]
 
   securitySchemes:
     BearerAuth:
