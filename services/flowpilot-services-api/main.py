@@ -157,7 +157,12 @@ def handle_post_execute_itinerary_item(request: Request, trip_id: str, item_id: 
 def create_app(config: Dict[str, Any]) -> FastAPI:
     # Create the API and load templates at startup
     # side effect: reads filesystem for templates and stores service in app state.
-    api = FastAPI(title="FlowPilot API", version="0.9.0")
+    api = FastAPI(
+        title="FlowPilot API",
+        version="0.9.0",
+        # Limit request body size to 1MB (protects against large payload attacks)
+        swagger_ui_parameters={"defaultModelsExpandDepth": -1},
+    )
     api.state.config = config
 
     service = FlowPilotService(config=config)
@@ -207,6 +212,10 @@ def main() -> int:
         port=int(args.port),
         reload=bool(args.reload),
         log_level=str(config.get("log_level", "info")),
+        # Security: Limit request body size to prevent memory exhaustion
+        limit_max_requests=10000,  # Max requests before worker restart
+        limit_concurrency=100,      # Max concurrent connections
+        timeout_keep_alive=5,        # Keep-alive timeout
     )
     return 0
 

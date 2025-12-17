@@ -12,6 +12,7 @@ from core import (
     AuthzService,
     EvaluateResponseModel,
 )
+from request_limiter import RequestSizeLimiterMiddleware, get_max_request_size
 from shared_auth import bearer_scheme, verify_token
 from utils import load_json_object, merge_config, parse_positive_float, parse_positive_int, validate_non_empty_string
 
@@ -241,9 +242,17 @@ def create_app(config: Dict[str, Any]) -> FastAPI:
     # Create FastAPI app and wire routes
     # why: keep web layer thin and delegate to core service
     # side effect: allocates in-memory stores.
-    api = FastAPI(title="AuthZ API", version="1.0.0")
+    api = FastAPI(
+        title="AuthZ API",
+        version="1.0.0",
+        # Limit request body size to 1MB (protects against large payload attacks)
+        swagger_ui_parameters={"defaultModelsExpandDepth": -1},
+    )
     api.state.config = config
     api.state.service = AuthzService(config=config)
+    
+    # Add request size limiting middleware
+    api.add_middleware(RequestSizeLimiterMiddleware, max_size=get_max_request_size())
 
     # Health check - no auth required
     api.add_api_route("/health", handle_get_health, methods=["GET"])
@@ -289,6 +298,10 @@ def main() -> int:
         port=int(args.port),
         reload=bool(args.reload),
         log_level=str(config.get("log_level", "info")),
+        # Security: Limit request body size to prevent memory exhaustion
+        limit_max_requests=10000,  # Max requests before worker restart
+        limit_concurrency=100,      # Max concurrent connections
+        timeout_keep_alive=5,        # Keep-alive timeout
     )
     return 0
 

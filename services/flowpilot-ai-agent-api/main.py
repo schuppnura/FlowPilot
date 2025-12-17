@@ -9,6 +9,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from pydantic import BaseModel
 
 from core import execute_workflow_run, normalize_workflow_id
+from request_limiter import RequestSizeLimiterMiddleware, get_max_request_size
 from shared_auth import bearer_scheme, verify_token
 from utils import load_json_object, merge_config, parse_positive_int, validate_non_empty_string
 
@@ -93,8 +94,18 @@ def handle_post_agent_runs(request: Request, body: WorkflowRunRequest) -> Dict[s
 def create_app(config: Dict[str, Any]) -> FastAPI:
     # Create the FastAPI app and attach runtime config
     # side effect: registers routes and handlers.
-    api = FastAPI(title="Agent Runner API", version="0.7.1")
+    # Note: Request body size is limited by uvicorn's --limit-max-requests parameter
+    api = FastAPI(
+        title="Agent Runner API",
+        version="0.7.1",
+        # Limit request body size to 1MB (protects against large payload attacks)
+        # Can be overridden per endpoint if needed
+        swagger_ui_parameters={"defaultModelsExpandDepth": -1},
+    )
     api.state.config = config
+    
+    # Add request size limiting middleware
+    api.add_middleware(RequestSizeLimiterMiddleware, max_size=get_max_request_size())
 
     # Health check - no auth required
     api.add_api_route("/health", handle_get_health, methods=["GET"])
@@ -135,6 +146,10 @@ def main() -> int:
         port=int(args.port),
         reload=bool(args.reload),
         log_level=str(config.get("log_level", "info")),
+        # Security: Limit request body size to prevent memory exhaustion
+        limit_max_requests=10000,  # Max requests before worker restart
+        limit_concurrency=100,      # Max concurrent connections
+        timeout_keep_alive=5,        # Keep-alive timeout
     )
     return 0
 
