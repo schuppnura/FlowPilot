@@ -57,6 +57,14 @@ services:
       REQUEST_TIMEOUT_SECONDS: "10"
       ***REMOVED***_TIMEOUT_CONNECT_SECONDS: "2"
       ***REMOVED***_TIMEOUT_READ_SECONDS: "8"
+
+      # Authentication (disabled by default for demo)
+      AUTH_ENABLED: "false"
+      KEYCLOAK_URL: "https://keycloak:8443"
+      KEYCLOAK_REALM: "flowpilot"
+      KEYCLOAK_CLIENT_ID: "flowpilot-agent"
+      KEYCLOAK_CLIENT_SECRET: "DbUpdfiTCgA1GnYlgPduhQDv84R3t65q"
+      KEYCLOAK_VERIFY_SSL: "false"
     ports:
       - "8002:8002"
     command: ["python", "main.py", "--host", "0.0.0.0", "--port", "8002"]
@@ -73,14 +81,19 @@ services:
       # Domain/workflow API base URL.
       WORKFLOW_BASE_URL: http://flowpilot-services-api:8000
 
-      # Remove this once you confirm nothing reads it anymore.
-      # CUMBAYA_BASE_URL: http://flowpilot-services-api:8000
-
       KEYCLOAK_TOKEN_URL: https://keycloak:8443/realms/flowpilot/protocol/openid-connect/token
       AGENT_CLIENT_ID: flowpilot-agent
-      AGENT_CLIENT_SECRET: change_me
+      AGENT_CLIENT_SECRET: DbUpdfiTCgA1GnYlgPduhQDv84R3t65q
 
       VERIFY_TRAVELER_TOKEN: "false"
+
+      # Authentication (disabled by default for demo)
+      AUTH_ENABLED: "false"
+      KEYCLOAK_URL: "https://keycloak:8443"
+      KEYCLOAK_REALM: "flowpilot"
+      KEYCLOAK_CLIENT_ID: "flowpilot-agent"
+      KEYCLOAK_CLIENT_SECRET: "DbUpdfiTCgA1GnYlgPduhQDv84R3t65q"
+      KEYCLOAK_VERIFY_SSL: "false"
     command: ["python", "main.py", "--host", "0.0.0.0", "--port", "8000"]
     ports:
       - "8004:8000"
@@ -99,6 +112,14 @@ services:
 
       # Templates are mounted at /data inside the container.
       TEMPLATE_DIRECTORY: "/data/trip_templates"
+
+      # Authentication (disabled by default for demo)
+      AUTH_ENABLED: "false"
+      KEYCLOAK_URL: "https://keycloak:8443"
+      KEYCLOAK_REALM: "flowpilot"
+      KEYCLOAK_CLIENT_ID: "flowpilot-agent"
+      KEYCLOAK_CLIENT_SECRET: "DbUpdfiTCgA1GnYlgPduhQDv84R3t65q"
+      KEYCLOAK_VERIFY_SSL: "false"
     ports:
       - "8003:8000"
     depends_on:
