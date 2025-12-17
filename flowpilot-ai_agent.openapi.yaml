@@ -6,9 +6,12 @@ info:
     Agent runner for workflow execution with per-item authorization.
     
     **Security**: All endpoints (except /health) require bearer token authentication.
+    
+    **TLS**: Services use HTTP within the Docker network. For production, deploy behind
+    a TLS-terminating reverse proxy (nginx, Traefik, etc.).
 servers:
-  - url: https://127.0.0.1:8004
-    description: Host access - TLS required
+  - url: http://127.0.0.1:8004
+    description: Local development access
 security:
   - BearerAuth: []
 paths:
