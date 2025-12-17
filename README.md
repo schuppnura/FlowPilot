@@ -13,6 +13,7 @@ It demonstrates:
 - An OSS IdP (Keycloak) with OIDC Authorization Code + PKCE for the desktop client.
 - A workflow “agent-runner” that executes workflow items item-by-item to produce mixed allow/deny outcomes in a single run.
 - Strict privacy discipline: no PII exposure to the LLM and no PII handling in the domain backend beyond `sub` (UUID).
+- End-to-end authentication: bearer token validation across all services with service-to-service authentication.
 
 Most components are domain-agnostic. Domain-specific behavior is isolated in the domain service and its templates.
 
@@ -112,6 +113,14 @@ docker compose down
 - `flowpilot.openapi.yaml` - Services API (domain backend)
 - `flowpilot-authz.openapi.yaml` - AuthZ API
 - `flowpilot-ai_agent.openapi.yaml` - AI Agent Runner API
+
+### Authentication
+All services enforce bearer token authentication by default (`AUTH_ENABLED=true`):
+- Desktop app → APIs: User authenticates via Keycloak OIDC, obtains access token, includes in all API requests
+- Service-to-service: AI agent obtains service token via client credentials grant, includes in calls to services API
+- Token validation: All services validate tokens via Keycloak introspection endpoint
+
+See `docs/SECURITY_SETUP.md` for hardening recommendations and `SECURITY.md` for vulnerability reporting.
 
 ---
 
