@@ -55,7 +55,15 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "workflow_item_id_property_names": ["workflow_item_id", "item_id"],
 
     # Action-to-relation mapping for ***REMOVED*** (can be extended without changing code).
-    "action_relation_map": {"book": "can_execute"},
+    # Note: both 'book' and 'auto-book' map to the same ***REMOVED*** relation; ABAC checks apply only to 'auto-book'.
+    "action_relation_map": {"book": "can_execute", "auto-book": "can_execute"},
+
+    # Default auto-book policy parameters (ABAC conditions)
+    # Users can override these via profile API PATCH /v1/profiles/{principal_sub}/policy-parameters
+    "auto_book_consent": False,
+    "auto_book_max_cost_eur": 1500,
+    "auto_book_min_days_advance": 7,
+    "auto_book_max_airline_risk": 5,
 
     # For progressive profiling: required identity-presence fields per workflow item kind.
     # These are presence flags only. The actual PII values remain in IdP and are not stored here.
@@ -81,7 +89,7 @@ class AuthZenLikeActorModel(BaseModel):
 
 
 class AuthZenLikeActionModel(BaseModel):
-    name: str = Field(..., description="Action name (e.g., 'book').")
+    name: str = Field(..., description="Action name (e.g., 'book' or 'auto-book'). 'auto-book' enables ABAC checks.")
     properties: Dict[str, Any] = Field(default_factory=dict)
 
     model_config = {"extra": "allow"}

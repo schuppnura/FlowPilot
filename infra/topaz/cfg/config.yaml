@@ -81,19 +81,12 @@ opa:
   instance_id: "-"
   graceful_shutdown_period_seconds: 2
   local_bundles:
-    paths: []
+    paths:
+      - /app/cfg/policies
   config:
     services:
       ghcr:
         url: https://ghcr.io
         type: "oci"
         response_header_timeout_seconds: 5
-    bundles:
-      todo:
-        service: ghcr
-        resource: "ghcr.io/aserto-policies/policy-todo:latest"
-        persist: false
-        config:
-          polling:
-            min_delay_seconds: 60
-            max_delay_seconds: 120
+    bundles: {}

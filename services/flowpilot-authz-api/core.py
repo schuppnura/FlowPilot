@@ -1,18 +1,44 @@
 # FlowPilot AuthZ API - Core Logic
 #
 # Authorization service that acts as PDP façade + PIP (enrichment) + adapter to ***REMOVED***.
-# This service enriches authorization requests with profile attributes and evaluates
-# relationship-based delegation via ***REMOVED*** (ReBAC PDP).
+# This service enriches authorization requests with profile attributes and orchestrates
+# authorization checks via ***REMOVED***. It does NOT make authorization decisions itself.
+#
+# POLICY ARCHITECTURE (for security auditors):
+# 
+# 1. Anti-Spoofing (AuthZ API - PEP Guardrail)
+#    - Function: check_principal_spoof()
+#    - Purpose: Validates request context (principal matches workflow owner)
+#    - NOT a policy decision - security guardrail to prevent trivial spoofing
+#
+# 2. ReBAC - Relationship-Based Access Control (***REMOVED*** Directory)
+#    - Function: check_***REMOVED***_permission()
+#    - Policy Location: infra/***REMOVED***/cfg/flowpilot-manifest.yaml
+#    - Evaluates: Agent delegation via authorization graph traversal
+#    - Decision Authority: ***REMOVED*** Directory
+#
+# 3. ABAC - Attribute-Based Access Control (***REMOVED*** OPA)
+#    - Function: call_***REMOVED***_policy()
+#    - Policy Location: infra/***REMOVED***/cfg/policies/auto_book.rego
+#    - Evaluates: Booking constraints (consent, cost, dates, risk)
+#    - Decision Authority: ***REMOVED*** Authorizer (OPA/Rego)
+#
+# 4. Progressive Profiling (AuthZ API - PIP Enrichment)
+#    - Functions: select_required_identity_fields(), compute_missing_fields()
+#    - Purpose: Validates required identity fields are present
+#    - Returns advisory information for UX - NOT an authorization decision
 #
 # Key responsibilities:
-# - Policy decision point (PDP) façade with AuthZEN-style evaluation
-# - Policy information point (PIP) for progressive profiling enrichment
-# - Anti-spoofing guardrails (workflow ownership validation)
-# - ***REMOVED*** Directory adapter for ReBAC tuple checks
-# - In-memory profile store for policy parameters and identity presence flags
-# - Action-to-relation mapping for domain-agnostic authorization
+# - PDP façade: orchestrate ***REMOVED*** checks, assemble decision responses
+# - PIP: enrich requests with profile attributes, return advisory information
+# - PEP guardrails: anti-spoofing validation
+# - Graph writer: maintain workflow ownership relations in ***REMOVED***
+# - Profile store: in-memory non-PII policy parameters and identity presence flags
 #
-# No PII values are stored - only presence flags, non-PII policy parameters, and pseudononymous relations with worflows
+# No PII values are stored. Only:
+# - presence flags for mandatory user profile attributes (boolean)
+# - non-PII policy parameters (e.g. autobook thresholds, numeric limits)
+# - pseudononymous workflow relations (UUID references)
 
 from __future__ import annotations
 
@@ -62,12 +88,13 @@ class Dependencies:
 
 
 class InMemoryProfileStore:
-    def __init__(self) -> None:
+    def __init__(self, default_policy_parameters: Optional[Dict[str, Any]] = None) -> None:
         # Store profiles in-memory for the demo
         # why: avoid extra services while keeping progressive profiling
         # side effect: memory use.
         self._lock = threading.Lock()
         self._profiles: Dict[str, Dict[str, Any]] = {}
+        self._default_policy_parameters = default_policy_parameters if isinstance(default_policy_parameters, dict) else {}
 
     def get_profile_count(self) -> int:
         # Return count of profiles stored
@@ -84,7 +111,7 @@ class InMemoryProfileStore:
             existing = self._profiles.get(principal_sub)
             if isinstance(existing, dict):
                 return existing
-            profile = {"principal_sub": principal_sub, "parameters": {}, "presence": {}}
+            profile = {"principal_sub": principal_sub, "parameters": dict(self._default_policy_parameters), "presence": {}}
             self._profiles[principal_sub] = profile
             return profile
 
@@ -170,7 +197,15 @@ class AuthzService:
         # side effect: none.
         self._config = dict(config)
         self._dependencies = self._create_dependencies(config=self._config)
-        self._profiles = InMemoryProfileStore()
+        
+        # Extract default policy parameters from config (e.g., auto-book defaults)
+        default_params = {
+            "auto_book_consent": config.get("auto_book_consent", False),
+            "auto_book_max_cost_eur": config.get("auto_book_max_cost_eur", 1500),
+            "auto_book_min_days_advance": config.get("auto_book_min_days_advance", 7),
+            "auto_book_max_airline_risk": config.get("auto_book_max_airline_risk", 5),
+        }
+        self._profiles = InMemoryProfileStore(default_policy_parameters=default_params)
 
     def get_profile_count(self) -> int:
         # Return number of profiles in-memory
@@ -348,8 +383,11 @@ def evaluate_request(
     profile_store: InMemoryProfileStore,
     request_body: Dict[str, Any],
 ) -> Dict[str, Any]:
-    # Evaluate authorization request
-    # why: assemble context, enforce anti-spoof guardrails, and delegate to ***REMOVED***.
+    # Orchestrate authorization evaluation through layered checks
+    # Layer 1: Anti-spoofing (PEP guardrail)
+    # Layer 2: ReBAC - ***REMOVED*** Directory (relationship-based)
+    # Layer 3: ABAC - ***REMOVED*** OPA (attribute-based, if action=auto-book)
+    # Layer 4: Progressive profiling (PIP enrichment)
     decision_id = str(uuid.uuid4())
 
     subject = request_body.get("subject", {})
@@ -372,6 +410,66 @@ def evaluate_request(
     explain = bool(options.get("explain", True))
     trace_option = options.get("trace")
 
+    # Layer 1: Anti-spoofing guardrail
+    spoof_result = evaluate_anti_spoofing(
+        dependencies=dependencies,
+        workflow_id=workflow_id,
+        principal_sub=principal_sub,
+        decision_id=decision_id,
+    )
+    if spoof_result is not None:
+        return spoof_result
+
+    # Layer 2: ReBAC check (***REMOVED*** Directory)
+    rebac_result = evaluate_rebac(
+        dependencies=dependencies,
+        actor_type=actor_type,
+        actor_id=actor_id,
+        action_name=action_name,
+        workflow_item_id=workflow_item_id,
+        trace_option=trace_option,
+        explain=explain,
+        decision_id=decision_id,
+    )
+    if rebac_result is not None:
+        return rebac_result
+
+    # Layer 3: ABAC check (***REMOVED*** OPA, only for auto-book)
+    if action_name == "auto-book":
+        abac_result = evaluate_abac(
+            dependencies=dependencies,
+            profile_store=profile_store,
+            principal_sub=principal_sub,
+            resource=resource,
+            action_name=action_name,
+            explain=explain,
+            decision_id=decision_id,
+        )
+        if abac_result is not None:
+            return abac_result
+
+    # Layer 4: Progressive profiling enrichment
+    return evaluate_progressive_profiling(
+        dependencies=dependencies,
+        profile_store=profile_store,
+        principal_sub=principal_sub,
+        workflow_id=workflow_id,
+        workflow_item_id=workflow_item_id,
+        workflow_item_kind=workflow_item_kind,
+        dry_run=dry_run,
+        explain=explain,
+        decision_id=decision_id,
+    )
+
+
+def evaluate_anti_spoofing(
+    dependencies: Dependencies,
+    workflow_id: str,
+    principal_sub: str,
+    decision_id: str,
+) -> Optional[Dict[str, Any]]:
+    # LAYER 1: Anti-spoofing guardrail
+    # Returns deny decision if spoofing detected, None otherwise
     is_spoof = check_principal_spoof(dependencies=dependencies, workflow_id=workflow_id, principal_sub=principal_sub)
     if is_spoof:
         return {
@@ -386,7 +484,21 @@ def evaluate_request(
                 }
             ],
         }
+    return None
 
+
+def evaluate_rebac(
+    dependencies: Dependencies,
+    actor_type: str,
+    actor_id: str,
+    action_name: str,
+    workflow_item_id: str,
+    trace_option: Any,
+    explain: bool,
+    decision_id: str,
+) -> Optional[Dict[str, Any]]:
+    # LAYER 2: ReBAC check via ***REMOVED*** Directory
+    # Returns deny decision if ***REMOVED*** denies, None if allowed
     relation = map_action_to_relation(dependencies=dependencies, action_name=action_name)
     allowed = check_***REMOVED***_permission(
         dependencies=dependencies,
@@ -416,7 +528,86 @@ def evaluate_request(
                 }
             )
         return {"decision": "deny", "decision_id": decision_id, "reason_codes": ["***REMOVED***.deny"], "advice": advice}
+    
+    return None
 
+
+def evaluate_abac(
+    dependencies: Dependencies,
+    profile_store: InMemoryProfileStore,
+    principal_sub: str,
+    resource: Dict[str, Any],
+    action_name: str,
+    explain: bool,
+    decision_id: str,
+) -> Optional[Dict[str, Any]]:
+    # LAYER 3: ABAC check via ***REMOVED*** OPA (for auto-book action)
+    # Returns deny decision if policy denies, None if allowed
+    policy_parameters = profile_store.get_policy_parameters(principal_sub=principal_sub)
+    resource_properties = resource.get("properties", {})
+    if not isinstance(resource_properties, dict):
+        resource_properties = {}
+    
+    # Build policy input for ***REMOVED*** OPA evaluation
+    policy_input = {
+        "user": policy_parameters,
+        "resource": resource_properties,
+    }
+    
+    # Call ***REMOVED*** policy evaluation
+    try:
+        policy_result = call_***REMOVED***_policy(
+            dependencies=dependencies,
+            policy_path="flowpilot/auto_book",
+            policy_input=policy_input,
+        )
+        
+        if not policy_result.get("allow", False):
+            auto_book_deny_reason = policy_result.get("reason", "auto_book.unknown_error")
+            advice_list: List[Dict[str, Any]] = []
+            if explain:
+                advice_list.append(
+                    {
+                        "kind": "policy",
+                        "code": auto_book_deny_reason,
+                        "message": f"Auto-book policy condition not met: {auto_book_deny_reason}",
+                        "details": {
+                            "action": action_name,
+                            "policy_parameters": policy_parameters,
+                            "evaluated_by": "***REMOVED***_opa",
+                        },
+                    }
+                )
+            return {"decision": "deny", "decision_id": decision_id, "reason_codes": [auto_book_deny_reason], "advice": advice_list}
+    except Exception as policy_error:
+        # Fallback to deny on policy evaluation error
+        advice_list_err: List[Dict[str, Any]] = []
+        if explain:
+            advice_list_err.append(
+                {
+                    "kind": "error",
+                    "code": "policy.evaluation_error",
+                    "message": f"Failed to evaluate auto-book policy: {str(policy_error)}",
+                }
+            )
+        return {"decision": "deny", "decision_id": decision_id, "reason_codes": ["policy.evaluation_error"], "advice": advice_list_err}
+    
+    return None
+
+
+def evaluate_progressive_profiling(
+    dependencies: Dependencies,
+    profile_store: InMemoryProfileStore,
+    principal_sub: str,
+    workflow_id: str,
+    workflow_item_id: str,
+    workflow_item_kind: str,
+    dry_run: bool,
+    explain: bool,
+    decision_id: str,
+) -> Dict[str, Any]:
+    # LAYER 4: Progressive profiling enrichment (PIP)
+    # Always returns a decision (allow or deny with advice)
     required_fields = select_required_identity_fields(
         dependencies=dependencies,
         workflow_item_kind=workflow_item_kind,
@@ -485,7 +676,16 @@ def extract_workflow_item_kind(resource: Dict[str, Any]) -> str:
 
 
 def check_principal_spoof(dependencies: Dependencies, workflow_id: str, principal_sub: str) -> bool:
-    # Detect principal spoofing by comparing principal_sub to workflow owner
+    # SECURITY GUARDRAIL: Detect principal spoofing by comparing principal_sub to workflow owner
+    # 
+    # AUDIT NOTE: This is NOT a policy decision - it's a PEP security guardrail.
+    # Prevents trivial attacks where an attacker supplies a different user's ID in the request context.
+    # 
+    # Why here and not in ***REMOVED***:
+    # - This validates request integrity/context, not authorization policy
+    # - Requires external service call (workflow service) to fetch owner
+    # - Appropriate for PEP (Policy Enforcement Point) responsibility
+    # 
     # side effect: network I/O to workflow service.
     try:
         owner_sub = get_workflow_owner_sub(dependencies=dependencies, workflow_id=workflow_id)
@@ -522,7 +722,14 @@ def get_workflow_owner_sub(dependencies: Dependencies, workflow_id: str) -> str:
 
 
 def select_required_identity_fields(dependencies: Dependencies, workflow_item_kind: str) -> List[str]:
-    # Select required identity fields based on item kind
+    # PROGRESSIVE PROFILING: Select required identity fields based on item kind
+    # 
+    # AUDIT NOTE: This is NOT an authorization decision - it's PIP (Policy Information Point) enrichment.
+    # Returns advisory information about missing profile fields for UX guidance.
+    # 
+    # Dry-run mode: Returns advice but allows execution
+    # Production mode: Denies if fields missing, returns advice
+    # 
     # why: progressive profiling without hard-coding in policies yet.
     kind = workflow_item_kind.strip().lower() if isinstance(workflow_item_kind, str) else "unknown"
     fields = dependencies.required_identity_fields_by_item_kind.get(kind)
@@ -583,6 +790,61 @@ def build_debug_advice(policy_parameters: Dict[str, Any]) -> List[Dict[str, Any]
     ]
 
 
+def call_***REMOVED***_policy(
+    dependencies: Dependencies,
+    policy_path: str,
+    policy_input: Dict[str, Any],
+) -> Dict[str, Any]:
+    # ABAC POLICY EVALUATION: Call ***REMOVED*** OPA/Rego for attribute-based authorization
+    # 
+    # AUDIT NOTE: Authorization decision made by ***REMOVED*** Authorizer (OPA), NOT by this service.
+    # Policy defined in: infra/***REMOVED***/cfg/policies/{policy_path}.rego (Rego language)
+    # 
+    # This function only:
+    # - Assembles policy input (user parameters + resource attributes)
+    # - Calls ***REMOVED*** Authorizer API
+    # - Returns the decision and reason code from ***REMOVED*** OPA
+    # 
+    # policy_path: e.g., "flowpilot/auto_book" maps to auto_book.rego
+    # policy_input: JSON input for the policy (user preferences, resource attributes)
+    # returns: policy evaluation result with 'allow' and 'reason' fields from OPA
+    # side effect: network I/O to ***REMOVED***.
+    
+    # ***REMOVED*** Authorizer API endpoint for policy evaluation
+    # Port 8383 is the Authorizer gateway (see config.yaml)
+    authorizer_base = dependencies.***REMOVED***_dir_base.replace(":9393", ":8383")
+    url = build_url(authorizer_base, f"/api/v2/authz/is")
+    
+    payload: Dict[str, Any] = {
+        "policy_context": {
+            "path": policy_path,
+            "decisions": ["allow", "reason"],
+        },
+        "policy_instance": {
+            "name": "flowpilot",
+            "instance_label": "flowpilot",
+        },
+        "resource_context": policy_input,
+    }
+    
+    connect_seconds, read_seconds = dependencies.***REMOVED***_timeouts_connect_read
+    timeouts = build_timeouts(connect_seconds=connect_seconds, read_seconds=read_seconds)
+    
+    data = http_post_json(url, payload, timeouts=timeouts)
+    
+    # Extract decisions from response
+    decisions = data.get("decisions", [])
+    result = {"allow": False, "reason": "auto_book.unknown_error"}
+    
+    for decision in decisions:
+        if decision.get("decision") == "allow":
+            result["allow"] = decision.get("is", False)
+        elif decision.get("decision") == "reason":
+            result["reason"] = decision.get("is", "auto_book.unknown_error")
+    
+    return result
+
+
 def check_***REMOVED***_permission(
     dependencies: Dependencies,
     subject_type: str,
@@ -592,8 +854,17 @@ def check_***REMOVED***_permission(
     relation: str,
     trace: Optional[bool],
 ) -> bool:
-    # Call ***REMOVED*** Directory Reader /check with the flat v3 REST payload
-    # side effect: network I/O.
+    # ReBAC POLICY EVALUATION: Call ***REMOVED*** Directory for relationship-based authorization
+    # 
+    # AUDIT NOTE: Authorization decision made by ***REMOVED*** Directory, NOT by this service.
+    # Policy defined in: infra/***REMOVED***/cfg/flowpilot-manifest.yaml
+    # 
+    # This function only:
+    # - Assembles the check request
+    # - Calls ***REMOVED*** Directory API
+    # - Returns the decision from ***REMOVED***
+    # 
+    # side effect: network I/O to ***REMOVED***.
     url = build_url(dependencies.***REMOVED***_dir_base, dependencies.***REMOVED***_check_path)
 
     trace_value = dependencies.***REMOVED***_enable_trace_default if trace is None else bool(trace)

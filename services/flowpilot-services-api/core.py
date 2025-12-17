@@ -153,19 +153,23 @@ class FlowPilotService:
                     continue
                 item_id = "i_" + uuid.uuid4().hex[:8]
                 kind = str(raw.get("kind", "unknown"))
-                items.append(
-                    {
-                        "item_id": item_id,
-                        "kind": kind,
-                        "title": str(raw.get("title", kind)),
-                        "planned_for": raw.get("planned_for"),
-                        "planned_price": raw.get("planned_price"),
-                        "status": "planned",
-                        "last_decision": None,
-                        "last_reason_codes": [],
-                        "last_advice": [],
-                    }
-                )
+                item_dict: Dict[str, Any] = {
+                    "item_id": item_id,
+                    "kind": kind,
+                    "title": str(raw.get("title", kind)),
+                    "planned_for": raw.get("planned_for"),
+                    "planned_price": raw.get("planned_price"),
+                    "status": "planned",
+                    "last_decision": None,
+                    "last_reason_codes": [],
+                    "last_advice": [],
+                }
+                # Preserve airline_risk_score and other item-level attributes for auto-book policy
+                if "airline_risk_score" in raw:
+                    item_dict["airline_risk_score"] = raw["airline_risk_score"]
+                if "type" in raw:
+                    item_dict["type"] = raw["type"]
+                items.append(item_dict)
 
         trip: Dict[str, Any] = {
             "trip_id": trip_id,
@@ -174,6 +178,9 @@ class FlowPilotService:
             "created_at": created_at,
             "items": items,
         }
+        # Preserve trip-level attributes for auto-book policy (e.g., departure_date)
+        if "departure_date" in template:
+            trip["departure_date"] = template["departure_date"]
         self._trips[trip_id] = trip
 
         # Create workflow and workflow_item objects in ***REMOVED*** via AuthZ API
@@ -245,9 +252,8 @@ class FlowPilotService:
 
         item = self._get_trip_item_or_raise(trip=trip, item_id=item_id)
         decision_payload = self._call_authz_for_item(
-            trip_id=trip_id,
-            item_id=item_id,
-            item_kind=str(item.get("kind", "unknown")),
+            trip=trip,
+            item=item,
             principal_sub=principal_sub,
             dry_run=bool(dry_run),
         )
@@ -312,27 +318,58 @@ class FlowPilotService:
         if principal_sub != owner_sub:
             raise PermissionError(f"Principal mismatch: principal_sub={principal_sub} is not owner_sub={owner_sub}")
 
-    def _call_authz_for_item(self, trip_id: str, item_id: str, item_kind: str, principal_sub: str, dry_run: bool) -> Dict[str, Any]:
-        # Call AuthZ /v1/evaluate
-        # why: authorization and ***REMOVED*** relationship checks live there
+    def _call_authz_for_item(self, trip: Dict[str, Any], item: Dict[str, Any], principal_sub: str, dry_run: bool) -> Dict[str, Any]:
+        # Call AuthZ /v1/evaluate for this itinerary item.
+        # why: PEP delegates to AuthZ API for ReBAC (***REMOVED***) and, for action 'auto-book', ABAC checks.
+        # details: we include attributes (total cost, departure_date, airline_risk_score) in resource.properties so the
+        #          AuthZ API can evaluate the auto-book policy. When action='auto-book', the PDP façade enforces
+        #          consent/cost/advance/risk constraints after delegation is verified by ***REMOVED***.
         # side effect: network I/O.
         authz_base_url = validate_non_empty_string(str(self._config.get("authz_base_url", "")), "authz_base_url")
         agent_sub = validate_non_empty_string(str(self._config.get("agent_sub", "")), "agent_sub")
         timeout_seconds = int(self._config.get("request_timeout_seconds", 10))
         domain = validate_non_empty_string(str(self._config.get("domain", "")), "domain")
 
+        trip_id = str(trip.get("trip_id", ""))
+        item_id = str(item.get("item_id", ""))
+        item_kind = str(item.get("kind", "unknown"))
+
+        # Extract attributes for auto-book policy evaluation
+        resource_properties: Dict[str, Any] = {
+            "domain": domain,
+            "workflow_item_id": item_id,
+            "workflow_item_kind": item_kind,
+        }
+        
+        # Add departure_date from trip-level (if present)
+        if "departure_date" in trip:
+            resource_properties["departure_date"] = trip["departure_date"]
+        
+        # Add airline_risk_score from item-level (if present)
+        if "airline_risk_score" in item:
+            resource_properties["airline_risk_score"] = item["airline_risk_score"]
+        
+        # Calculate total trip cost from all items' planned_price
+        # Note: This is the total cost across ALL items in the trip (hotels, flights, etc.)
+        #       Used by auto-book policy to enforce cost limits
+        total_cost = 0.0
+        for trip_item in trip.get("items", []):
+            if isinstance(trip_item, dict):
+                planned_price = trip_item.get("planned_price")
+                if isinstance(planned_price, dict):
+                    amount = planned_price.get("amount")
+                    if isinstance(amount, (int, float)):
+                        total_cost += float(amount)
+        resource_properties["planned_price"] = total_cost
+
         url = build_url(authz_base_url, "/v1/evaluate")
         body: Dict[str, Any] = {
             "subject": {"type": "agent", "id": agent_sub},
-            "action": {"name": "book"},
+            "action": {"name": "auto-book"},
             "resource": {
                 "type": "workflow",
                 "id": trip_id,
-                "properties": {
-                    "domain": domain,
-                    "workflow_item_id": item_id,
-                    "workflow_item_kind": item_kind,
-                },
+                "properties": resource_properties,
             },
             "context": {"principal": {"type": "user", "id": principal_sub}},
             "options": {"dry_run": bool(dry_run), "explain": True, "metrics": False},

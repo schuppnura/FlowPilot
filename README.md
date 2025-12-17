@@ -10,6 +10,7 @@ It demonstrates:
 - A domain backend that owns workflow state (system of record) and enforces authorization as a PEP.
 - A dedicated AuthZ integration service that acts as PDP façade + PIP (enrichment) + graph writer; maintains workflow ownership relations in ***REMOVED*** and enriches requests with profile attributes.
 - A ReBAC-capable PDP (***REMOVED***) used to evaluate relationship-based delegation and permissions via an authorization graph.
+- Hybrid ReBAC + ABAC authorization: autonomous booking is gated by attribute-based policy conditions (consent, cost, advance days, airline risk) after delegation is verified.
 - An OSS IdP (Keycloak) with OIDC Authorization Code + PKCE for the desktop client.
 - A workflow “agent-runner” that executes workflow items item-by-item to produce mixed allow/deny outcomes in a single run.
 - Strict privacy discipline: no PII exposure to the LLM and no PII handling in the domain backend beyond `sub` (UUID).
@@ -69,6 +70,47 @@ When an agent attempts to execute a workflow item:
 - **Verifiable delegation**: No trusting client assertions; relations are explicit
 - **Auditability**: Complete permission chain is traceable
 - **Scalability**: Authorization logic is centralized and reusable across domains
+
+## Policy Management Architecture
+
+**For Security Auditors**: All authorization policy decisions are managed in ***REMOVED***. The AuthZ API does NOT make authorization decisions—it orchestrates checks and provides enrichment.
+
+### Authorization Layers
+
+1. **Anti-Spoofing (AuthZ API - PEP Guardrail)**
+   - Validates request context (principal matches workflow owner)
+   - Security guardrail, not policy decision
+   - Prevents trivial spoofing attacks
+
+2. **ReBAC - Relationship-Based Access Control (***REMOVED*** Directory)**
+   - Policy Location: `infra/***REMOVED***/cfg/flowpilot-manifest.yaml`
+   - Evaluates: Agent delegation via authorization graph
+   - Example: Can `agent-runner` act on behalf of `user`?
+
+3. **ABAC - Attribute-Based Access Control (***REMOVED*** OPA)**
+   - Policy Location: `infra/***REMOVED***/cfg/policies/auto_book.rego`
+   - Evaluates: Booking constraints (consent, cost, dates, risk)
+   - Language: Rego (declarative policy as code)
+
+4. **Progressive Profiling (AuthZ API - PIP Enrichment)**
+   - Validates required identity fields are present
+   - Returns advisory information for UX
+   - Not an authorization decision—enrichment only
+
+### Policy Change Process
+
+- **ReBAC changes**: Update manifest YAML → reload via `***REMOVED*** directory set manifest`
+- **ABAC changes**: Update Rego policy → automatic reload from volume mount
+- **No code deployment required** for policy changes
+
+### Audit Trail
+
+- All policy decisions include `decision_id` for traceability
+- ReBAC decisions logged by ***REMOVED*** Directory
+- ABAC decisions logged by ***REMOVED*** Authorizer
+- Anti-spoofing rejections logged by AuthZ API
+
+See docs/AUTO_BOOK_POLICY.md for detailed ABAC policy documentation.
 
 ---
 
