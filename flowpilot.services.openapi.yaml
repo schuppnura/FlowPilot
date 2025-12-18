@@ -33,7 +33,7 @@ paths:
                   value:
                     status: ok
 
-  /v1/trip-templates:
+  /v1/workflow-templates:
     get:
       summary: List workflow templates
       responses:
@@ -42,7 +42,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TripTemplatesResponse"
+                $ref: "#/components/schemas/WorkflowTemplatesResponse"
               examples:
                 sample:
                   value:
@@ -56,7 +56,7 @@ paths:
                         description: A template designed to demonstrate mixed outcomes.
                         item_count: 3
 
-  /v1/trips:
+  /v1/workflows:
     post:
       summary: Create workflow (trip) from a template
       requestBody:
@@ -64,7 +64,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateTripRequest"
+              $ref: "#/components/schemas/CreateWorkflowRequest"
             examples:
               create:
                 value:
@@ -80,7 +80,7 @@ paths:
               examples:
                 created:
                   value:
-                    trip_id: t_85244fb6
+                    workflow_id: t_85244fb6
                     template_id: template_all_ok
                     owner_sub: 1460e175-74f9-43af-aac3-7b4fc0547f05
                     created_at: "2025-12-16T15:24:09.068379+00:00"
@@ -98,11 +98,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /v1/trips/{trip_id}:
+  /v1/workflows/{workflow_id}:
     get:
       summary: Get workflow (trip) by id
       parameters:
-        - name: trip_id
+        - name: workflow_id
           in: path
           required: true
           schema:
@@ -126,11 +126,11 @@ paths:
                   value:
                     detail: "Trip not found: t_..."
 
-  /v1/trips/{trip_id}/itinerary:
+  /v1/workflows/{workflow_id}/items:
     get:
       summary: List workflow items
       parameters:
-        - name: trip_id
+        - name: workflow_id
           in: path
           required: true
           schema:
@@ -142,21 +142,21 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ItineraryResponse"
+                $ref: "#/components/schemas/WorkflowItemsResponse"
               examples:
                 sample:
                   value:
-                    trip_id: t_85244fb6
+                    workflow_id: t_85244fb6
                     items:
-                      - item_id: i_8484ac8f
+                      - workflow_workflow_item_id: i_8484ac8f
                         kind: unknown
                         title: unknown
                         status: planned
-                      - item_id: i_6aac5389
+                      - workflow_workflow_item_id: i_6aac5389
                         kind: unknown
                         title: unknown
                         status: planned
-                      - item_id: i_0c758592
+                      - workflow_workflow_item_id: i_0c758592
                         kind: unknown
                         title: unknown
                         status: planned
@@ -167,17 +167,17 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /v1/trips/{trip_id}/itinerary-items/{item_id}/execute:
+  /v1/workflows/{workflow_id}/items-items/{workflow_workflow_item_id}/execute:
     post:
       summary: Execute a single workflow item (PEP)
       parameters:
-        - name: trip_id
+        - name: workflow_id
           in: path
           required: true
           schema:
             type: string
             example: t_85244fb6
-        - name: item_id
+        - name: workflow_workflow_item_id
           in: path
           required: true
           schema:
@@ -188,7 +188,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ExecuteItemRequest"
+              $ref: "#/components/schemas/ExecuteWorkflowItemRequest"
             examples:
               dryRun:
                 value:
@@ -204,8 +204,8 @@ paths:
               examples:
                 ok:
                   value:
-                    trip_id: t_85244fb6
-                    item_id: i_8484ac8f
+                    workflow_id: t_85244fb6
+                    workflow_workflow_item_id: i_8484ac8f
                     dry_run: true
                     result: executed
                     status: completed
@@ -236,9 +236,9 @@ components:
           type: string
         templates_loaded:
           type: integer
-        trips_in_memory:
+        workflows_in_memory:
           type: integer
-      required: [status, service, templates_loaded, trips_in_memory]
+      required: [status, service, templates_loaded, workflows_in_memory]
 
     ErrorResponse:
       type: object
@@ -247,7 +247,7 @@ components:
           type: string
       required: [detail]
 
-    TripTemplate:
+    WorkflowTemplate:
       type: object
       properties:
         template_id:
@@ -261,16 +261,16 @@ components:
           minimum: 0
       required: [template_id, title, description, item_count]
 
-    TripTemplatesResponse:
+    WorkflowTemplatesResponse:
       type: object
       properties:
         templates:
           type: array
           items:
-            $ref: "#/components/schemas/TripTemplate"
+            $ref: "#/components/schemas/WorkflowTemplate"
       required: [templates]
 
-    CreateTripRequest:
+    CreateWorkflowRequest:
       type: object
       properties:
         template_id:
@@ -282,7 +282,7 @@ components:
     Trip:
       type: object
       properties:
-        trip_id:
+        workflow_id:
           type: string
         template_id:
           type: string
@@ -293,12 +293,12 @@ components:
         item_count:
           type: integer
           minimum: 0
-      required: [trip_id, template_id, owner_sub, created_at, item_count]
+      required: [workflow_id, template_id, owner_sub, created_at, item_count]
 
-    ItineraryItem:
+    WorkflowItem:
       type: object
       properties:
-        item_id:
+        workflow_workflow_item_id:
           type: string
         kind:
           type: string
@@ -306,20 +306,20 @@ components:
           type: string
         status:
           type: string
-      required: [item_id, kind, title, status]
+      required: [workflow_workflow_item_id, kind, title, status]
 
-    ItineraryResponse:
+    WorkflowItemsResponse:
       type: object
       properties:
-        trip_id:
+        workflow_id:
           type: string
         items:
           type: array
           items:
-            $ref: "#/components/schemas/ItineraryItem"
-      required: [trip_id, items]
+            $ref: "#/components/schemas/WorkflowItem"
+      required: [workflow_id, items]
 
-    ExecuteItemRequest:
+    ExecuteWorkflowItemRequest:
       type: object
       properties:
         principal_sub:
@@ -331,9 +331,9 @@ components:
     ExecuteItemResponse:
       type: object
       properties:
-        trip_id:
+        workflow_id:
           type: string
-        item_id:
+        workflow_workflow_item_id:
           type: string
         dry_run:
           type: boolean
@@ -341,7 +341,7 @@ components:
           type: string
         status:
           type: string
-      required: [trip_id, item_id, dry_run, result, status]
+      required: [workflow_id, workflow_workflow_item_id, dry_run, result, status]
 
   securitySchemes:
     BearerAuth:

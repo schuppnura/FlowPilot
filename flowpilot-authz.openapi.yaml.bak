@@ -328,7 +328,7 @@ paths:
             examples:
               createWorkflowItem:
                 value:
-                  workflow_workflow_item_id: i_f032d0a2
+                  workflow_item_id: i_f032d0a2
                   workflow_id: t_4a6455a3
                   display_name: Book flight to Paris
                   properties:
@@ -344,7 +344,7 @@ paths:
               examples:
                 success:
                   value:
-                    workflow_workflow_item_id: i_f032d0a2
+                    workflow_item_id: i_f032d0a2
                     workflow_id: t_4a6455a3
                     status: created
         "400":
@@ -580,7 +580,7 @@ components:
       properties:
         workflow_id:
           type: string
-          description: Workflow identifier (typically workflow_id)
+          description: Workflow identifier (typically trip_id)
           example: t_4a6455a3
         owner_sub:
           type: string
@@ -601,7 +601,7 @@ components:
       type: object
       description: Request to create workflow_item object and workflow relation in ***REMOVED***
       properties:
-        workflow_workflow_item_id:
+        workflow_item_id:
           type: string
           description: Workflow item identifier
           example: i_f032d0a2
@@ -617,7 +617,7 @@ components:
           type: object
           description: Optional item properties (kind, title, etc.)
           additionalProperties: true
-      required: [workflow_workflow_item_id, workflow_id]
+      required: [workflow_item_id, workflow_id]
 
     GraphCreateResponse:
       type: object
@@ -626,7 +626,7 @@ components:
         workflow_id:
           type: string
           description: Workflow ID (present for workflow creation)
-        workflow_workflow_item_id:
+        workflow_item_id:
           type: string
           description: Workflow item ID (present for item creation)
         owner_sub:

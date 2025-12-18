@@ -81,14 +81,14 @@ def get_service_token() -> str | None:
     return None
 
 
-def normalize_workflow_id(trip_id: Optional[str], workflow_id: Optional[str]) -> str:
-    # Normalize workflow_id with legacy trip_id fallback
+def normalize_workflow_id(workflow_id: Optional[str], workflow_id: Optional[str]) -> str:
+    # Normalize workflow_id with legacy workflow_id fallback
     # why: keep older clients working without branching logic.
     if workflow_id and isinstance(workflow_id, str) and workflow_id.strip():
         return workflow_id.strip()
-    if trip_id and isinstance(trip_id, str) and trip_id.strip():
-        return trip_id.strip()
-    raise ValueError("Missing workflow_id (or legacy trip_id)")
+    if workflow_id and isinstance(workflow_id, str) and workflow_id.strip():
+        return workflow_id.strip()
+    raise ValueError("Missing workflow_id (or legacy workflow_id)")
 
 
 def list_workflow_items(config: Dict[str, Any], workflow_id: str) -> List[WorkflowItem]:

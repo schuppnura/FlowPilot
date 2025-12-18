@@ -260,8 +260,8 @@ def get_user_token_via_browser() -> tuple[str, str, str]:
 
 
 def create_trip_for_owner(owner_sub: str, access_token: str, template_id: str = "template_all_ok") -> dict:
-    """Create a trip owned by the specified user"""
-    url = f"{SERVICES_API_BASE}/v1/trips"
+    """Create a workflow owned by the specified user"""
+    url = f"{SERVICES_API_BASE}/v1/workflows"
     payload = {
         "template_id": template_id,
         "principal_sub": owner_sub,  # API expects principal_sub, not owner_sub
@@ -321,14 +321,14 @@ def run_tests():
         print(f"  ✗ Authentication failed: {e}")
         return
 
-    # Setup: Create a trip owned by the logged-in user
+    # Setup: Create a workflow owned by the logged-in user
     print(f"\n[Setup] Creating trip owned by {user_sub}...")
     try:
         trip_result = create_trip_for_owner(owner_sub=user_sub, access_token=access_token)
-        workflow_id = trip_result["trip_id"]
+        workflow_id = trip_result["workflow_id"]
         print(f"  Created trip: {workflow_id}")
     except Exception as e:
-        print(f"  ✗ Failed to create trip: {e}")
+        print(f"  ✗ Failed to create workflow: {e}")
         return
 
     # Get the first item ID from the workflow
@@ -403,7 +403,7 @@ if __name__ == "__main__":
     print("=" * 60)
     print("\nThis test will:")
     print("1. Open your browser to login with Keycloak")
-    print("2. Create a trip for that user")
+    print("2. Create a workflow for that user")
     print("3. Test authorization with legitimate and spoofed principals")
     print("4. Wait for you to press Enter to test again with a different user")
     print("\nPress Ctrl+C to exit at any time.")

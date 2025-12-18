@@ -48,8 +48,8 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "***REMOVED***_trace_default": True,  # Enable trace for complete audit trail
 
     # Workflow lookup endpoints (kept generic so other verticals can re-use authz-api).
-    "workflow_owner_path_template": "/v1/trips/{workflow_id}",
-    "workflow_itinerary_path_template": "/v1/trips/{workflow_id}/itinerary",
+    "workflow_owner_path_template": "/v1/workflows/{workflow_id}",
+    "workflow_items_path_template": "/v1/workflows/{workflow_id}/items",
 
     # How to find a workflow-item identifier in the incoming resource JSON.
     "workflow_item_id_property_names": ["workflow_item_id", "item_id"],

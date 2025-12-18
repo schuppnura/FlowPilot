@@ -61,7 +61,7 @@ paths:
                     principal_sub: 1460e175-74f9-43af-aac3-7b4fc0547f05
                     dry_run: true
                     results:
-                      - workflow_item_id: i_f032d0a2
+                      - workflow_workflow_item_id: i_f032d0a2
                         kind: unknown
                         status: completed
                         decision: deny
@@ -119,7 +119,7 @@ paths:
                     principal_sub: 1460e175-74f9-43af-aac3-7b4fc0547f05
                     dry_run: true
                     results:
-                      - workflow_item_id: i_f032d0a2
+                      - workflow_workflow_item_id: i_f032d0a2
                         kind: unknown
                         status: completed
                         decision: deny
@@ -167,7 +167,7 @@ components:
         workflow_id:
           type: string
           description: Workflow identifier
-        trip_id:
+        workflow_id:
           type: string
           description: Legacy alias for workflow_id (backward compatibility)
         principal_sub:
@@ -185,7 +185,7 @@ components:
       properties:
         workflow_id:
           type: string
-        trip_id:
+        workflow_id:
           type: string
         principal_sub:
           type: string
@@ -207,7 +207,7 @@ components:
     AgentRunItemResult:
       type: object
       properties:
-        workflow_item_id:
+        workflow_workflow_item_id:
           type: string
         kind:
           type: string
@@ -225,7 +225,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/AgentAdvice"
-      required: [workflow_item_id, kind, status, decision, reason_codes, advice]
+      required: [workflow_workflow_item_id, kind, status, decision, reason_codes, advice]
 
     AgentRunResponse:
       type: object

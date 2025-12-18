@@ -4,8 +4,8 @@
 # and acts as the Policy Enforcement Point (PEP) for authorization decisions.
 #
 # Key responsibilities:
-# - Workflow (trip) creation from templates
-# - Itinerary item management and state tracking
+# - Workflow creation from templates
+# - Workflow item management and state tracking
 # - Policy enforcement point (PEP) that delegates decisions to AuthZ API
 # - Dry-run semantics for workflow execution
 # - In-memory workflow storage (demo only)
@@ -93,7 +93,7 @@ class FlowPilotService:
         # side effect: none.
         self._config = dict(config)
         self._templates: Dict[str, Dict[str, Any]] = {}
-        self._trips: Dict[str, Dict[str, Any]] = {}
+        self._workflows: Dict[str, Dict[str, Any]] = {}  # Stores workflows (API: trip_id for compatibility)
 
     def load_templates(self) -> None:
         # Load templates from directory
@@ -109,13 +109,13 @@ class FlowPilotService:
         # side effect: none.
         return len(self._templates)
 
-    def get_trip_count(self) -> int:
-        # Return number of trips in memory
+    def get_workflow_count(self) -> int:
+        # Return number of workflows in memory
         # why: health/debug
         # side effect: none.
-        return len(self._trips)
+        return len(self._workflows)
 
-    def list_trip_templates(self) -> List[Dict[str, Any]]:
+    def list_workflow_templates(self) -> List[Dict[str, Any]]:
         # Return minimal template metadata
         # why: client selection without leaking full template details
         # side effect: none.
@@ -132,9 +132,10 @@ class FlowPilotService:
         templates.sort(key=lambda entry: str(entry.get("template_id", "")))
         return templates
 
-    def create_trip_from_template(self, template_id: str, owner_sub: str) -> Dict[str, Any]:
-        # Create a trip and itinerary items from a template
-        # side effect: stores a new trip in memory.
+    def create_workflow_from_template(self, template_id: str, owner_sub: str) -> Dict[str, Any]:
+        # Create a workflow and items from a template
+        # side effect: stores a new workflow in memory.
+        # Note: Returns trip_id in API response for backward compatibility
         template_id = validate_non_empty_string(template_id, "template_id")
         owner_sub = validate_non_empty_string(owner_sub, "owner_sub")
 
@@ -142,7 +143,7 @@ class FlowPilotService:
             raise KeyError(f"Template not found: {template_id}")
 
         template = self._templates[template_id]
-        trip_id = "t_" + uuid.uuid4().hex[:8]
+        workflow_id = "t_" + uuid.uuid4().hex[:8]
         created_at = get_utc_now_iso()
 
         items: List[Dict[str, Any]] = []
@@ -171,8 +172,8 @@ class FlowPilotService:
                     item_dict["type"] = raw["type"]
                 items.append(item_dict)
 
-        trip: Dict[str, Any] = {
-            "trip_id": trip_id,
+        workflow: Dict[str, Any] = {
+            "workflow_id": workflow_id,
             "template_id": template_id,
             "owner_sub": owner_sub,
             "created_at": created_at,
@@ -180,52 +181,52 @@ class FlowPilotService:
         }
         # Preserve trip-level attributes for auto-book policy (e.g., departure_date)
         if "departure_date" in template:
-            trip["departure_date"] = template["departure_date"]
-        self._trips[trip_id] = trip
+            workflow["departure_date"] = template["departure_date"]
+        self._workflows[trip_id] = trip
 
         # Create workflow and workflow_item objects in ***REMOVED*** via AuthZ API
         try:
-            self._create_workflow_graph(trip_id=trip_id, owner_sub=owner_sub, template_name=str(template.get("name", template_id)))
+            self._create_workflow_graph(workflow_id=workflow_id, owner_sub=owner_sub, template_name=str(template.get("name", template_id)))
             for item in items:
                 self._create_workflow_item_graph(
                     workflow_item_id=str(item["item_id"]),
-                    workflow_id=trip_id,
+                    workflow_id=workflow_id,
                     item_title=str(item.get("title", "")),
                     item_kind=str(item.get("kind", "unknown")),
                 )
         except Exception as graph_error:
             # Log but don't fail the trip creation if graph write fails
-            print(f"Warning: Failed to create ***REMOVED*** graph for trip {trip_id}: {graph_error}")
+            print(f"Warning: Failed to create ***REMOVED*** graph for workflow {trip_id}: {graph_error}")
 
-        return {"trip_id": trip_id, "owner_sub": owner_sub, "created_at": created_at, "item_count": len(items)}
+        return {"workflow_id": workflow_id, "owner_sub": owner_sub, "created_at": created_at, "item_count": len(items)}
 
-    def get_trip(self, trip_id: str) -> Dict[str, Any]:
-        # Return a trip record
+    def get_workflow(self, workflow_id: str) -> Dict[str, Any]:
+        # Return a workflow record
         # assumptions: trip exists
         # side effect: none.
-        trip_id = validate_non_empty_string(trip_id, "trip_id")
-        if trip_id not in self._trips:
-            raise KeyError(f"Trip not found: {trip_id}")
-        trip = self._trips[trip_id]
+        workflow_id = validate_non_empty_string(workflow_id, "workflow_id")
+        if trip_id not in self._workflows:
+            raise KeyError(f"Workflow not found: {trip_id}")
+        workflow = self._workflows[trip_id]
         return {
-            "trip_id": str(trip.get("trip_id")),
-            "template_id": str(trip.get("template_id")),
-            "owner_sub": str(trip.get("owner_sub")),
-            "created_at": str(trip.get("created_at")),
-            "item_count": len(trip.get("items", [])) if isinstance(trip.get("items", []), list) else 0,
+            "workflow_id": str(workflow.get("workflow_id")),
+            "template_id": str(workflow.get("template_id")),
+            "owner_sub": str(workflow.get("owner_sub")),
+            "created_at": str(workflow.get("created_at")),
+            "item_count": len(workflow.get("items", [])) if isinstance(workflow.get("items", []), list) else 0,
         }
 
-    def get_itinerary(self, trip_id: str) -> Dict[str, Any]:
-        # Return itinerary items for agent-runner
+    def get_workflow_items(self, workflow_id: str) -> Dict[str, Any]:
+        # Return workflow items for agent-runner
         # assumptions: trip exists
         # side effect: none.
-        trip_id = validate_non_empty_string(trip_id, "trip_id")
-        if trip_id not in self._trips:
-            raise KeyError(f"Trip not found: {trip_id}")
+        workflow_id = validate_non_empty_string(workflow_id, "workflow_id")
+        if trip_id not in self._workflows:
+            raise KeyError(f"Workflow not found: {trip_id}")
 
-        trip = self._trips[trip_id]
+        workflow = self._workflows[trip_id]
         items_out: List[Dict[str, Any]] = []
-        for item in trip.get("items", []):
+        for item in workflow.get("items", []):
             if not isinstance(item, dict):
                 continue
             items_out.append(
@@ -237,20 +238,20 @@ class FlowPilotService:
                 }
             )
 
-        return {"trip_id": trip_id, "items": items_out}
+        return {"workflow_id": workflow_id, "items": items_out}
 
-    def execute_itinerary_item(self, trip_id: str, item_id: str, principal_sub: str, dry_run: bool) -> Dict[str, Any]:
-        # Execute an itinerary item with AuthZ decision
+    def execute_workflow_item(self, workflow_id: str, item_id: str, principal_sub: str, dry_run: bool) -> Dict[str, Any]:
+        # Execute a workflow item with AuthZ decision
         # why: PEP responsibility
         # side effects: network I/O + optional state mutation.
-        trip_id = validate_non_empty_string(trip_id, "trip_id")
+        workflow_id = validate_non_empty_string(workflow_id, "workflow_id")
         item_id = validate_non_empty_string(item_id, "item_id")
         principal_sub = validate_non_empty_string(principal_sub, "principal_sub")
 
-        trip = self._get_trip_or_raise(trip_id=trip_id)
-        self._validate_principal_matches_owner(trip=trip, principal_sub=principal_sub)
+        workflow = self._get_workflow_or_raise(workflow_id=workflow_id)
+        self._validate_principal_matches_owner(workflow=trip, principal_sub=principal_sub)
 
-        item = self._get_trip_item_or_raise(trip=trip, item_id=item_id)
+        item = self._get_workflow_item_or_raise(workflow=trip, item_id=item_id)
         decision_payload = self._call_authz_for_item(
             trip=trip,
             item=item,
@@ -277,49 +278,49 @@ class FlowPilotService:
         return {
             "status": "simulated" if dry_run else "executed",
             "decision": "allow",
-            "trip_id": trip_id,
+            "workflow_id": workflow_id,
             "item_id": item_id,
             "item_kind": str(item.get("kind", "unknown")),
             "reason_codes": reason_codes,
             "advice": advice,
         }
 
-    def _get_trip_or_raise(self, trip_id: str) -> Dict[str, Any]:
-        # Fetch a trip from memory
+    def _get_workflow_or_raise(self, workflow_id: str) -> Dict[str, Any]:
+        # Fetch a workflow from memory
         # why: centralize errors
         # side effect: none.
-        if trip_id not in self._trips:
-            raise KeyError(f"Trip not found: {trip_id}")
-        trip = self._trips[trip_id]
-        if not isinstance(trip, dict):
-            raise ValueError("Trip store corrupted: expected object")
+        if trip_id not in self._workflows:
+            raise KeyError(f"Workflow not found: {trip_id}")
+        workflow = self._workflows[trip_id]
+        if not isinstance(workflow, dict):
+            raise ValueError("Workflow store corrupted: expected object")
         return trip
 
-    def _get_trip_item_or_raise(self, trip: Dict[str, Any], item_id: str) -> Dict[str, Any]:
-        # Find a trip item by id
+    def _get_workflow_item_or_raise(self, workflow: Dict[str, Any], item_id: str) -> Dict[str, Any]:
+        # Find a workflow item by id
         # why: protect against rogue item ids
         # side effect: none.
-        items = trip.get("items", [])
+        items = workflow.get("items", [])
         if not isinstance(items, list):
-            raise ValueError("Trip store corrupted: items must be a list")
+            raise ValueError("Workflow store corrupted: items must be a list")
         for item in items:
             if not isinstance(item, dict):
                 continue
             if str(item.get("item_id", "")).strip() == item_id:
                 return item
-        raise KeyError(f"Itinerary item not found: {item_id}")
+        raise KeyError(f"Workflow item not found: {item_id}")
 
-    def _validate_principal_matches_owner(self, trip: Dict[str, Any], principal_sub: str) -> None:
+    def _validate_principal_matches_owner(self, workflow: Dict[str, Any], principal_sub: str) -> None:
         # Prevent trivial principal spoofing in the demo
         # assumption: real systems bind principal_sub to token subject.
-        owner_sub = str(trip.get("owner_sub", "")).strip()
+        owner_sub = str(workflow.get("owner_sub", "")).strip()
         if not owner_sub:
-            raise ValueError("Trip store corrupted: missing owner_sub")
+            raise ValueError("Workflow store corrupted: missing owner_sub")
         if principal_sub != owner_sub:
             raise PermissionError(f"Principal mismatch: principal_sub={principal_sub} is not owner_sub={owner_sub}")
 
-    def _call_authz_for_item(self, trip: Dict[str, Any], item: Dict[str, Any], principal_sub: str, dry_run: bool) -> Dict[str, Any]:
-        # Call AuthZ /v1/evaluate for this itinerary item.
+    def _call_authz_for_item(self, workflow: Dict[str, Any], item: Dict[str, Any], principal_sub: str, dry_run: bool) -> Dict[str, Any]:
+        # Call AuthZ /v1/evaluate for this workflow item.
         # why: PEP delegates to AuthZ API for ReBAC (***REMOVED***) and, for action 'auto-book', ABAC checks.
         # details: we include attributes (total cost, departure_date, airline_risk_score) in resource.properties so the
         #          AuthZ API can evaluate the auto-book policy. When action='auto-book', the PDP façade enforces
@@ -330,7 +331,7 @@ class FlowPilotService:
         timeout_seconds = int(self._config.get("request_timeout_seconds", 10))
         domain = validate_non_empty_string(str(self._config.get("domain", "")), "domain")
 
-        trip_id = str(trip.get("trip_id", ""))
+        workflow_id = str(workflow.get("workflow_id", ""))
         item_id = str(item.get("item_id", ""))
         item_kind = str(item.get("kind", "unknown"))
 
@@ -342,8 +343,8 @@ class FlowPilotService:
         }
         
         # Add departure_date from trip-level (if present)
-        if "departure_date" in trip:
-            resource_properties["departure_date"] = trip["departure_date"]
+        if "departure_date" in workflow:
+            resource_properties["departure_date"] = workflow["departure_date"]
         
         # Add airline_risk_score from item-level (if present)
         if "airline_risk_score" in item:
@@ -353,8 +354,8 @@ class FlowPilotService:
         # Note: This is the total cost across ALL items in the trip (hotels, flights, etc.)
         #       Used by auto-book policy to enforce cost limits
         total_cost = 0.0
-        for trip_item in trip.get("items", []):
-            if isinstance(trip_item, dict):
+        for trip_item in workflow.get("items", []):
+            if isinstance(workflow_item, dict):
                 planned_price = trip_item.get("planned_price")
                 if isinstance(planned_price, dict):
                     amount = planned_price.get("amount")
@@ -368,7 +369,7 @@ class FlowPilotService:
             "action": {"name": "auto-book"},
             "resource": {
                 "type": "workflow",
-                "id": trip_id,
+                "id": workflow_id,
                 "properties": resource_properties,
             },
             "context": {"principal": {"type": "user", "id": principal_sub}},
@@ -384,7 +385,7 @@ class FlowPilotService:
             raise RuntimeError(f"AuthZ evaluate failed: HTTP {response.status_code}: {response.text}")
         return response.json()
 
-    def _create_workflow_graph(self, trip_id: str, owner_sub: str, template_name: str) -> None:
+    def _create_workflow_graph(self, workflow_id: str, owner_sub: str, template_name: str) -> None:
         # Create workflow object and owner relation in ***REMOVED*** via AuthZ API graph write endpoint
         # why: establish workflow ownership for ReBAC authorization checks during workflow execution
         # when: called immediately after creating workflow in memory (in create_trip_from_template)
@@ -398,7 +399,7 @@ class FlowPilotService:
 
         url = build_url(authz_base_url, "/v1/graph/workflows")
         body: Dict[str, Any] = {
-            "workflow_id": trip_id,
+            "workflow_id": workflow_id,
             "owner_sub": owner_sub,
             "display_name": template_name,
             "properties": {"domain": domain},

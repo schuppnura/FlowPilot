@@ -4,11 +4,11 @@
 # state and enforces authorization as a Policy Enforcement Point (PEP).
 #
 # Key endpoints:
-# - GET /v1/trip-templates: List available trip templates
-# - POST /v1/trips: Create a new trip from a template
-# - GET /v1/trips/{trip_id}: Get trip metadata
-# - GET /v1/trips/{trip_id}/itinerary: Get trip itinerary items
-# - POST /v1/trips/{trip_id}/itinerary-items/{item_id}/execute: Execute item with AuthZ check
+# - GET /v1/workflow-templates: List available trip templates
+# - POST /v1/workflows: Create a new trip from a template
+# - GET /v1/workflows/{workflow_id}: Get workflow metadata
+# - GET /v1/workflows/{workflow_id}/items: Get workflow items items
+# - POST /v1/workflows/{workflow_id}/items-items/{workflow_item_id}/execute: Execute item with AuthZ check
 # - GET /health: Health check with trip/template counts
 #
 # All endpoints (except health) require bearer token authentication.
@@ -47,12 +47,12 @@ DEFAULT_CONFIG: Dict[str, Any] = {
 }
 
 
-class CreateTripRequest(BaseModel):
+class CreateWorkflowRequest(BaseModel):
     template_id: str
     principal_sub: str
 
 
-class ExecuteItineraryItemRequest(BaseModel):
+class ExecuteWorkflowItemRequest(BaseModel):
     principal_sub: str
     dry_run: bool = True
 
@@ -101,65 +101,65 @@ def handle_get_health(request: Request) -> Dict[str, Any]:
         "status": "ok",
         "service": str(request.app.state.config.get("service_name", "flowpilot-api")),
         "templates_loaded": int(service.get_template_count()),
-        "trips_in_memory": int(service.get_trip_count()),
+        "workflows_in_memory": int(service.get_workflow_count()),
     }
 
 
-def handle_get_trip_templates(request: Request) -> Dict[str, Any]:
+def handle_get_workflow_templates(request: Request) -> Dict[str, Any]:
     # List available trip templates
     # why: allow the client to pick a workflow
     # side effect: none.
     service: FlowPilotService = request.app.state.service
-    return {"templates": service.list_trip_templates()}
+    return {"templates": service.list_workflow_templates()}
 
 
-def handle_post_trips(request: Request, body: CreateTripRequest) -> Dict[str, Any]:
-    # Create a trip from a template
+def handle_post_workflows(request: Request, body: CreateWorkflowRequest) -> Dict[str, Any]:
+    # Create a workflow from a template
     # assumptions: principal_sub is authenticated upstream
     # side effect: stores trip in memory.
     service: FlowPilotService = request.app.state.service
     try:
         template_id = validate_non_empty_string(body.template_id, "template_id")
         principal_sub = validate_non_empty_string(body.principal_sub, "principal_sub")
-        return service.create_trip_from_template(template_id=template_id, owner_sub=principal_sub)
+        return service.create_workflow_from_template(template_id=template_id, owner_sub=principal_sub)
     except ValueError as exception:
         raise HTTPException(status_code=400, detail=str(exception)) from exception
 
 
-def handle_get_trip(request: Request, trip_id: str) -> Dict[str, Any]:
+def handle_get_workflow(request: Request, workflow_id: str) -> Dict[str, Any]:
     # Return one trip record
     # why: demo visibility and debugging
     # side effect: none.
     service: FlowPilotService = request.app.state.service
     try:
-        return service.get_trip(trip_id=validate_non_empty_string(trip_id, "trip_id"))
+        return service.get_workflow(workflow_id=validate_non_empty_string(workflow_id, "workflow_id"))
     except KeyError as exception:
         raise HTTPException(status_code=404, detail=str(exception)) from exception
     except ValueError as exception:
         raise HTTPException(status_code=400, detail=str(exception)) from exception
 
 
-def handle_get_itinerary(request: Request, trip_id: str) -> Dict[str, Any]:
+def handle_get_workflow_items(request: Request, workflow_id: str) -> Dict[str, Any]:
     # Return the itinerary for a trip
     # why: agent-runner lists items from here
     # side effect: none.
     service: FlowPilotService = request.app.state.service
     try:
-        return service.get_itinerary(trip_id=validate_non_empty_string(trip_id, "trip_id"))
+        return service.get_workflow_items(workflow_id=validate_non_empty_string(workflow_id, "workflow_id"))
     except KeyError as exception:
         raise HTTPException(status_code=404, detail=str(exception)) from exception
     except ValueError as exception:
         raise HTTPException(status_code=400, detail=str(exception)) from exception
 
 
-def handle_post_execute_itinerary_item(request: Request, trip_id: str, item_id: str, body: ExecuteItineraryItemRequest) -> Dict[str, Any]:
+def handle_post_execute_workflow_item(request: Request, workflow_id: str, workflow_item_id: str, body: ExecuteWorkflowItemRequest) -> Dict[str, Any]:
     # Execute one itinerary item with AuthZ enforcement
     # why: FlowPilot is PEP and delegates decisions to AuthZ/***REMOVED***.
     service: FlowPilotService = request.app.state.service
     try:
-        return service.execute_itinerary_item(
-            trip_id=validate_non_empty_string(trip_id, "trip_id"),
-            item_id=validate_non_empty_string(item_id, "item_id"),
+        return service.execute_workflow_item(
+            workflow_id=validate_non_empty_string(workflow_id, "workflow_id"),
+            workflow_item_id=validate_non_empty_string(workflow_item_id, "workflow_item_id"),
             principal_sub=validate_non_empty_string(body.principal_sub, "principal_sub"),
             dry_run=bool(body.dry_run),
         )
@@ -192,11 +192,11 @@ def create_app(config: Dict[str, Any]) -> FastAPI:
     api.add_api_route("/health", handle_get_health, methods=["GET"])
 
     # All other endpoints require authentication
-    api.add_api_route("/v1/trip-templates", handle_get_trip_templates, methods=["GET"], dependencies=[Depends(bearer_scheme)])
-    api.add_api_route("/v1/trips", handle_post_trips, methods=["POST"], dependencies=[Depends(bearer_scheme)])
-    api.add_api_route("/v1/trips/{trip_id}", handle_get_trip, methods=["GET"], dependencies=[Depends(bearer_scheme)])
-    api.add_api_route("/v1/trips/{trip_id}/itinerary", handle_get_itinerary, methods=["GET"], dependencies=[Depends(bearer_scheme)])
-    api.add_api_route("/v1/trips/{trip_id}/itinerary-items/{item_id}/execute", handle_post_execute_itinerary_item, methods=["POST"], dependencies=[Depends(bearer_scheme)])
+    api.add_api_route("/v1/workflow-templates", handle_get_workflow_templates, methods=["GET"], dependencies=[Depends(bearer_scheme)])
+    api.add_api_route("/v1/trips", handle_post_workflows, methods=["POST"], dependencies=[Depends(bearer_scheme)])
+    api.add_api_route("/v1/trips/{workflow_id}", handle_get_workflow, methods=["GET"], dependencies=[Depends(bearer_scheme)])
+    api.add_api_route("/v1/trips/{workflow_id}/items", handle_get_workflow_items, methods=["GET"], dependencies=[Depends(bearer_scheme)])
+    api.add_api_route("/v1/trips/{workflow_id}/items-items/{workflow_item_id}/execute", handle_post_execute_workflow_item, methods=["POST"], dependencies=[Depends(bearer_scheme)])
 
     return api
 

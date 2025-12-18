@@ -66,7 +66,7 @@ class EvaluateResponseModel(BaseModel):
 class Dependencies:
     workflow_base_url: str
     workflow_owner_path_template: str
-    workflow_itinerary_path_template: str
+    workflow_items_path_template: str
     workflow_item_id_property_names: List[str]
 
     ***REMOVED***_dir_base: str
@@ -360,7 +360,7 @@ class AuthzService:
         return Dependencies(
             workflow_base_url=validate_non_empty_string(config.get("workflow_base_url"), "workflow_base_url"),
             workflow_owner_path_template=validate_non_empty_string(config.get("workflow_owner_path_template"), "workflow_owner_path_template"),
-            workflow_itinerary_path_template=validate_non_empty_string(config.get("workflow_itinerary_path_template"), "workflow_itinerary_path_template"),
+            workflow_items_path_template=validate_non_empty_string(config.get("workflow_items_path_template"), "workflow_items_path_template"),
             workflow_item_id_property_names=normalized_item_names,
             ***REMOVED***_dir_base=validate_non_empty_string(config.get("***REMOVED***_dir_base"), "***REMOVED***_dir_base"),
             ***REMOVED***_check_path=validate_non_empty_string(config.get("***REMOVED***_check_path"), "***REMOVED***_check_path"),
@@ -819,6 +819,10 @@ def call_***REMOVED***_policy(
     url = build_url(authorizer_base, f"/api/v2/authz/is")
     
     payload: Dict[str, Any] = {
+        "identity_context": {
+            "type": "IDENTITY_TYPE_NONE",
+            "identity": "",
+        },
         "policy_context": {
             "path": policy_path,
             "decisions": ["allow", "reason"],
