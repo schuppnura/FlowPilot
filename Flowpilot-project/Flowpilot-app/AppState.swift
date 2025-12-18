@@ -13,7 +13,7 @@ final class AppState: ObservableObject {
     @Published var idToken: String?
     @Published var accessToken: String?
     
-    @Published var workflowTemplates: [TripTemplate] = []
+    @Published var workflowTemplates: [WorkflowTemplate] = []
     @Published var selectedWorkflowTemplateId: String?
     @Published var workflowId: String?
     
@@ -150,7 +150,7 @@ final class AppState: ObservableObject {
         
         statusMessage = "Running agent (dry-run)…"
         do {
-            // Agent-runner API still expects tripId; we pass the workflow id.
+            // Agent-runner API still expects workflowId; we pass the workflow id.
             let run = try await agentRunnerClient.runAgent(workflowId: workflow, principalSub: sub, dryRun: true)
             lastAgentRun = run
             missingProfileFieldsFromAdvice = AdviceUtils.extractMissingProfileFields(from: run)

@@ -1,4 +1,4 @@
-// This view expects AppState.workflowTemplates to be [TripTemplate]
+// This view expects AppState.workflowTemplates to be [WorkflowTemplate]
 import SwiftUI
 
 struct ContentView: View {

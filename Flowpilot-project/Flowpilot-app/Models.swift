@@ -9,7 +9,7 @@ import Foundation
 
 // MARK: - Cumbaya Templates
 
-struct TripTemplate: Codable, Identifiable {
+struct WorkflowTemplate: Codable, Identifiable {
     let template_id: String
     let domain: String
     let name: String
@@ -17,8 +17,8 @@ struct TripTemplate: Codable, Identifiable {
     var id: String { template_id }
 }
 
-struct TripTemplatesResponse: Codable {
-    let templates: [TripTemplate]
+struct WorkflowTemplatesResponse: Codable {
+    let templates: [WorkflowTemplate]
 }
 
 struct LoadTemplateRequest: Codable {
@@ -27,7 +27,7 @@ struct LoadTemplateRequest: Codable {
 }
 
 struct LoadTemplateResponse: Codable {
-    let trip_id: String
+    let workflow_id: String
     let template_id: String?
     let created_at: String?
 }
@@ -47,20 +47,20 @@ struct AgentRunResponse: Codable {
     let dry_run: Bool
     let results: [AgentRunItemResult]
     
-    var trip_id: String { workflow_id }
+    var workflow_id: String { workflow_id }
 }
 
 struct AgentRunItemResult: Codable, Identifiable {
-    let workflow_item_id: String
+    let workflow_workflow_item_id: String
     let kind: String
     let status: String
     let decision: String
     let reason_codes: [String]?
     let advice: [AgentAdvice]?
     
-    var id: String { workflow_item_id }
+    var id: String { workflow_workflow_item_id }
     
-    var itinerary_item_id: String { workflow_item_id }
+    var itinerary_workflow_item_id: String { workflow_workflow_item_id }
     var outcome: String { decision }
 }
 

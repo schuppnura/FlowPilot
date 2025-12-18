@@ -29,9 +29,9 @@ final class FlowPilotApiClient {
         self.accessTokenProvider = accessTokenProvider
     }
 
-    func fetchTemplates() async throws -> [TripTemplate] {
-        // Fetch available workflow templates; assumptions: GET /v1/trip-templates; side effect: network I/O.
-        let url = baseUrl.appendingPathComponent("/v1/trip-templates")
+    func fetchTemplates() async throws -> [WorkflowTemplate] {
+        // Fetch available workflow templates; assumptions: GET /v1/workflow-templates; side effect: network I/O.
+        let url = baseUrl.appendingPathComponent("/v1/workflow-templates")
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         
@@ -50,8 +50,8 @@ final class FlowPilotApiClient {
     }
 
     func loadTemplate(templateId: String, principalSub: String) async throws -> String {
-        // Create a workflow instance from a template; assumptions: POST /v1/trips; side effect: network I/O + server-side state creation.
-        let url = baseUrl.appendingPathComponent("/v1/trips")
+        // Create a workflow instance from a template; assumptions: POST /v1/workflows; side effect: network I/O + server-side state creation.
+        let url = baseUrl.appendingPathComponent("/v1/workflows")
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -82,23 +82,23 @@ final class FlowPilotApiClient {
     // MARK: - Internals
 
     private func extractTripId(from data: Data) throws -> String {
-        // Extract trip_id from a flexible JSON response; why: allow evolution (top-level or nested under trip); assumptions: response is JSON; side effect: none.
+        // Extract workflow_id from a flexible JSON response; why: allow evolution (top-level or nested under trip); assumptions: response is JSON; side effect: none.
         let jsonObject = try JSONSerialization.jsonObject(with: data, options: [])
         guard let root = jsonObject as? [String: Any] else {
             throw ApiClientError.invalidResponse("Expected JSON object, got: \(stringBody(data))")
         }
 
-        if let tripId = root["trip_id"] as? String, !tripId.isEmpty {
-            return tripId
+        if let workflowId = root["workflow_id"] as? String, !workflowId.isEmpty {
+            return workflowId
         }
 
         if let trip = root["trip"] as? [String: Any],
-           let tripId = trip["trip_id"] as? String,
-           !tripId.isEmpty {
-            return tripId
+           let workflowId = trip["workflow_id"] as? String,
+           !workflowId.isEmpty {
+            return workflowId
         }
 
-        throw ApiClientError.invalidResponse("Expected trip_id in response, got: \(stringBody(data))")
+        throw ApiClientError.invalidResponse("Expected workflow_id in response, got: \(stringBody(data))")
     }
 
     private func requireHttpResponse(response: URLResponse, data: Data) throws -> HTTPURLResponse {
