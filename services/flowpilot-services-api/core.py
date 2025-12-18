@@ -182,7 +182,7 @@ class FlowPilotService:
         # Preserve trip-level attributes for auto-book policy (e.g., departure_date)
         if "departure_date" in template:
             workflow["departure_date"] = template["departure_date"]
-        self._workflows[trip_id] = trip
+        self._workflows[workflow_id] = workflow
 
         # Create workflow and workflow_item objects in ***REMOVED*** via AuthZ API
         try:
@@ -196,7 +196,7 @@ class FlowPilotService:
                 )
         except Exception as graph_error:
             # Log but don't fail the trip creation if graph write fails
-            print(f"Warning: Failed to create ***REMOVED*** graph for workflow {trip_id}: {graph_error}")
+            print(f"Warning: Failed to create ***REMOVED*** graph for workflow {workflow_id}: {graph_error}")
 
         return {"workflow_id": workflow_id, "owner_sub": owner_sub, "created_at": created_at, "item_count": len(items)}
 
@@ -205,9 +205,9 @@ class FlowPilotService:
         # assumptions: trip exists
         # side effect: none.
         workflow_id = validate_non_empty_string(workflow_id, "workflow_id")
-        if trip_id not in self._workflows:
-            raise KeyError(f"Workflow not found: {trip_id}")
-        workflow = self._workflows[trip_id]
+        if workflow_id not in self._workflows:
+            raise KeyError(f"Workflow not found: {workflow_id}")
+        workflow = self._workflows[workflow_id]
         return {
             "workflow_id": str(workflow.get("workflow_id")),
             "template_id": str(workflow.get("template_id")),
@@ -221,10 +221,10 @@ class FlowPilotService:
         # assumptions: trip exists
         # side effect: none.
         workflow_id = validate_non_empty_string(workflow_id, "workflow_id")
-        if trip_id not in self._workflows:
-            raise KeyError(f"Workflow not found: {trip_id}")
+        if workflow_id not in self._workflows:
+            raise KeyError(f"Workflow not found: {workflow_id}")
 
-        workflow = self._workflows[trip_id]
+        workflow = self._workflows[workflow_id]
         items_out: List[Dict[str, Any]] = []
         for item in workflow.get("items", []):
             if not isinstance(item, dict):
@@ -249,11 +249,11 @@ class FlowPilotService:
         principal_sub = validate_non_empty_string(principal_sub, "principal_sub")
 
         workflow = self._get_workflow_or_raise(workflow_id=workflow_id)
-        self._validate_principal_matches_owner(workflow=trip, principal_sub=principal_sub)
+        self._validate_principal_matches_owner(workflow=workflow, principal_sub=principal_sub)
 
-        item = self._get_workflow_item_or_raise(workflow=trip, item_id=item_id)
+        item = self._get_workflow_item_or_raise(workflow=workflow, item_id=item_id)
         decision_payload = self._call_authz_for_item(
-            trip=trip,
+            workflow=workflow,
             item=item,
             principal_sub=principal_sub,
             dry_run=bool(dry_run),
@@ -289,12 +289,12 @@ class FlowPilotService:
         # Fetch a workflow from memory
         # why: centralize errors
         # side effect: none.
-        if trip_id not in self._workflows:
-            raise KeyError(f"Workflow not found: {trip_id}")
-        workflow = self._workflows[trip_id]
+        if workflow_id not in self._workflows:
+            raise KeyError(f"Workflow not found: {workflow_id}")
+        workflow = self._workflows[workflow_id]
         if not isinstance(workflow, dict):
             raise ValueError("Workflow store corrupted: expected object")
-        return trip
+        return workflow
 
     def _get_workflow_item_or_raise(self, workflow: Dict[str, Any], item_id: str) -> Dict[str, Any]:
         # Find a workflow item by id
@@ -354,9 +354,9 @@ class FlowPilotService:
         # Note: This is the total cost across ALL items in the trip (hotels, flights, etc.)
         #       Used by auto-book policy to enforce cost limits
         total_cost = 0.0
-        for trip_item in workflow.get("items", []):
+        for workflow_item in workflow.get("items", []):
             if isinstance(workflow_item, dict):
-                planned_price = trip_item.get("planned_price")
+                planned_price = workflow_item.get("planned_price")
                 if isinstance(planned_price, dict):
                     amount = planned_price.get("amount")
                     if isinstance(amount, (int, float)):
