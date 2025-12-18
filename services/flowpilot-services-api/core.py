@@ -240,18 +240,18 @@ class FlowPilotService:
 
         return {"workflow_id": workflow_id, "items": items_out}
 
-    def execute_workflow_item(self, workflow_id: str, item_id: str, principal_sub: str, dry_run: bool) -> Dict[str, Any]:
+    def execute_workflow_item(self, workflow_id: str, workflow_item_id: str, principal_sub: str, dry_run: bool) -> Dict[str, Any]:
         # Execute a workflow item with AuthZ decision
         # why: PEP responsibility
         # side effects: network I/O + optional state mutation.
         workflow_id = validate_non_empty_string(workflow_id, "workflow_id")
-        item_id = validate_non_empty_string(item_id, "item_id")
+        workflow_item_id = validate_non_empty_string(workflow_item_id, "workflow_item_id")
         principal_sub = validate_non_empty_string(principal_sub, "principal_sub")
 
         workflow = self._get_workflow_or_raise(workflow_id=workflow_id)
         self._validate_principal_matches_owner(workflow=workflow, principal_sub=principal_sub)
 
-        item = self._get_workflow_item_or_raise(workflow=workflow, item_id=item_id)
+        item = self._get_workflow_item_or_raise(workflow=workflow, item_id=workflow_item_id)
         decision_payload = self._call_authz_for_item(
             workflow=workflow,
             item=item,
@@ -279,7 +279,7 @@ class FlowPilotService:
             "status": "simulated" if dry_run else "executed",
             "decision": "allow",
             "workflow_id": workflow_id,
-            "item_id": item_id,
+            "item_id": workflow_item_id,
             "item_kind": str(item.get("kind", "unknown")),
             "reason_codes": reason_codes,
             "advice": advice,
