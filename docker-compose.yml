@@ -53,6 +53,7 @@ services:
 
       # ***REMOVED*** directory REST base.
       ***REMOVED***_DIR_BASE: http://***REMOVED***:9393
+      ***REMOVED***_TRACE_DEFAULT: "true"  # Enable trace for complete audit trail
 
       REQUEST_TIMEOUT_SECONDS: "10"
       ***REMOVED***_TIMEOUT_CONNECT_SECONDS: "2"

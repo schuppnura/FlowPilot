@@ -45,7 +45,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "***REMOVED***_check_path": "/api/v3/directory/check",
     "***REMOVED***_timeout_connect_seconds": 2.0,
     "***REMOVED***_timeout_read_seconds": 8.0,
-    "***REMOVED***_trace_default": False,
+    "***REMOVED***_trace_default": True,  # Enable trace for complete audit trail
 
     # Workflow lookup endpoints (kept generic so other verticals can re-use authz-api).
     "workflow_owner_path_template": "/v1/trips/{workflow_id}",
@@ -180,6 +180,10 @@ def build_config(config_path: Optional[str]) -> Dict[str, Any]:
         os.environ.get("***REMOVED***_TIMEOUT_READ_SECONDS", str(config["***REMOVED***_timeout_read_seconds"])),
         "***REMOVED***_TIMEOUT_READ_SECONDS",
     )
+
+    # Enable trace by default for audit trail; can be disabled via env var
+    ***REMOVED***_trace_env = os.environ.get("***REMOVED***_TRACE_DEFAULT", str(config["***REMOVED***_trace_default"])).lower()
+    config["***REMOVED***_trace_default"] = ***REMOVED***_trace_env in ("true", "1", "yes")
 
     config["request_timeout_seconds"] = parse_positive_int(
         os.environ.get("REQUEST_TIMEOUT_SECONDS", str(config["request_timeout_seconds"])),

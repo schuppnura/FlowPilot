@@ -7,25 +7,29 @@ Agentic workflows with an AuthZEN-style PEP/PDP boundary, ReBAC delegation (***R
 FlowPilot is a reference demo that validates a reusable authorization and delegation architecture for “agentic” workflow execution across domains (travel today; nursing later).
 
 It demonstrates:
-- A domain backend that owns workflow state (system of record) and enforces authorization as a PEP.
-- A dedicated AuthZ integration service that acts as PDP façade + PIP (enrichment) + graph writer; maintains workflow ownership relations in ***REMOVED*** and enriches requests with profile attributes.
-- A ReBAC-capable PDP (***REMOVED***) used to evaluate relationship-based delegation and permissions via an authorization graph.
-- Hybrid ReBAC + ABAC authorization: autonomous booking is gated by attribute-based policy conditions (consent, cost, advance days, airline risk) after delegation is verified.
-- An OSS IdP (Keycloak) with OIDC Authorization Code + PKCE for the desktop client.
-- A workflow “agent-runner” that executes workflow items item-by-item to produce mixed allow/deny outcomes in a single run.
-- Strict privacy discipline: no PII exposure to the LLM and no PII handling in the domain backend beyond `sub` (UUID).
-- End-to-end authentication: bearer token validation across all services with service-to-service authentication.
+
+1. ***REMOVED*** as PDP applying OPA for ABAC and a grpah for ReBAC. It evaluates relationship-based delegation and permissions via an authorization graph.
+
+2. An AuthZ integration layer that acts as integration beteeen PEP and PDP and maintaing the ReBAC graph for workflow ownership relations in ***REMOVED*** and enriches requests with profile attributes.
+
+3.  PEP using PDP authorization as a domain backend that owns workflow state (system of record) in the context of a travel agent use case: autonomous booking is gated by attribute-based policy conditions (consent, cost, advance days, airline risk) after delegation is verified.
+
+4. Keycloak as the IdP with OIDC Authorization Code + PKCE for the desktop client and Client Credntails for Agentic AI servers. It shows end-to-end authentication: bearer token validation across all services with service-to-service authentication.
+
+5. An Agentic AI server that executes workflow items item-by-item to produce mixed allow/deny outcomes in a single run.
+
+6. Strict privacy discipline: no PII exposure to the LLM and no PII handling in the domain backend beyond `sub` (UUID).
 
 Most components are domain-agnostic. Domain-specific behavior is isolated in the domain service and its templates.
 
 ---
 
-## Target architecture (from FlowPilot.txt)
+## Target architecture
 
 - Desktop client: collects intent, creates workflows, triggers dry runs, authenticates via OIDC + PKCE.
 - Domain backend (`flowpilot-services-api`): system-of-record; PEP that builds minimal decision inputs and enforces dry_run semantics.
 - Authorization integration service (`flowpilot-authz-api`): PIP + PDP façade + graph writer; enriches with profile attrs, maintains workflow-user relations in ***REMOVED***, and evaluates permissions.
-- Agent runner (`flowpilot-ai-agent-api`): iterates workflow items against domain APIs and aggregates outcomes.
+- AI agent (`flowpilot-ai-agent-api`): iterates workflow items against domain APIs and aggregates outcomes.
 - Identity provider: Keycloak.
 - PDP: ***REMOVED*** (Directory + Authorizer) for ReBAC tuples and checks.
 
@@ -107,12 +111,61 @@ When an agent attempts to execute a workflow item:
 
 ### Audit Trail
 
+FlowPilot enables *****REMOVED*** trace by default** for complete authorization audit trails.
+
+**What's Logged:**
 - All policy decisions include `decision_id` for traceability
 - ReBAC decisions (including anti-spoofing) logged by ***REMOVED*** Directory
 - ABAC decisions logged by ***REMOVED*** Authorizer
-- Complete authorization decision path traceable in ***REMOVED***
+- Complete authorization decision path with graph traversal details
 
-See docs/AUTO_BOOK_POLICY.md for detailed ABAC policy documentation.
+**Viewing Authorization Decisions:**
+
+```bash
+# Real-time authorization logs
+docker logs -f flowpilot-***REMOVED***-1
+
+# Filter for specific checks
+docker logs flowpilot-***REMOVED***-1 | grep "is_owner"      # Anti-spoofing checks
+docker logs flowpilot-***REMOVED***-1 | grep "can_execute"  # Delegation checks
+
+# Find denials
+docker logs flowpilot-***REMOVED***-1 | grep -i "deny"
+
+# Export logs for analysis
+docker logs flowpilot-***REMOVED***-1 > ***REMOVED***_audit.log
+```
+
+**Querying the Authorization Graph:**
+
+```bash
+# List all workflows
+docker exec flowpilot-***REMOVED***-1 ***REMOVED*** directory list objects workflow --plaintext
+
+# Check specific permission
+docker exec flowpilot-***REMOVED***-1 ***REMOVED*** directory check --plaintext \
+  --subject-type user --subject-id "<user-id>" \
+  --object-type workflow --object-id "<workflow-id>" \
+  --relation is_owner
+```
+
+**Decision Correlation:**
+
+Every authorization decision includes a `decision_id` that correlates:
+1. Client request → AuthZ API response
+2. AuthZ API → ***REMOVED*** permission checks
+3. ***REMOVED*** logs → Complete decision trace
+
+**Configuration:**
+
+Trace is enabled by default. To disable (not recommended for production audit requirements):
+
+```bash
+# In docker-compose.yml or .env
+***REMOVED***_TRACE_DEFAULT=false
+```
+
+See [docs/AUDIT_TRAIL.md](docs/AUDIT_TRAIL.md) for comprehensive audit guide and [docs/AUTO_BOOK_POLICY.md](docs/AUTO_BOOK_POLICY.md) for ABAC policy documentation.
 
 ---
 
