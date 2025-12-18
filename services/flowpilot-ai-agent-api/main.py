@@ -36,7 +36,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
 
     # Workflow item listing and execution endpoints. Defaults map to the FlowPilot trip itinerary model.
     "workflow_items_path_template": "/v1/workflows/{workflow_id}/items",
-    "workflow_item_execute_path_template": "/v1/workflows/{workflow_id}/items-items/{workflow_item_id}/execute",
+    "workflow_item_execute_path_template": "/v1/workflows/{workflow_id}/items/{workflow_item_id}/execute",
 
     # Operational timeouts.
     "request_timeout_seconds": 10,
@@ -44,8 +44,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
 
 
 class WorkflowRunRequest(BaseModel):
-    workflow_id: Optional[str] = None
-    workflow_id: Optional[str] = None
+    workflow_id: str
     principal_sub: str
     dry_run: bool = True
 
@@ -89,7 +88,7 @@ def handle_post_workflow_runs(request: Request, body: WorkflowRunRequest) -> Dic
     config: Dict[str, Any] = request.app.state.config
 
     try:
-        workflow_id = normalize_workflow_id(workflow_id=body.workflow_id, workflow_id=body.workflow_id)
+        workflow_id = normalize_workflow_id(workflow_id=body.workflow_id)
         principal_sub = validate_non_empty_string(body.principal_sub, "principal_sub")
         result = execute_workflow_run(config=config, workflow_id=workflow_id, principal_sub=principal_sub, dry_run=bool(body.dry_run))
     except ValueError as exception:
