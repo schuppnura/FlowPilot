@@ -188,6 +188,9 @@ def build_config(config_path: Optional[str]) -> Dict[str, Any]:
     # Auto-book policy defaults (can be overridden via environment)
     auto_book_consent_env = os.environ.get("AUTO_BOOK_CONSENT", str(config["auto_book_consent"])).lower()
     config["auto_book_consent"] = auto_book_consent_env in ("true", "1", "yes")
+    
+    if "AUTO_BOOK_MAX_COST_EUR" in os.environ:
+        config["auto_book_max_cost_eur"] = parse_positive_int(os.environ["AUTO_BOOK_MAX_COST_EUR"], "AUTO_BOOK_MAX_COST_EUR")
 
     config["request_timeout_seconds"] = parse_positive_int(
         os.environ.get("REQUEST_TIMEOUT_SECONDS", str(config["request_timeout_seconds"])),

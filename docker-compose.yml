@@ -55,8 +55,9 @@ services:
       ***REMOVED***_DIR_BASE: http://***REMOVED***:9393
       ***REMOVED***_TRACE_DEFAULT: "true"  # Enable trace for complete audit trail
 
-      # Auto-book policy defaults (for demo - consent enabled)
+      # Auto-book policy defaults (for demo - consent enabled, high limits)
       AUTO_BOOK_CONSENT: "true"
+      AUTO_BOOK_MAX_COST_EUR: "10000"
 
       REQUEST_TIMEOUT_SECONDS: "10"
       ***REMOVED***_TIMEOUT_CONNECT_SECONDS: "2"
