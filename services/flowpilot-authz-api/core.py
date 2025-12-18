@@ -596,7 +596,7 @@ def evaluate_abac(
     try:
         policy_result = call_***REMOVED***_policy(
             dependencies=dependencies,
-            policy_path="flowpilot/auto_book",
+            policy_path="flowpilot.auto_book",
             policy_input=policy_input,
         )
         
@@ -808,7 +808,7 @@ def call_***REMOVED***_policy(
     # - Calls ***REMOVED*** Authorizer API
     # - Returns the decision and reason code from ***REMOVED*** OPA
     # 
-    # policy_path: e.g., "flowpilot/auto_book" maps to auto_book.rego
+    # policy_path: e.g., "flowpilot.auto_book" maps to package flowpilot.auto_book in auto_book.rego
     # policy_input: JSON input for the policy (user preferences, resource attributes)
     # returns: policy evaluation result with 'allow' and 'reason' fields from OPA
     # side effect: network I/O to ***REMOVED***.
