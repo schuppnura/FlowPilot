@@ -6,32 +6,27 @@
 #
 # POLICY ARCHITECTURE (for security auditors):
 # 
-# 1. Anti-Spoofing (AuthZ API - PEP Guardrail)
-#    - Function: check_principal_spoof()
-#    - Purpose: Validates request context (principal matches workflow owner)
-#    - NOT a policy decision - security guardrail to prevent trivial spoofing
-#
-# 2. ReBAC - Relationship-Based Access Control (***REMOVED*** Directory)
-#    - Function: check_***REMOVED***_permission()
+# 1. ReBAC - Relationship-Based Access Control (***REMOVED*** Directory)
+#    - Function: evaluate_rebac() → check_***REMOVED***_permission()
 #    - Policy Location: infra/***REMOVED***/cfg/flowpilot-manifest.yaml
-#    - Evaluates: Agent delegation via authorization graph traversal
+#    - Evaluates: Workflow-ownership (anti-spoofing)
+#                 and Agent delegation via authorization graph traversal
 #    - Decision Authority: ***REMOVED*** Directory
 #
-# 3. ABAC - Attribute-Based Access Control (***REMOVED*** OPA)
-#    - Function: call_***REMOVED***_policy()
+# 2. ABAC - Attribute-Based Access Control (***REMOVED*** OPA)
+#    - Function: evaluate_abac() → call_***REMOVED***_policy()
 #    - Policy Location: infra/***REMOVED***/cfg/policies/auto_book.rego
 #    - Evaluates: Booking constraints (consent, cost, dates, risk)
 #    - Decision Authority: ***REMOVED*** Authorizer (OPA/Rego)
 #
-# 4. Progressive Profiling (AuthZ API - PIP Enrichment)
-#    - Functions: select_required_identity_fields(), compute_missing_fields()
+# 3. Progressive Profiling (AuthZ API - PIP Enrichment)
+#    - Functions: evaluate_progressive_profiling()
 #    - Purpose: Validates required identity fields are present
 #    - Returns advisory information for UX - NOT an authorization decision
 #
 # Key responsibilities:
 # - PDP façade: orchestrate ***REMOVED*** checks, assemble decision responses
 # - PIP: enrich requests with profile attributes, return advisory information
-# - PEP guardrails: anti-spoofing validation
 # - Graph writer: maintain workflow ownership relations in ***REMOVED***
 # - Profile store: in-memory non-PII policy parameters and identity presence flags
 #
@@ -410,17 +405,21 @@ def evaluate_request(
     explain = bool(options.get("explain", True))
     trace_option = options.get("trace")
 
-    # Layer 1: Anti-spoofing guardrail
-    spoof_result = evaluate_anti_spoofing(
+    # Layer 1: Anti-spoofing guardrail (***REMOVED***-based ownership check)
+    # Check that the principal actually owns the workflow
+    ownership_result = evaluate_ownership(
         dependencies=dependencies,
         workflow_id=workflow_id,
         principal_sub=principal_sub,
+        trace_option=trace_option,
+        explain=explain,
         decision_id=decision_id,
     )
-    if spoof_result is not None:
-        return spoof_result
+    if ownership_result is not None:
+        return ownership_result
 
-    # Layer 2: ReBAC check (***REMOVED*** Directory)
+    # Layer 2: ReBAC check (***REMOVED*** Directory) - Agent delegation
+    # Check that the agent is delegated by the workflow owner
     rebac_result = evaluate_rebac(
         dependencies=dependencies,
         actor_type=actor_type,
@@ -462,28 +461,67 @@ def evaluate_request(
     )
 
 
-def evaluate_anti_spoofing(
+def evaluate_ownership(
     dependencies: Dependencies,
     workflow_id: str,
     principal_sub: str,
+    trace_option: Any,
+    explain: bool,
     decision_id: str,
 ) -> Optional[Dict[str, Any]]:
-    # LAYER 1: Anti-spoofing guardrail
-    # Returns deny decision if spoofing detected, None otherwise
-    is_spoof = check_principal_spoof(dependencies=dependencies, workflow_id=workflow_id, principal_sub=principal_sub)
-    if is_spoof:
+    # LAYER 1: Anti-spoofing via ***REMOVED*** ownership check
+    # 
+    # SECURITY GUARDRAIL: Verify the principal owns the workflow using ***REMOVED*** graph.
+    # This prevents principal spoofing attacks where an attacker supplies a different user's ID.
+    # 
+    # AUDIT NOTE: Authorization decision made by ***REMOVED*** Directory based on ownership relation.
+    # No external API calls needed - ownership is already in the authorization graph.
+    # 
+    # Checks: workflow --owner--> user (where user.id == principal_sub)
+    # 
+    # Returns deny decision if principal doesn't own workflow, None if they do.
+    
+    # Check if this principal is the owner of the workflow
+    is_owner = check_***REMOVED***_permission(
+        dependencies=dependencies,
+        subject_type="user",
+        subject_id=principal_sub,
+        object_type="workflow",
+        object_id=workflow_id,
+        relation="is_owner",
+        trace=trace_option if isinstance(trace_option, bool) else None,
+    )
+    
+    if not is_owner:
+        advice: List[Dict[str, Any]] = [
+            {
+                "kind": "security",
+                "code": "principal_spoof",
+                "message": "Principal does not own the workflow. Rejecting request to prevent principal spoofing.",
+            }
+        ]
+        if explain:
+            advice.append(
+                {
+                    "kind": "debug",
+                    "code": "***REMOVED***.ownership_check",
+                    "message": "***REMOVED*** ownership check returned deny.",
+                    "details": {
+                        "subject_type": "user",
+                        "subject_id": principal_sub,
+                        "object_type": "workflow",
+                        "object_id": workflow_id,
+                        "relation": "is_owner",
+                    },
+                }
+            )
         return {
             "decision": "deny",
             "decision_id": decision_id,
             "reason_codes": ["security.principal_spoof"],
-            "advice": [
-                {
-                    "kind": "security",
-                    "code": "principal_spoof",
-                    "message": "Principal does not own the workflow. Rejecting request to prevent principal spoofing.",
-                }
-            ],
+            "advice": advice,
         }
+    
     return None
 
 
@@ -675,26 +713,6 @@ def extract_workflow_item_kind(resource: Dict[str, Any]) -> str:
     return "unknown"
 
 
-def check_principal_spoof(dependencies: Dependencies, workflow_id: str, principal_sub: str) -> bool:
-    # SECURITY GUARDRAIL: Detect principal spoofing by comparing principal_sub to workflow owner
-    # 
-    # AUDIT NOTE: This is NOT a policy decision - it's a PEP security guardrail.
-    # Prevents trivial attacks where an attacker supplies a different user's ID in the request context.
-    # 
-    # Why here and not in ***REMOVED***:
-    # - This validates request integrity/context, not authorization policy
-    # - Requires external service call (workflow service) to fetch owner
-    # - Appropriate for PEP (Policy Enforcement Point) responsibility
-    # 
-    # side effect: network I/O to workflow service.
-    try:
-        owner_sub = get_workflow_owner_sub(dependencies=dependencies, workflow_id=workflow_id)
-    except Exception:
-        return False
-
-    return bool(owner_sub and principal_sub and owner_sub != principal_sub)
-
-
 def map_action_to_relation(dependencies: Dependencies, action_name: str) -> str:
     # Map action name to ***REMOVED*** relation
     # why: decouple API action labels from directory permission names
@@ -704,21 +722,6 @@ def map_action_to_relation(dependencies: Dependencies, action_name: str) -> str:
     if isinstance(mapped, str) and mapped.strip():
         return mapped.strip()
     return action_name
-
-
-def get_workflow_owner_sub(dependencies: Dependencies, workflow_id: str) -> str:
-    # Fetch workflow owner sub from workflow service
-    # why: prevent trivial spoofing
-    # side effect: network I/O.
-    path = dependencies.workflow_owner_path_template.format(workflow_id=workflow_id)
-    url = build_url(dependencies.workflow_base_url, path)
-    data = http_get_json(url, timeout_seconds=dependencies.request_timeout_seconds)
-
-    owner = data.get("owner_sub")
-    if isinstance(owner, str) and owner.strip():
-        return owner.strip()
-
-    raise ValueError("Workflow owner lookup failed: response missing owner_sub")
 
 
 def select_required_identity_fields(dependencies: Dependencies, workflow_item_kind: str) -> List[str]:

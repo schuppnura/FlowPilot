@@ -14,6 +14,10 @@ types:
     relations:
       owner: user
     permissions:
+      # Direct ownership check - used for anti-spoofing
+      # A user is_owner if they have the owner relation to the workflow
+      is_owner: owner
+      
       # Agent can execute if the workflow owner has delegated to that agent.
       can_execute: owner->delegate
 

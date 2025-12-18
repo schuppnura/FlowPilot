@@ -47,6 +47,26 @@
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "secret": "KEYCLOAK_CLIENT_SECRET_HERE"
+    },
+    {
+      "clientId": "flowpilot-testing",
+      "name": "FlowPilot Testing Script",
+      "description": "OAuth client for user_based_testing.py script",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:8765/callback"
+      ],
+      "webOrigins": [
+        "http://localhost:8765"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
     }
   ]
 }

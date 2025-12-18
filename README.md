@@ -77,15 +77,17 @@ When an agent attempts to execute a workflow item:
 
 ### Authorization Layers
 
-1. **Anti-Spoofing (AuthZ API - PEP Guardrail)**
-   - Validates request context (principal matches workflow owner)
-   - Security guardrail, not policy decision
-   - Prevents trivial spoofing attacks
+1. **Anti-Spoofing (***REMOVED*** Directory - ReBAC)**
+   - Policy Location: `infra/***REMOVED***/cfg/flowpilot-manifest.yaml` (`workflow.is_owner` permission)
+   - Validates: Principal owns the workflow (prevents principal spoofing)
+   - Implementation: Pure ReBAC check using `workflow --owner--> user` relation
+   - Prevents trivial spoofing attacks by verifying ownership in authorization graph
 
 2. **ReBAC - Relationship-Based Access Control (***REMOVED*** Directory)**
    - Policy Location: `infra/***REMOVED***/cfg/flowpilot-manifest.yaml`
    - Evaluates: Agent delegation via authorization graph
    - Example: Can `agent-runner` act on behalf of `user`?
+   - Permissions: `workflow_item.can_execute` follows delegation chain
 
 3. **ABAC - Attribute-Based Access Control (***REMOVED*** OPA)**
    - Policy Location: `infra/***REMOVED***/cfg/policies/auto_book.rego`
@@ -106,9 +108,9 @@ When an agent attempts to execute a workflow item:
 ### Audit Trail
 
 - All policy decisions include `decision_id` for traceability
-- ReBAC decisions logged by ***REMOVED*** Directory
+- ReBAC decisions (including anti-spoofing) logged by ***REMOVED*** Directory
 - ABAC decisions logged by ***REMOVED*** Authorizer
-- Anti-spoofing rejections logged by AuthZ API
+- Complete authorization decision path traceable in ***REMOVED***
 
 See docs/AUTO_BOOK_POLICY.md for detailed ABAC policy documentation.
 
@@ -119,7 +121,8 @@ See docs/AUTO_BOOK_POLICY.md for detailed ABAC policy documentation.
 ### Authorization & delegation
 - ***REMOVED*** is the PDP; domain services never embed auth logic.
 - Two-token pattern: Actor (agent identity) + Principal (end-user `sub` when acting on behalf).
-- Do not trust asserted principals; spoofing/wrong owner must deny with explicit reasons.
+- Principal ownership verified via ***REMOVED*** graph; no external API calls needed.
+- All authorization decisions (including anti-spoofing) made by ***REMOVED*** using the authorization graph.
 
 ### Privacy & LLM safety
 - LLM receives no PII and no stable identifiers.
