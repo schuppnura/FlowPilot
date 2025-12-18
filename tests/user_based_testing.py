@@ -259,7 +259,7 @@ def get_user_token_via_browser() -> tuple[str, str, str]:
         raise Exception(f"Failed to exchange code for token: {e}")
 
 
-def create_trip_for_owner(owner_sub: str, access_token: str, template_id: str = "template_all_ok") -> dict:
+def create_workflow_for_owner(owner_sub: str, access_token: str, template_id: str = "template_all_ok") -> dict:
     """Create a workflow owned by the specified user"""
     url = f"{SERVICES_API_BASE}/v1/workflows"
     payload = {
@@ -322,11 +322,11 @@ def run_tests():
         return
 
     # Setup: Create a workflow owned by the logged-in user
-    print(f"\n[Setup] Creating trip owned by {user_sub}...")
+    print(f"\n[Setup] Creating workflow owned by {user_sub}...")
     try:
-        trip_result = create_trip_for_owner(owner_sub=user_sub, access_token=access_token)
-        workflow_id = trip_result["workflow_id"]
-        print(f"  Created trip: {workflow_id}")
+        workflow_result = create_workflow_for_owner(owner_sub=user_sub, access_token=access_token)
+        workflow_id = workflow_result["workflow_id"]
+        print(f"  Created workflow: {workflow_id}")
     except Exception as e:
         print(f"  ✗ Failed to create workflow: {e}")
         return
