@@ -193,10 +193,10 @@ def create_app(config: Dict[str, Any]) -> FastAPI:
 
     # All other endpoints require authentication
     api.add_api_route("/v1/workflow-templates", handle_get_workflow_templates, methods=["GET"], dependencies=[Depends(bearer_scheme)])
-    api.add_api_route("/v1/trips", handle_post_workflows, methods=["POST"], dependencies=[Depends(bearer_scheme)])
-    api.add_api_route("/v1/trips/{workflow_id}", handle_get_workflow, methods=["GET"], dependencies=[Depends(bearer_scheme)])
-    api.add_api_route("/v1/trips/{workflow_id}/items", handle_get_workflow_items, methods=["GET"], dependencies=[Depends(bearer_scheme)])
-    api.add_api_route("/v1/trips/{workflow_id}/items-items/{workflow_item_id}/execute", handle_post_execute_workflow_item, methods=["POST"], dependencies=[Depends(bearer_scheme)])
+    api.add_api_route("/v1/workflows", handle_post_workflows, methods=["POST"], dependencies=[Depends(bearer_scheme)])
+    api.add_api_route("/v1/workflows/{workflow_id}", handle_get_workflow, methods=["GET"], dependencies=[Depends(bearer_scheme)])
+    api.add_api_route("/v1/workflows/{workflow_id}/items", handle_get_workflow_items, methods=["GET"], dependencies=[Depends(bearer_scheme)])
+    api.add_api_route("/v1/workflows/{workflow_id}/items/{workflow_item_id}/execute", handle_post_execute_workflow_item, methods=["POST"], dependencies=[Depends(bearer_scheme)])
 
     return api
 

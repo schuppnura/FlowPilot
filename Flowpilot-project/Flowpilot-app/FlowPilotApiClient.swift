@@ -31,7 +31,7 @@ final class FlowPilotApiClient {
 
     func fetchTemplates() async throws -> [WorkflowTemplate] {
         // Fetch available workflow templates; assumptions: GET /v1/workflow-templates; side effect: network I/O.
-        let url = baseUrl.appendingPathComponent("/v1/workflow-templates")
+        let url = baseUrl.appendingPathComponent("v1/workflow-templates")
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         
@@ -45,13 +45,13 @@ final class FlowPilotApiClient {
             throw ApiClientError.httpError(http.statusCode, stringBody(data))
         }
 
-        let decoded = try JSONDecoder().decode(TripTemplatesResponse.self, from: data)
+        let decoded = try JSONDecoder().decode(WorkflowTemplatesResponse.self, from: data)
         return decoded.templates
     }
 
     func loadTemplate(templateId: String, principalSub: String) async throws -> String {
         // Create a workflow instance from a template; assumptions: POST /v1/workflows; side effect: network I/O + server-side state creation.
-        let url = baseUrl.appendingPathComponent("/v1/workflows")
+        let url = baseUrl.appendingPathComponent("v1/workflows")
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")

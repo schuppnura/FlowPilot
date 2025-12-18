@@ -46,21 +46,19 @@ struct AgentRunResponse: Codable {
     let principal_sub: String
     let dry_run: Bool
     let results: [AgentRunItemResult]
-    
-    var workflow_id: String { workflow_id }
 }
 
 struct AgentRunItemResult: Codable, Identifiable {
-    let workflow_workflow_item_id: String
+    let workflow_item_id: String
     let kind: String
     let status: String
     let decision: String
     let reason_codes: [String]?
     let advice: [AgentAdvice]?
     
-    var id: String { workflow_workflow_item_id }
+    var id: String { workflow_item_id }
     
-    var itinerary_workflow_item_id: String { workflow_workflow_item_id }
+    var itinerary_item_id: String { workflow_item_id }
     var outcome: String { decision }
 }
 
