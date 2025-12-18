@@ -9,11 +9,13 @@ To start the entire FlowPilot stack with proper initialization:
 ```
 
 This script will:
-1. Start all Docker containers
-2. Wait for ***REMOVED*** to be ready
-3. Load the authorization manifest into ***REMOVED***
-4. Wait for Keycloak to be ready
-5. Provision users and the agent in ***REMOVED***
+1. Build the OCI policy bundle (if policy CLI is installed)
+2. Start the HTTPS bundle server with TLS
+3. Start all Docker containers
+4. Wait for ***REMOVED*** to be ready
+5. Load the authorization manifest into ***REMOVED***
+6. Wait for Keycloak to be ready
+7. Provision users and the agent in ***REMOVED***
 
 ## Manual Startup (if needed)
 
@@ -101,10 +103,11 @@ agent can execute workflow_item
 
 Start order matters:
 
-1. **Keycloak** - Must be fully ready before provisioning
-2. *****REMOVED***** - Must have manifest loaded before creating objects
-3. **Services API** - Creates workflow graphs when workflows are created
-4. **AuthZ API** - Evaluates permissions
+1. **HTTPS Bundle Server** - Must be running before ***REMOVED*** starts (serves OCI policy bundles)
+2. **Keycloak** - Must be fully ready before provisioning
+3. *****REMOVED***** - Must have manifest loaded and policy bundle fetched before creating objects
+4. **Services API** - Creates workflow graphs when workflows are created
+5. **AuthZ API** - Evaluates permissions
 
 ## Key Files
 

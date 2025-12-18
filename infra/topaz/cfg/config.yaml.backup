@@ -79,19 +79,19 @@ api:
         read_header_timeout: 2s
         write_timeout: 2s
         idle_timeout: 30s
-
-# OPA configuration - OCI policy bundle loading
+# OPA configuration - minimal setup required by ***REMOVED***
+# ABAC policy loading disabled pending ***REMOVED*** community guidance
+# See: infra/***REMOVED***/cfg/bundle/ for ready-to-use policy bundle
 opa:
   instance_id: "-"
   graceful_shutdown_period_seconds: 2
-  config:
-    services:
-      bundle_server:
-        url: https://host.docker.internal:8888
-        tls:
-          system_ca_required: false
-    bundles:
-      flowpilot:
-        service: bundle_server
-        resource: bundle/flowpilot-policy.tar.gz
-        persist: false
+  # Uncomment below to enable ABAC policy bundle loading:
+  # config:
+  #   services:
+  #     bundle_server:
+  #       url: http://host.docker.internal:8888
+  #   bundles:
+  #     flowpilot:
+  #       service: bundle_server
+  #       resource: bundle/policy-bundle.tar.gz
+  #       persist: false

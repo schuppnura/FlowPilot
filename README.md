@@ -94,9 +94,10 @@ When an agent attempts to execute a workflow item:
    - Permissions: `workflow_item.can_execute` follows delegation chain
 
 3. **ABAC - Attribute-Based Access Control (***REMOVED*** OPA)**
-   - Policy Location: `infra/***REMOVED***/cfg/policies/auto_book.rego`
+   - Policy Location: `infra/***REMOVED***/cfg/bundle/auto_book.rego`
    - Evaluates: Booking constraints (consent, cost, dates, risk)
    - Language: Rego (declarative policy as code)
+   - Distribution: OCI-compliant policy bundle served via HTTPS with TLS
 
 4. **Progressive Profiling (AuthZ API - PIP Enrichment)**
    - Validates required identity fields are present
@@ -106,8 +107,18 @@ When an agent attempts to execute a workflow item:
 ### Policy Change Process
 
 - **ReBAC changes**: Update manifest YAML → reload via `***REMOVED*** directory set manifest`
-- **ABAC changes**: Update Rego policy → automatic reload from volume mount
+- **ABAC changes**: Update Rego policy in `infra/***REMOVED***/cfg/bundle/` → rebuild OCI bundle → ***REMOVED*** fetches update
 - **No code deployment required** for policy changes
+
+### Policy Bundle Distribution
+
+ABAC policies are packaged as OCI-compliant bundles and served via HTTPS:
+- **Bundle format**: OPA policy bundle in OCI image format
+- **Distribution**: HTTPS server with TLS (`infra/***REMOVED***/cfg/https_bundle_server.py`)
+- **TLS certificates**: Self-signed certificates in `infra/***REMOVED***/certs/`
+- **Rebuild command**: `policy build infra/***REMOVED***/cfg/bundle -t localhost/flowpilot-policy:latest`
+
+See [docs/POLICY_BUNDLE_MANAGEMENT.md](docs/POLICY_BUNDLE_MANAGEMENT.md) for policy management workflows and `infra/***REMOVED***/cfg/bundle/OCI_BUNDLE_SETUP.md` for OCI bundle setup details.
 
 ### Audit Trail
 
@@ -214,11 +225,15 @@ docker compose version
 
 ### Quick start
 
-1) Install ***REMOVED*** CLI (required for authorization)
+1) Install ***REMOVED*** CLI and policy CLI (required for authorization)
 ```bash
 # Install ***REMOVED*** CLI
 brew tap aserto-dev/tap
 brew install aserto-dev/tap/***REMOVED***
+
+# Install policy CLI (OPCR) for OCI bundle management
+brew tap opcr-io/tap
+brew install opcr-io/tap/policy
 ```
 
 2) Setup secrets

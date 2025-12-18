@@ -124,6 +124,11 @@ secrets/
 .secrets/
 infra/keycloak/realm-flowpilot.json
 
+# HTTPS Bundle Server
+/tmp/https-bundle-server.log
+/tmp/https-bundle-server.pid
+infra/***REMOVED***/cfg/bundle/flowpilot-policy.tar.gz
+
 # Spyder project settings
 .spyderproject
 .spyproject
