@@ -15,7 +15,10 @@ final class AppState: ObservableObject {
     
     @Published var workflowTemplates: [WorkflowTemplate] = []
     @Published var selectedWorkflowTemplateId: String?
+    @Published var workflowStartDate: Date = Date()
     @Published var workflowId: String?
+    @Published var workflowStartDateString: String?
+    @Published var workflowItems: [WorkflowItem] = []
     
     @Published var lastAgentRun: AgentRunResponse?
     @Published var missingProfileFieldsFromAdvice: [String] = []
@@ -57,19 +60,46 @@ final class AppState: ObservableObject {
     
     func signOut() {
         // Sign out and clear transient demo state; why: ensure next demo run is clean; side effect: mutates published state.
+        // Also performs Keycloak logout to terminate the SSO session
+        
+        // Capture idToken before clearing
+        let idTokenToRevoke = idToken
+        
+        // Clear local state immediately
         principalSub = nil
         idToken = nil
         accessToken = nil
         
         workflowId = nil
+        workflowStartDateString = nil
+        workflowItems = []
         workflowTemplates = []
         selectedWorkflowTemplateId = nil
         
         lastAgentRun = nil
         missingProfileFieldsFromAdvice = []
         
-        statusMessage = "Signed out."
+        statusMessage = "Signing out..."
         errorMessage = ""
+        
+        // Perform Keycloak logout asynchronously
+        if let token = idTokenToRevoke {
+            Task {
+                do {
+                    try await oidcClient.signOut(idToken: token)
+                    await MainActor.run {
+                        statusMessage = "Signed out."
+                    }
+                } catch {
+                    // Logout failed, but we've already cleared local state
+                    await MainActor.run {
+                        statusMessage = "Signed out (local only)."
+                    }
+                }
+            }
+        } else {
+            statusMessage = "Signed out."
+        }
     }
     
     func signIn(isRegistrationPreferred: Bool) async {
@@ -124,12 +154,23 @@ final class AppState: ObservableObject {
             return
         }
         
+        // Format start date as ISO 8601 date string (YYYY-MM-DD)
+        let dateFormatter = ISO8601DateFormatter()
+        dateFormatter.formatOptions = [.withFullDate]
+        let startDateString = dateFormatter.string(from: workflowStartDate)
+        
         statusMessage = "Creating workflow…"
         do {
             // Backend still creates a "trip"; we treat it as a workflow id in the UI/state.
-            let newWorkflowId = try await workflowClient.loadTemplate(templateId: templateId, principalSub: sub)
+            let newWorkflowId = try await workflowClient.loadTemplate(templateId: templateId, principalSub: sub, startDate: startDateString)
             workflowId = newWorkflowId
-            statusMessage = "Created workflow: \(newWorkflowId)"
+            workflowStartDateString = startDateString
+            
+            // Fetch workflow items immediately after creation
+            let items = try await workflowClient.fetchWorkflowItems(workflowId: newWorkflowId)
+            workflowItems = items
+            
+            statusMessage = "Created workflow: \(newWorkflowId) (start: \(startDateString)) with \(items.count) items"
         } catch {
             setError("Create workflow failed: \(error)")
             statusMessage = ""
@@ -158,6 +199,23 @@ final class AppState: ObservableObject {
             let deniedCount = run.results.filter { $0.decision.lowercased() == "deny" }.count
             let errorCount = run.results.filter { $0.status.lowercased() == "error" }.count
             statusMessage = "Agent run complete. Allowed=\(allowedCount), Denied=\(deniedCount), Errors=\(errorCount)."
+            
+            // Surface detailed denial/error information for visibility
+            let denials = run.results.filter { $0.decision.lowercased() == "deny" || $0.status.lowercased() == "error" }
+            if !denials.isEmpty {
+                let detailLines = denials.map { result -> String in
+                    var line = "[\(result.kind)] \(result.workflow_item_id): \(result.status.uppercased()) - \(result.decision.uppercased())"
+                    if let reasonCodes = result.reason_codes, !reasonCodes.isEmpty {
+                        line += " | Reason: \(reasonCodes.joined(separator: ", "))"
+                    }
+                    if let advice = result.advice, !advice.isEmpty {
+                        let messages = advice.map { $0.message }.joined(separator: "; ")
+                        line += " | \(messages)"
+                    }
+                    return line
+                }
+                statusMessage += "\n\nDetails:\n" + detailLines.joined(separator: "\n")
+            }
         } catch {
             setError("Agent run failed: \(error)")
             statusMessage = ""

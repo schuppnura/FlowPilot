@@ -50,6 +50,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
 class CreateWorkflowRequest(BaseModel):
     template_id: str
     principal_sub: str
+    start_date: str  # ISO 8601 date string (YYYY-MM-DD)
 
 
 class ExecuteWorkflowItemRequest(BaseModel):
@@ -121,7 +122,8 @@ def handle_post_workflows(request: Request, body: CreateWorkflowRequest) -> Dict
     try:
         template_id = validate_non_empty_string(body.template_id, "template_id")
         principal_sub = validate_non_empty_string(body.principal_sub, "principal_sub")
-        return service.create_workflow_from_template(template_id=template_id, owner_sub=principal_sub)
+        start_date = validate_non_empty_string(body.start_date, "start_date")
+        return service.create_workflow_from_template(template_id=template_id, owner_sub=principal_sub, start_date=start_date)
     except ValueError as exception:
         raise HTTPException(status_code=400, detail=str(exception)) from exception
 

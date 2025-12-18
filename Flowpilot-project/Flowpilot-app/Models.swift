@@ -24,12 +24,37 @@ struct WorkflowTemplatesResponse: Codable {
 struct LoadTemplateRequest: Codable {
     let template_id: String
     let principal_sub: String
+    let start_date: String
 }
 
 struct LoadTemplateResponse: Codable {
     let workflow_id: String
     let template_id: String?
     let created_at: String?
+    let start_date: String?
+}
+
+struct WorkflowItem: Codable, Identifiable {
+    let item_id: String
+    let kind: String
+    let title: String
+    let status: String
+    
+    // Optional detail fields
+    let type: String?
+    let city: String?
+    let neighborhood: String?
+    let star_rating: Int?
+    let departure_airport: String?
+    let arrival_airport: String?
+    let cuisine: String?
+    
+    var id: String { item_id }
+}
+
+struct WorkflowItemsResponse: Codable {
+    let workflow_id: String
+    let items: [WorkflowItem]
 }
 
 // MARK: - Agent Runner

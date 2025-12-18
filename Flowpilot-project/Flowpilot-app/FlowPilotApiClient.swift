@@ -4,6 +4,7 @@ import Foundation
 enum ApiClientError: Error, LocalizedError {
     case httpError(Int, String)
     case invalidResponse(String)
+    case networkError(String)
 
     var errorDescription: String? {
         switch self {
@@ -11,6 +12,8 @@ enum ApiClientError: Error, LocalizedError {
             return "HTTP error \(status): \(body)"
         case .invalidResponse(let message):
             return "Invalid response: \(message)"
+        case .networkError(let message):
+            return "Network error: \(message)"
         }
     }
 }
@@ -49,7 +52,7 @@ final class FlowPilotApiClient {
         return decoded.templates
     }
 
-    func loadTemplate(templateId: String, principalSub: String) async throws -> String {
+    func loadTemplate(templateId: String, principalSub: String, startDate: String) async throws -> String {
         // Create a workflow instance from a template; assumptions: POST /v1/workflows; side effect: network I/O + server-side state creation.
         let url = baseUrl.appendingPathComponent("v1/workflows")
         var request = URLRequest(url: url)
@@ -60,7 +63,7 @@ final class FlowPilotApiClient {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
 
-        let payload = LoadTemplateRequest(template_id: templateId, principal_sub: principalSub)
+        let payload = LoadTemplateRequest(template_id: templateId, principal_sub: principalSub, start_date: startDate)
         request.httpBody = try JSONEncoder().encode(payload)
 
         let (data, response) = try await urlSession.data(for: request)
@@ -75,8 +78,28 @@ final class FlowPilotApiClient {
 
     // Preferred naming (non-breaking): clearer method names that wrap the legacy ones.
 
-    func createWorkflowFromTemplate(templateId: String, principalSub: String) async throws -> String {
-        return try await loadTemplate(templateId: templateId, principalSub: principalSub)
+    func createWorkflowFromTemplate(templateId: String, principalSub: String, startDate: String) async throws -> String {
+        return try await loadTemplate(templateId: templateId, principalSub: principalSub, startDate: startDate)
+    }
+    
+    func fetchWorkflowItems(workflowId: String) async throws -> [WorkflowItem] {
+        // Fetch workflow items for a workflow; assumptions: GET /v1/workflows/{workflow_id}/items; side effect: network I/O.
+        let url = baseUrl.appendingPathComponent("v1/workflows/\(workflowId)/items")
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        
+        if let token = accessTokenProvider(), !token.isEmpty {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        
+        let (data, response) = try await urlSession.data(for: request)
+        let http = try requireHttpResponse(response: response, data: data)
+        if http.statusCode != 200 {
+            throw ApiClientError.httpError(http.statusCode, stringBody(data))
+        }
+        
+        let decoded = try JSONDecoder().decode(WorkflowItemsResponse.self, from: data)
+        return decoded.items
     }
 
     // MARK: - Internals

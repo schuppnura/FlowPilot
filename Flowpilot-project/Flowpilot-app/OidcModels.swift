@@ -11,6 +11,7 @@ import Foundation
 struct OidcDiscovery: Codable {
     let authorization_endpoint: String
     let token_endpoint: String
+    let end_session_endpoint: String?
 }
 
 struct OidcTokenResponse: Codable {

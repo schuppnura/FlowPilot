@@ -18,6 +18,12 @@ sleep 3
 echo ">>> Initializing ***REMOVED*** manifest..."
 "$REPO_ROOT/bin/***REMOVED***-init.sh"
 
+echo ">>> Waiting for Keycloak to be ready..."
+sleep 5
+
+echo ">>> Provisioning users and agent..."
+python3 "$REPO_ROOT/provision_current_user.py" || echo "Warning: User provisioning failed. Run 'python3 provision_current_user.py' manually."
+
 cat <<'EOF'
 
 Stack is up.

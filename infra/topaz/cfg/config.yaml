@@ -7,7 +7,7 @@ logging:
 
 directory:
   # This is the embedded local directory DB file.
-  db_path: /db/cumbaya.db
+  db_path: /db/flowpilot.db
 
 api:
   health:
@@ -15,6 +15,8 @@ api:
 
   services:
     console:
+      grpc:
+        listen_address: "0.0.0.0:8081"
       gateway:
         listen_address: "0.0.0.0:8080"
         allowed_origins:
@@ -77,16 +79,19 @@ api:
         read_header_timeout: 2s
         write_timeout: 2s
         idle_timeout: 30s
+# OPA configuration - minimal setup required by ***REMOVED***
+# ABAC policy loading disabled pending ***REMOVED*** community guidance
+# See: infra/***REMOVED***/cfg/bundle/ for ready-to-use policy bundle
 opa:
   instance_id: "-"
   graceful_shutdown_period_seconds: 2
-  local_bundles:
-    paths:
-      - /app/cfg/policies
-  config:
-    services:
-      ghcr:
-        url: https://ghcr.io
-        type: "oci"
-        response_header_timeout_seconds: 5
-    bundles: {}
+  # Uncomment below to enable ABAC policy bundle loading:
+  # config:
+  #   services:
+  #     bundle_server:
+  #       url: http://host.docker.internal:8888
+  #   bundles:
+  #     flowpilot:
+  #       service: bundle_server
+  #       resource: bundle/policy-bundle.tar.gz
+  #       persist: false

@@ -132,12 +132,13 @@ class FlowPilotService:
         templates.sort(key=lambda entry: str(entry.get("template_id", "")))
         return templates
 
-    def create_workflow_from_template(self, template_id: str, owner_sub: str) -> Dict[str, Any]:
+    def create_workflow_from_template(self, template_id: str, owner_sub: str, start_date: str) -> Dict[str, Any]:
         # Create a workflow and items from a template
         # side effect: stores a new workflow in memory.
         # Note: Returns trip_id in API response for backward compatibility
         template_id = validate_non_empty_string(template_id, "template_id")
         owner_sub = validate_non_empty_string(owner_sub, "owner_sub")
+        start_date = validate_non_empty_string(start_date, "start_date")
 
         if template_id not in self._templates:
             raise KeyError(f"Template not found: {template_id}")
@@ -165,11 +166,11 @@ class FlowPilotService:
                     "last_reason_codes": [],
                     "last_advice": [],
                 }
-                # Preserve airline_risk_score and other item-level attributes for auto-book policy
-                if "airline_risk_score" in raw:
-                    item_dict["airline_risk_score"] = raw["airline_risk_score"]
-                if "type" in raw:
-                    item_dict["type"] = raw["type"]
+                # Preserve all item-level attributes from template
+                for key in ["airline_risk_score", "type", "city", "neighborhood", "star_rating", 
+                           "departure_airport", "arrival_airport", "cuisine"]:
+                    if key in raw:
+                        item_dict[key] = raw[key]
                 items.append(item_dict)
 
         workflow: Dict[str, Any] = {
@@ -177,6 +178,7 @@ class FlowPilotService:
             "template_id": template_id,
             "owner_sub": owner_sub,
             "created_at": created_at,
+            "start_date": start_date,
             "items": items,
         }
         # Preserve trip-level attributes for auto-book policy (e.g., departure_date)
@@ -229,14 +231,19 @@ class FlowPilotService:
         for item in workflow.get("items", []):
             if not isinstance(item, dict):
                 continue
-            items_out.append(
-                {
-                    "item_id": str(item.get("item_id")),
-                    "kind": str(item.get("kind", "unknown")),
-                    "title": str(item.get("title", "")),
-                    "status": str(item.get("status", "unknown")),
-                }
-            )
+            # Build base item response
+            item_response: Dict[str, Any] = {
+                "item_id": str(item.get("item_id")),
+                "kind": str(item.get("kind", "unknown")),
+                "title": str(item.get("title", "")),
+                "status": str(item.get("status", "unknown")),
+            }
+            # Include all additional attributes if present
+            for key in ["type", "city", "neighborhood", "star_rating", 
+                       "departure_airport", "arrival_airport", "cuisine"]:
+                if key in item:
+                    item_response[key] = item[key]
+            items_out.append(item_response)
 
         return {"workflow_id": workflow_id, "items": items_out}
 

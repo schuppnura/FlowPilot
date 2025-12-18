@@ -15,6 +15,8 @@ struct FlowPilotDemoApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(state)
+                .frame(minWidth: 800, minHeight: 1000)
         }
+        .defaultSize(width: 900, height: 1200)
     }
 }

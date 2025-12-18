@@ -26,14 +26,22 @@ final class FlowPilotAIAgentApiClient {
         let payload = AgentRunRequest(workflow_id: workflowId, principal_sub: principalSub, dry_run: dryRun)
         request.httpBody = try JSONEncoder().encode(payload)
 
-        let (data, response) = try await urlSession.data(for: request)
-        let http = try requireHttpResponse(response: response, data: data)
+        do {
+            let (data, response) = try await urlSession.data(for: request)
+            let http = try requireHttpResponse(response: response, data: data)
 
-        if http.statusCode != 200 && http.statusCode != 201 {
-            throw ApiClientError.httpError(http.statusCode, stringBody(data))
+            if http.statusCode != 200 && http.statusCode != 201 {
+                let bodyString = stringBody(data)
+                let errorDetail = parseErrorDetail(from: data) ?? bodyString
+                throw ApiClientError.httpError(http.statusCode, "HTTP \(http.statusCode): \(errorDetail)")
+            }
+
+            return try JSONDecoder().decode(AgentRunResponse.self, from: data)
+        } catch let error as ApiClientError {
+            throw error
+        } catch {
+            throw ApiClientError.networkError("Network error: \(error.localizedDescription)")
         }
-
-        return try JSONDecoder().decode(AgentRunResponse.self, from: data)
     }
 
     private func requireHttpResponse(response: URLResponse, data: Data) throws -> HTTPURLResponse {
@@ -47,5 +55,26 @@ final class FlowPilotAIAgentApiClient {
     private func stringBody(_ data: Data) -> String {
         // Convert response data to a readable string; why: improve diagnostics on non-2xx; assumptions: UTF-8 preferred; side effect: none.
         return String(data: data, encoding: .utf8) ?? "<non-utf8 body>"
+    }
+    
+    private func parseErrorDetail(from data: Data) -> String? {
+        // Try to extract error detail from JSON response; why: provide more meaningful error messages; side effect: none.
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return nil
+        }
+        
+        if let detail = json["detail"] as? String {
+            return detail
+        }
+        
+        if let message = json["message"] as? String {
+            return message
+        }
+        
+        if let error = json["error"] as? String {
+            return error
+        }
+        
+        return nil
     }
 }

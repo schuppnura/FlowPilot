@@ -19,7 +19,7 @@
 #    - Evaluates: Booking constraints (consent, cost, dates, risk)
 #    - Decision Authority: ***REMOVED*** Authorizer (OPA/Rego)
 #
-# 3. Progressive Profiling (AuthZ API - PIP Enrichment)
+# 3. Progressive Profiling (PIP Enrichment)
 #    - Functions: evaluate_progressive_profiling()
 #    - Purpose: Validates required identity fields are present
 #    - Returns advisory information for UX - NOT an authorization decision
@@ -379,7 +379,7 @@ def evaluate_request(
     request_body: Dict[str, Any],
 ) -> Dict[str, Any]:
     # Orchestrate authorization evaluation through layered checks
-    # Layer 1: Anti-spoofing (PEP guardrail)
+    # Layer 1: ReBAC - ***REMOVED*** Directory (anti-spoofing guardrail)
     # Layer 2: ReBAC - ***REMOVED*** Directory (relationship-based)
     # Layer 3: ABAC - ***REMOVED*** OPA (attribute-based, if action=auto-book)
     # Layer 4: Progressive profiling (PIP enrichment)
@@ -596,7 +596,7 @@ def evaluate_abac(
     try:
         policy_result = call_***REMOVED***_policy(
             dependencies=dependencies,
-            policy_path="flowpilot.auto_book",
+            policy_path="auto_book",
             policy_input=policy_input,
         )
         
@@ -800,7 +800,7 @@ def call_***REMOVED***_policy(
 ) -> Dict[str, Any]:
     # ABAC POLICY EVALUATION: Call ***REMOVED*** OPA/Rego for attribute-based authorization
     # 
-    # AUDIT NOTE: Authorization decision made by ***REMOVED*** Authorizer (OPA), NOT by this service.
+    # AUDIT NOTE: Authorization decision made by ***REMOVED*** Authorizer (OPA), not in this code!
     # Policy defined in: infra/***REMOVED***/cfg/policies/{policy_path}.rego (Rego language)
     # 
     # This function only:
@@ -827,10 +827,6 @@ def call_***REMOVED***_policy(
             "path": policy_path,
             "decisions": ["allow", "reason"],
         },
-        "policy_instance": {
-            "name": "flowpilot",
-            "instance_label": "flowpilot",
-        },
         "resource_context": policy_input,
     }
     
@@ -838,6 +834,10 @@ def call_***REMOVED***_policy(
     timeouts = build_timeouts(connect_seconds=connect_seconds, read_seconds=read_seconds)
     
     data = http_post_json(url, payload, timeouts=timeouts)
+    
+    # DEBUG: Log what ***REMOVED*** returns
+    import json
+    print(f"[DEBUG] ***REMOVED*** response: {json.dumps(data, indent=2)}")
     
     # Extract decisions from response
     decisions = data.get("decisions", [])
@@ -863,7 +863,7 @@ def check_***REMOVED***_permission(
 ) -> bool:
     # ReBAC POLICY EVALUATION: Call ***REMOVED*** Directory for relationship-based authorization
     # 
-    # AUDIT NOTE: Authorization decision made by ***REMOVED*** Directory, NOT by this service.
+    # AUDIT NOTE: Authorization decision made by ***REMOVED*** Directory, not in this code!
     # Policy defined in: infra/***REMOVED***/cfg/flowpilot-manifest.yaml
     # 
     # This function only:

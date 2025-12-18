@@ -71,6 +71,36 @@ final class KeycloakOidcClient: NSObject {
         let sub = try JwtUtils.requireStringClaim(claims, key: "sub")
         return (tokenResponse, sub)
     }
+    
+    func signOut(idToken: String) async throws {
+        // Perform OIDC logout by calling Keycloak's end_session_endpoint
+        // This terminates the Keycloak session and clears SSO cookies
+        let discovery = try await fetchDiscoveryIfNeeded()
+        
+        guard let endSessionEndpoint = discovery.end_session_endpoint,
+              let endSessionUrl = URL(string: endSessionEndpoint) else {
+            // If no end_session_endpoint, just return (some OIDC providers don't support it)
+            return
+        }
+        
+        // Build logout URL with id_token_hint and post_logout_redirect_uri
+        guard var components = URLComponents(url: endSessionUrl, resolvingAgainstBaseURL: false) else {
+            return
+        }
+        
+        var queryItems: [URLQueryItem] = []
+        queryItems.append(URLQueryItem(name: "id_token_hint", value: idToken))
+        queryItems.append(URLQueryItem(name: "post_logout_redirect_uri", value: redirectUri))
+        components.queryItems = queryItems
+        
+        guard let logoutUrl = components.url else {
+            return
+        }
+        
+        // Use ASWebAuthenticationSession to perform the logout in the system browser
+        // This ensures Keycloak's SSO cookies are cleared
+        _ = try? await startWebAuthenticationSession(authorizeUrl: logoutUrl)
+    }
 
     private func fetchDiscoveryIfNeeded() async throws -> OidcDiscovery {
         if let cached = cachedDiscovery { return cached }
