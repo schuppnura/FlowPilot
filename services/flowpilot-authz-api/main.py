@@ -185,6 +185,10 @@ def build_config(config_path: Optional[str]) -> Dict[str, Any]:
     ***REMOVED***_trace_env = os.environ.get("***REMOVED***_TRACE_DEFAULT", str(config["***REMOVED***_trace_default"])).lower()
     config["***REMOVED***_trace_default"] = ***REMOVED***_trace_env in ("true", "1", "yes")
 
+    # Auto-book policy defaults (can be overridden via environment)
+    auto_book_consent_env = os.environ.get("AUTO_BOOK_CONSENT", str(config["auto_book_consent"])).lower()
+    config["auto_book_consent"] = auto_book_consent_env in ("true", "1", "yes")
+
     config["request_timeout_seconds"] = parse_positive_int(
         os.environ.get("REQUEST_TIMEOUT_SECONDS", str(config["request_timeout_seconds"])),
         "REQUEST_TIMEOUT_SECONDS",
