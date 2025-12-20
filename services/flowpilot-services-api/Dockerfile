@@ -6,9 +6,8 @@ COPY services/flowpilot-services-api/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
 # Shared utilities copied into the module name used by the code ("utils").
-COPY services/shared-utils.py /app/utils.py
-COPY services/shared_auth.py /app/shared_auth.py
-COPY services/shared-sanitizer.py /app/sanitizer.py
+COPY services/shared-libraries/utils.py /app/utils.py
+COPY services/shared-libraries/security.py /app/security.py
 COPY services/flowpilot-services-api/main.py /app/main.py
 COPY services/flowpilot-services-api/main.py /app/main.py
 COPY services/flowpilot-services-api/core.py /app/core.py

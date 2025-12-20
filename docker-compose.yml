@@ -5,15 +5,9 @@ services:
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
-
-      # Hostname v2 (frontend URL shown in OIDC discovery / issuer)
       KC_HOSTNAME: https://localhost:8443
       KC_HOSTNAME_STRICT: "false"
-
-      # Optional but useful in Docker: allows “backchannel” URLs to resolve from incoming headers
-      # (so internal callers can use https://keycloak:8443 even if the public issuer is localhost).
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
-
       KC_HTTPS_CERTIFICATE_FILE: /opt/keycloak/certs/cert.pem
       KC_HTTPS_CERTIFICATE_KEY_FILE: /opt/keycloak/certs/key.pem
       KC_HTTPS_PORT: 8443
@@ -24,57 +18,36 @@ services:
       - ./infra/keycloak:/opt/keycloak/data/import:ro
       - ./infra/keycloak/certs:/opt/keycloak/certs:ro
 
-  ***REMOVED***:
-    image: ghcr.io/aserto-dev/***REMOVED***:latest
-    platform: linux/amd64
-    command: ["run", "--config-file", "/app/cfg/config.yaml"]
-    restart: unless-stopped
+  opa:
+    image: openpolicyagent/opa:latest
+    command: ["run", "--server", "--addr", "0.0.0.0:8181", "--watch", "/policies"]
     volumes:
-      - ./infra/***REMOVED***/cfg:/app/cfg:ro
-      - ./infra/***REMOVED***/db:/db:rw
-      - ./infra/***REMOVED***/certs:/certs:rw
+      - ./infra/opa/policies:/policies:ro
     ports:
-      - "9080:8080"
-      - "9393:9393"
-      - "9292:9292"
-      - "9394:9394"
-      - "9395:9395"
-      - "9494:9494"
+      - "8181:8181"
+    restart: unless-stopped
 
   flowpilot-authz-api:
     build:
       context: .
       dockerfile: services/flowpilot-authz-api/Dockerfile
+    platform: linux/amd64
     environment:
-      LOG_LEVEL: info
-
-      # Domain service used for enrichment / owner lookups.
-      WORKFLOW_BASE_URL: http://flowpilot-services-api:8000
-
-      # ***REMOVED*** directory REST base.
-      ***REMOVED***_DIR_BASE: http://***REMOVED***:9393
-      ***REMOVED***_TRACE_DEFAULT: "true"  # Enable trace for complete audit trail
-
-      # Auto-book policy defaults (for demo - consent enabled, high limits)
-      AUTO_BOOK_CONSENT: "true"
-      AUTO_BOOK_MAX_COST_EUR: "10000"
-
-      REQUEST_TIMEOUT_SECONDS: "10"
-      ***REMOVED***_TIMEOUT_CONNECT_SECONDS: "2"
-      ***REMOVED***_TIMEOUT_READ_SECONDS: "8"
-
+      - OPA_URL=http://opa:8181
+      - OPA_PACKAGE=auto_book
       # Authentication (enabled by default for security)
-      AUTH_ENABLED: "true"
-      KEYCLOAK_URL: "https://keycloak:8443"
-      KEYCLOAK_REALM: "flowpilot"
-      KEYCLOAK_CLIENT_ID: "flowpilot-agent"
-      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
-      KEYCLOAK_VERIFY_SSL: ${KEYCLOAK_VERIFY_SSL:-false}
+      - AUTH_ENABLED=true
+      - KEYCLOAK_URL=https://keycloak:8443
+      - KEYCLOAK_REALM=flowpilot
+      - KEYCLOAK_CLIENT_ID=flowpilot-agent
+      - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
+      - KEYCLOAK_VERIFY_SSL=${KEYCLOAK_VERIFY_SSL:-false}
+    command: ["python", "main.py", "--host", "0.0.0.0", "--port", "8000"]
     ports:
-      - "8002:8002"
-    command: ["python", "main.py", "--host", "0.0.0.0", "--port", "8002"]
+      - "8002:8000"
     depends_on:
-      - ***REMOVED***
+      - opa
+      - keycloak
 
   flowpilot-ai-agent-api:
     build:
@@ -111,7 +84,7 @@ services:
       context: .
       dockerfile: services/flowpilot-services-api/Dockerfile
     environment:
-      AUTHZ_BASE_URL: "http://flowpilot-authz-api:8002"
+      AUTHZ_BASE_URL: "http://flowpilot-authz-api:8000"
       AGENT_SUB: "agent-runner"
       DOMAIN: "flowpilot"
 

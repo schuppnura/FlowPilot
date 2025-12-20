@@ -4,12 +4,12 @@
 # state and enforces authorization as a Policy Enforcement Point (PEP).
 #
 # Key endpoints:
-# - GET /v1/workflow-templates: List available trip templates
-# - POST /v1/workflows: Create a new trip from a template
+# - GET /v1/workflow-templates: List available workflow templates
+# - POST /v1/workflows: Create a new workflow from a template
 # - GET /v1/workflows/{workflow_id}: Get workflow metadata
 # - GET /v1/workflows/{workflow_id}/items: Get workflow items items
 # - POST /v1/workflows/{workflow_id}/items-items/{workflow_item_id}/execute: Execute item with AuthZ check
-# - GET /health: Health check with trip/template counts
+# - GET /health: Health check with workflow/template counts
 #
 # All endpoints (except health) require bearer token authentication.
 # Domain-specific: Travel workflows with flights, hotels, restaurants, museums, trains.
@@ -25,8 +25,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from pydantic import BaseModel
 
 from core import FlowPilotService
-from sanitizer import RequestSizeLimiterMiddleware, get_max_request_size
-from shared_auth import bearer_scheme, verify_token
+from security import bearer_scheme
 from utils import load_json_object, merge_config, parse_positive_int, validate_non_empty_string
 
 
@@ -39,7 +38,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "template_directory": "../data/trip_templates",
 
     # AuthZ integration
-    "authz_base_url": "http://flowpilot-authz-api:8002",
+    "authz_base_url": "http://flowpilot-authz-api:8000",
     "agent_sub": "agent_flowpilot_1",
 
     # Operational
@@ -107,7 +106,7 @@ def handle_get_health(request: Request) -> Dict[str, Any]:
 
 
 def handle_get_workflow_templates(request: Request) -> Dict[str, Any]:
-    # List available trip templates
+    # List available workflow templates
     # why: allow the client to pick a workflow
     # side effect: none.
     service: FlowPilotService = request.app.state.service
@@ -117,7 +116,7 @@ def handle_get_workflow_templates(request: Request) -> Dict[str, Any]:
 def handle_post_workflows(request: Request, body: CreateWorkflowRequest) -> Dict[str, Any]:
     # Create a workflow from a template
     # assumptions: principal_sub is authenticated upstream
-    # side effect: stores trip in memory.
+    # side effect: stores workflow in memory.
     service: FlowPilotService = request.app.state.service
     try:
         template_id = validate_non_empty_string(body.template_id, "template_id")
@@ -129,7 +128,7 @@ def handle_post_workflows(request: Request, body: CreateWorkflowRequest) -> Dict
 
 
 def handle_get_workflow(request: Request, workflow_id: str) -> Dict[str, Any]:
-    # Return one trip record
+    # Return one workflow record
     # why: demo visibility and debugging
     # side effect: none.
     service: FlowPilotService = request.app.state.service
@@ -142,7 +141,7 @@ def handle_get_workflow(request: Request, workflow_id: str) -> Dict[str, Any]:
 
 
 def handle_get_workflow_items(request: Request, workflow_id: str) -> Dict[str, Any]:
-    # Return the itinerary for a trip
+    # Return the items for a workflow
     # why: agent-runner lists items from here
     # side effect: none.
     service: FlowPilotService = request.app.state.service
@@ -174,7 +173,7 @@ def handle_post_execute_workflow_item(request: Request, workflow_id: str, workfl
 
 
 def create_app(config: Dict[str, Any]) -> FastAPI:
-    # 
+    #
     # Create FastAPI API endpoints and wire routes
     #
     # side effect: reads filesystem for templates and stores service in app state.
@@ -234,8 +233,8 @@ def main() -> int:
         reload=bool(args.reload),
         log_level=str(config.get("log_level", "info")),
         # Security: Limit request body size to prevent memory exhaustion
-        limit_max_requests=10000,  # Max requests before worker restart
-        limit_concurrency=100,      # Max concurrent connections
+        limit_max_requests=10000,    # Max requests before worker restart
+        limit_concurrency=100,       # Max concurrent connections
         timeout_keep_alive=5,        # Keep-alive timeout
     )
     return 0

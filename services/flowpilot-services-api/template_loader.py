@@ -102,7 +102,7 @@ def validate_template(template: Dict[str, Any], domain: str, file_path: str) -> 
         validate_template_item(item=item, index=index, file_path=file_path)
 
 
-def load_trip_templates_from_directory(template_directory: str, domain: str) -> Dict[str, Dict[str, Any]]:
+def load_workflow_templates_from_directory(template_directory: str, domain: str) -> Dict[str, Dict[str, Any]]:
     # Load and validate templates from a directory into a dict keyed by template_id.
     # Assumptions: template_directory exists and contains at least one .json file.
     # Side effects: reads filesystem.

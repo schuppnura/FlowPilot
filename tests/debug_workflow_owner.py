@@ -28,7 +28,7 @@ def main():
     print("\n" + "=" * 60)
     print("Workflow Owner Debug Script")
     print("=" * 60)
-    
+
     # Get user token
     print("\n[1] Authenticating...")
     try:
@@ -38,7 +38,7 @@ def main():
     except Exception as e:
         print(f"  ✗ Auth failed: {e}")
         return 1
-    
+
     # Create workflow
     print(f"\n[2] Creating workflow...")
     try:
@@ -49,7 +49,7 @@ def main():
     except Exception as e:
         print(f"  ✗ Create failed: {e}")
         return 1
-    
+
     # Get workflow details from services API
     print(f"\n[3] Fetching workflow details...")
     try:
@@ -61,7 +61,7 @@ def main():
         print(f"  Workflow data: {workflow_data}")
         stored_owner = workflow_data.get("owner_sub", "N/A")
         print(f"  ✓ Stored owner_sub: {stored_owner}")
-        
+
         if stored_owner == user_sub:
             print(f"  ✓ MATCH: owner_sub matches authenticated user")
         else:
@@ -69,7 +69,7 @@ def main():
     except Exception as e:
         print(f"  ✗ Fetch failed: {e}")
         return 1
-    
+
     # Get workflow items
     print(f"\n[4] Fetching workflow items...")
     try:
@@ -85,7 +85,7 @@ def main():
     except Exception as e:
         print(f"  ✗ Fetch items failed: {e}")
         return 1
-    
+
     # Try to execute first item directly
     if items:
         first_item = items[0]
@@ -106,7 +106,7 @@ def main():
                 print(f"  ✗ ERROR: {response.text}")
         except Exception as e:
             print(f"  ✗ Execution failed: {e}")
-    
+
     print("\n" + "=" * 60)
     return 0
 

@@ -18,7 +18,7 @@ response = requests.post(
     json={
         "subject_type": "user",
         "subject_id": carlo_sub,
-        "object_type": "user", 
+        "object_type": "user",
         "object_id": carlo_sub,
         "relation": "is_owner",  # Just checking if object exists, not a real permission
         "trace": False
@@ -27,7 +27,7 @@ response = requests.post(
 )
 print(f"   Status: {response.status_code}")
 
-# Test 2: Check if agent object exists  
+# Test 2: Check if agent object exists
 print("\n2. Checking if agent object exists in ***REMOVED***...")
 response = requests.post(
     "http://localhost:9393/api/v3/directory/check",
@@ -82,7 +82,7 @@ if workflow_response.status_code == 200:
     workflow_data = workflow_response.json()
     workflow_id = workflow_data["workflow_id"]
     print(f"   Created workflow: {workflow_id}")
-    
+
     # Get workflow items
     items_response = requests.get(
         f"http://localhost:8003/v1/workflows/{workflow_id}/items",
@@ -94,7 +94,7 @@ if workflow_response.status_code == 200:
         if items_data.get("items"):
             workflow_item_id = items_data["items"][0]["item_id"]
             print(f"   Got workflow_item: {workflow_item_id}")
-            
+
             # Now test the permission check
             print(f"\n   Testing: agent:{agent_id} can_execute workflow_item:{workflow_item_id}...")
             perm_response = requests.post(

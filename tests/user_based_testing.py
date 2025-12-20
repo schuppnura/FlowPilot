@@ -49,17 +49,17 @@ auth_code_result = {"code": None, "error": None}
 
 class OAuthCallbackHandler(BaseHTTPRequestHandler):
     """HTTP handler for OAuth callback"""
-    
+
     def do_GET(self):
         global auth_code_result
-        
+
         # Parse query parameters
         parsed = urlparse(self.path)
         params = parse_qs(parsed.query)
-        
+
         # Debug: print what we received
         print(f"  Callback received: {self.path}")
-        
+
         if 'code' in params:
             auth_code_result["code"] = params['code'][0]
             print(f"  ✓ Authorization code received")
@@ -100,7 +100,7 @@ class OAuthCallbackHandler(BaseHTTPRequestHandler):
             self.send_header('Content-type', 'text/html')
             self.end_headers()
             self.wfile.write(b"Invalid callback")
-    
+
     def log_message(self, format, *args):
         # Enable minimal logging for debugging
         pass
@@ -120,7 +120,7 @@ def create_self_signed_cert():
     temp_dir = tempfile.mkdtemp()
     cert_file = os.path.join(temp_dir, "cert.pem")
     key_file = os.path.join(temp_dir, "key.pem")
-    
+
     # Generate self-signed certificate using openssl
     cmd = [
         "openssl", "req", "-x509", "-newkey", "rsa:2048",
@@ -128,7 +128,7 @@ def create_self_signed_cert():
         "-days", "1", "-nodes",
         "-subj", "/CN=localhost"
     ]
-    
+
     try:
         subprocess.run(cmd, check=True, capture_output=True)
         return cert_file, key_file, temp_dir
@@ -142,14 +142,14 @@ def get_user_token_via_browser() -> tuple[str, str, str]:
     """Get access token and user sub using browser-based OIDC login with PKCE"""
     global auth_code_result
     auth_code_result = {"code": None, "error": None}
-    
+
     # Generate PKCE parameters
     code_verifier, code_challenge = generate_pkce_pair()
-    
+
     # Start local callback server with HTTPS
     callback_port = 8765
     redirect_uri = f"https://localhost:{callback_port}/callback"
-    
+
     print(f"\n  Creating temporary SSL certificate...")
     try:
         cert_file, key_file, temp_dir = create_self_signed_cert()
@@ -158,11 +158,11 @@ def get_user_token_via_browser() -> tuple[str, str, str]:
         print(f"  Falling back to HTTP (may not work with Safari)")
         redirect_uri = f"http://localhost:{callback_port}/callback"
         cert_file = None
-    
+
     print(f"  Starting callback server on port {callback_port}...")
     try:
         server = HTTPServer(('localhost', callback_port), OAuthCallbackHandler)
-        
+
         # Wrap with SSL if we have a certificate
         if cert_file:
             context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
@@ -173,15 +173,15 @@ def get_user_token_via_browser() -> tuple[str, str, str]:
             print(f"  ✓ HTTP callback server started (fallback)")
     except OSError as e:
         raise Exception(f"Failed to start callback server on port {callback_port}. Is it already in use? {e}")
-    
+
     # Use a more robust server approach - keep serving until we get the code
     def serve_until_code():
         while auth_code_result["code"] is None and auth_code_result["error"] is None:
             server.handle_request()
-    
+
     server_thread = threading.Thread(target=serve_until_code, daemon=True)
     server_thread.start()
-    
+
     # Build authorization URL
     state = secrets.token_urlsafe(16)
     auth_params = {
@@ -195,26 +195,26 @@ def get_user_token_via_browser() -> tuple[str, str, str]:
         "prompt": "login",  # Force re-authentication each time
     }
     auth_url = f"{KEYCLOAK_BASE_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/auth?{urllib.parse.urlencode(auth_params)}"
-    
+
     print(f"  Opening browser for login...")
     print(f"  If browser doesn't open, visit: {auth_url}")
-    
+
     # Give the server a moment to start
     import time
     time.sleep(0.5)
-    
+
     webbrowser.open(auth_url)
-    
+
     # Wait for callback (with timeout)
     print("  Waiting for login (this may take a minute)...")
     server_thread.join(timeout=120)
-    
+
     # Clean up server
     try:
         server.server_close()
     except:
         pass
-    
+
     # Clean up temp certificate files
     if cert_file:
         try:
@@ -222,13 +222,13 @@ def get_user_token_via_browser() -> tuple[str, str, str]:
             shutil.rmtree(temp_dir)
         except:
             pass
-    
+
     if auth_code_result["error"]:
         raise Exception(f"Login failed: {auth_code_result['error']}")
-    
+
     if not auth_code_result["code"]:
         raise Exception("Login timeout or no authorization code received. Did you complete the login in the browser?")
-    
+
     # Exchange authorization code for token
     token_url = f"{KEYCLOAK_BASE_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token"
     token_data = {
@@ -238,13 +238,13 @@ def get_user_token_via_browser() -> tuple[str, str, str]:
         "redirect_uri": redirect_uri,
         "code_verifier": code_verifier,
     }
-    
+
     try:
         response = requests.post(token_url, data=token_data, verify=False)
         response.raise_for_status()
         token_response = response.json()
         access_token = token_response["access_token"]
-        
+
         # Decode token to get sub (user ID)
         payload_encoded = access_token.split('.')[1]
         # Add padding if needed
@@ -253,7 +253,7 @@ def get_user_token_via_browser() -> tuple[str, str, str]:
         payload = json.loads(payload_json)
         user_sub = payload['sub']
         username = payload.get('preferred_username', 'unknown')
-        
+
         return access_token, user_sub, username
     except requests.exceptions.RequestException as e:
         raise Exception(f"Failed to exchange code for token: {e}")
@@ -268,14 +268,14 @@ def create_workflow_for_owner(owner_sub: str, access_token: str, template_id: st
     }
     headers = {"Authorization": f"Bearer {access_token}"}
     response = requests.post(url, json=payload, headers=headers, verify=False)
-    
+
     if response.status_code != 200:
         try:
             error_detail = response.json()
             raise Exception(f"{response.status_code} {response.reason}: {error_detail}")
         except:
             raise Exception(f"{response.status_code} {response.reason}: {response.text}")
-    
+
     return response.json()
 
 
@@ -335,7 +335,7 @@ def run_tests():
     # In a real test, you'd fetch this from the itinerary endpoint
     # For this test, we'll use a placeholder that matches template structure
     workflow_item_id = "i_placeholder"  # This would come from get_itinerary
-    
+
     # Base resource properties for tests
     base_properties = {
         "planned_price": 1000,
@@ -355,7 +355,7 @@ def run_tests():
         )
         print(f"  Decision: {result['decision']}")
         print(f"  Reason codes: {result.get('reason_codes', [])}")
-        
+
         # Should NOT be denied due to spoofing
         if "security.principal_spoof" in result.get("reason_codes", []):
             print("  ✗ FAIL: Legitimate request was flagged as spoofing!")
@@ -378,7 +378,7 @@ def run_tests():
         )
         print(f"  Decision: {result['decision']}")
         print(f"  Reason codes: {result.get('reason_codes', [])}")
-        
+
         # MUST be denied with principal_spoof reason code
         if result["decision"] == "deny" and "security.principal_spoof" in result.get("reason_codes", []):
             # Check advice message
@@ -407,7 +407,7 @@ if __name__ == "__main__":
     print("3. Test authorization with legitimate and spoofed principals")
     print("4. Wait for you to press Enter to test again with a different user")
     print("\nPress Ctrl+C to exit at any time.")
-    
+
     while True:
         try:
             print("\n" + "=" * 60)
@@ -415,9 +415,9 @@ if __name__ == "__main__":
             if response.lower() in ['quit', 'exit', 'q']:
                 print("Exiting...")
                 break
-            
+
             run_tests()
-            
+
         except KeyboardInterrupt:
             print("\n\nExiting...")
             break

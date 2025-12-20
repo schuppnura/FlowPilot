@@ -8,7 +8,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
-echo ">>> Loading Cumbaya manifest into ***REMOVED***..."
+echo ">>> Loading FlowPilot manifest into ***REMOVED***..."
 docker compose exec ***REMOVED*** ./***REMOVED*** directory set manifest -P --no-check /app/cfg/flowpilot-manifest.yaml
 
 echo ">>> Verifying manifest..."

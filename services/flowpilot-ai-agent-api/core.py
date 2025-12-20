@@ -41,22 +41,22 @@ def get_service_token() -> str | None:
     auth_enabled = os.environ.get("AUTH_ENABLED", "true").lower() == "true"
     if not auth_enabled:
         return None
-    
+
     # Check token cache
     if "token" in _token_cache and "expires_at" in _token_cache:
         import time
         if time.time() < _token_cache["expires_at"] - 30:  # 30s buffer
             return _token_cache["token"]
-    
+
     # Get new token from Keycloak
     keycloak_url = os.environ.get("KEYCLOAK_URL", "https://keycloak:8443")
     realm = os.environ.get("KEYCLOAK_REALM", "flowpilot")
     client_id = os.environ.get("KEYCLOAK_CLIENT_ID", "flowpilot-agent")
     client_secret = os.environ.get("KEYCLOAK_CLIENT_SECRET", "")
     verify_ssl = os.environ.get("KEYCLOAK_VERIFY_SSL", "false").lower() == "true"
-    
+
     token_url = f"{keycloak_url}/realms/{realm}/protocol/openid-connect/token"
-    
+
     try:
         response = requests.post(
             token_url,
@@ -68,7 +68,7 @@ def get_service_token() -> str | None:
             timeout=5,
             verify=verify_ssl,
         )
-        
+
         if response.status_code == 200:
             token_data = response.json()
             import time
@@ -77,7 +77,7 @@ def get_service_token() -> str | None:
             return _token_cache["token"]
     except Exception:
         pass  # Fall through to return None
-    
+
     return None
 
 
@@ -99,12 +99,12 @@ def list_workflow_items(config: Dict[str, Any], workflow_id: str) -> List[Workfl
     timeout_seconds = int(config.get("request_timeout_seconds", 10))
 
     url = build_url(base_url, template.format(workflow_id=workflow_id))
-    
+
     headers = {}
     token = get_service_token()
     if token:
         headers["Authorization"] = f"Bearer {token}"
-    
+
     payload = http_get_json(url=url, timeout_seconds=timeout_seconds, headers=headers if headers else None)
 
     items_raw = payload.get("items", [])
@@ -170,7 +170,7 @@ def post_execute_workflow_item(
     token = get_service_token()
     if token:
         headers["Authorization"] = f"Bearer {token}"
-    
+
     response = requests.post(url, json=payload, timeout=timeouts, headers=headers if headers else None)
     response_text = response.text or ""
 

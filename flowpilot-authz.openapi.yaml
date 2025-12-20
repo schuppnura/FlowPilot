@@ -6,9 +6,9 @@ info:
     Authorization integration service with PDP façade, PIP enrichment, and authorization graph writer.
     
     **Responsibilities**:
-    - Policy evaluation via ***REMOVED*** (PDP façade)
+    - Policy evaluation using OPA rego policy (PDP)
     - Progressive profiling enrichment (PIP)
-    - Authorization graph maintenance (workflow-user relations in ***REMOVED***)
+    - Authorization graph maintenance
     
     Implements AuthZEN-like request structure with progressive profiling support.
     
@@ -48,7 +48,6 @@ paths:
       description: >
         Evaluates whether a subject (agent or user) may perform an action on a resource.
         Uses AuthZEN-like structure with subject/action/resource/context/options.
-        May consult ***REMOVED*** and return advice (e.g., missing profile fields for progressive profiling).
       requestBody:
         required: true
         content:
@@ -88,10 +87,10 @@ paths:
                 deny:
                   value:
                     decision: deny
-                    reason_codes: [***REMOVED***.deny]
+                    reason_codes: [rego.deny]
                     advice:
                       - type: deny
-                        message: "Denied by ***REMOVED*** policy."
+                        message: "Denied by rego policy."
                 allow:
                   value:
                     decision: allow
@@ -256,7 +255,7 @@ paths:
     post:
       summary: Create workflow graph (object + owner relation)
       description: >
-        Creates a workflow object in ***REMOVED*** and establishes the owner relation to a user.
+        Creates a workflow object and establishes the owner relation to a user.
         This endpoint is called by domain services when workflows are created.
         
         **Graph structure**: `workflow --owner--> user`
@@ -300,7 +299,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "500":
-          description: Failed to create ***REMOVED*** objects/relations
+          description: Failed to create objects/relations
           content:
             application/json:
               schema:
@@ -310,7 +309,7 @@ paths:
     post:
       summary: Create workflow item graph (object + workflow relation)
       description: >
-        Creates a workflow_item object in ***REMOVED*** and links it to a workflow.
+        Creates a workflow_item object and links it to a workflow.
         This endpoint is called by domain services for each workflow item.
         
         **Graph structure**: `workflow_item --workflow--> workflow`
@@ -354,7 +353,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "500":
-          description: Failed to create ***REMOVED*** objects/relations
+          description: Failed to create objects/relations
           content:
             application/json:
               schema:
@@ -473,7 +472,7 @@ components:
           default: true
         trace:
           type: boolean
-          description: Override ***REMOVED*** trace behavior
+          description: Override trace behavior
       additionalProperties: true
 
     EvaluateRequest:
@@ -576,7 +575,7 @@ components:
     # Graph write models
     CreateWorkflowGraphRequest:
       type: object
-      description: Request to create workflow object and owner relation in ***REMOVED***
+      description: Request to create workflow object and owner relation
       properties:
         workflow_id:
           type: string
@@ -599,7 +598,7 @@ components:
 
     CreateWorkflowItemGraphRequest:
       type: object
-      description: Request to create workflow_item object and workflow relation in ***REMOVED***
+      description: Request to create workflow_item object and workflow relation
       properties:
         workflow_workflow_item_id:
           type: string

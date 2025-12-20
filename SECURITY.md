@@ -14,7 +14,7 @@ We take the security of FlowPilot seriously. If you discover a security vulnerab
 
 **Please do NOT report security vulnerabilities through public GitHub issues.**
 
-Instead, please report them via email to: **[security contact email - replace with your email]**
+Instead, please report them via email to: carlo.schupp@nura.pro
 
 Include the following information:
 - Type of vulnerability
@@ -89,7 +89,7 @@ When deploying FlowPilot in production:
 
 ### Demo/Development Environment Warnings
 
-⚠️ **The default configuration requires additional hardening for production:**
+**The default configuration requires additional hardening for production:**
 
 - Self-signed certificates are used (replace with CA-signed certs)
 - Default credentials (admin/admin for Keycloak - must be changed)
@@ -97,7 +97,7 @@ When deploying FlowPilot in production:
 - No rate limiting configured
 - Services exposed on localhost
 
-**Authentication is ENABLED by default. To disable for local dev/testing, set AUTH_ENABLED=false**
+**Authentication is ENABLED by default.
 
 ## Known Limitations
 
@@ -147,9 +147,9 @@ We recommend:
 ## Security Contacts
 
 For security-related questions or concerns:
-- Email: **[security contact - replace with your email]**
+- Email: carlo.schupp@nura.pro
 - Response time: Within 48 hours
 
 ---
 
-Last updated: 2025-12-17
+Last updated: 2025-12-20

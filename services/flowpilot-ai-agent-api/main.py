@@ -22,8 +22,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from pydantic import BaseModel
 
 from core import execute_workflow_run, normalize_workflow_id
-from sanitizer import RequestSizeLimiterMiddleware, get_max_request_size
-from shared_auth import bearer_scheme, verify_token
+from security import RequestSizeLimiterMiddleware, bearer_scheme, get_max_request_size, verify_token
 from utils import load_json_object, merge_config, parse_positive_int, validate_non_empty_string
 
 
@@ -104,7 +103,7 @@ def handle_post_agent_runs(request: Request, body: WorkflowRunRequest) -> Dict[s
 
 
 def create_app(config: Dict[str, Any]) -> FastAPI:
-    # 
+    #
     # Create FastAPI API endpoints and wire routes
     #
     # side effect: registers routes and handlers.
@@ -117,13 +116,13 @@ def create_app(config: Dict[str, Any]) -> FastAPI:
         swagger_ui_parameters={"defaultModelsExpandDepth": -1},
     )
     api.state.config = config
-    
+
     # Add request size limiting middleware
     api.add_middleware(RequestSizeLimiterMiddleware, max_size=get_max_request_size())
 
     # Health check - no auth required
     api.add_api_route("/health", handle_get_health, methods=["GET"])
-    
+
     # All other endpoints require authentication
     api.add_api_route("/v1/workflow-runs", handle_post_workflow_runs, methods=["POST"], dependencies=[Depends(bearer_scheme)])
     api.add_api_route("/v1/agent-runs", handle_post_agent_runs, methods=["POST"], dependencies=[Depends(bearer_scheme)])

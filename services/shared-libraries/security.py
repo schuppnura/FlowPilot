@@ -1,13 +1,20 @@
-# Shared Input Sanitization and Security Middleware for FlowPilot Services
+# Shared Security Utilities for FlowPilot Services
 #
-# Comprehensive input validation and injection attack prevention middleware used
-# across all FlowPilot services to protect against security vulnerabilities.
+# Comprehensive security module combining authentication and input sanitization
+# for FlowPilot services. Provides bearer token validation using Keycloak
+# introspection and input validation middleware to protect against various
+# security vulnerabilities.
 #
-# Input sanitization and security middleware for FastAPI services.
+# Authentication:
+# - Bearer token validation using Keycloak introspection
+# - Support for both user tokens and service-to-service authentication
 #
-# Protects against:
+# Input Sanitization:
 # - Large payload attacks (request body size limits)
 # - SQL injection attempts (dangerous pattern detection)
+# - XSS (Cross-Site Scripting) attempts
+# - Command injection attempts
+# - Path traversal attempts
 # - Excessive string lengths (per-field character limits)
 # - Resource exhaustion (connection limits)
 
@@ -15,11 +22,205 @@ from __future__ import annotations
 
 import os
 import re
-from typing import Any, Callable
+from typing import Any, Callable, Dict
 
-from fastapi import Request, Response, status
+import requests
+from fastapi import HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from starlette.middleware.base import BaseHTTPMiddleware
+
+
+# =============================================================================
+# Authentication - Bearer Token Validation
+# =============================================================================
+
+class BearerTokenValidator:
+    # Validates bearer tokens using Keycloak token introspection.
+
+    def __init__(
+        self,
+        keycloak_url: str,
+        realm: str,
+        client_id: str,
+        client_secret: str,
+        enabled: bool = True,
+    ):
+        # Initialize the bearer token validator.
+        #
+        # Args:
+        #     keycloak_url: Base URL of Keycloak (e.g., https://localhost:8443)
+        #     realm: Keycloak realm name
+        #     client_id: Client ID for introspection
+        #     client_secret: Client secret for introspection
+        #     enabled: Whether to enforce authentication (False for dev/demo)
+        self.enabled = enabled
+        if not self.enabled:
+            return
+
+        self.introspection_url = f"{keycloak_url}/realms/{realm}/protocol/openid-connect/token/introspect"
+        self.client_id = client_id
+        self.client_secret = client_secret
+        self.verify_ssl = os.environ.get("KEYCLOAK_VERIFY_SSL", "false").lower() == "true"
+
+    def validate_token(self, token: str) -> Dict[str, Any]:
+        # Validate a bearer token using Keycloak introspection.
+        #
+        # Args:
+        #     token: The bearer token to validate
+        #
+        # Returns:
+        #     Token introspection response with user info
+        #
+        # Raises:
+        #     HTTPException: If token is invalid or introspection fails
+        if not self.enabled:
+            # For demo/dev mode, return a mock response
+            return {"active": True, "sub": "demo_user", "client_id": "demo"}
+
+        if not token or not token.strip():
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Empty or missing bearer token",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        try:
+            response = requests.post(
+                self.introspection_url,
+                data={
+                    "token": token,
+                    "client_id": self.client_id,
+                    "client_secret": self.client_secret,
+                },
+                timeout=5,
+                verify=self.verify_ssl,
+            )
+        except requests.Timeout as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=f"Token validation timeout: Keycloak at {self.introspection_url} did not respond",
+            ) from exc
+        except requests.ConnectionError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=f"Token validation connection failed: Cannot reach Keycloak at {self.introspection_url}",
+            ) from exc
+        except requests.RequestException as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=f"Token validation service error: {type(exc).__name__}",
+            ) from exc
+
+        if response.status_code != 200:
+            # Log the response for debugging but don't expose to client
+            error_detail = f"Token validation failed with HTTP {response.status_code}"
+            try:
+                error_body = response.json()
+                if "error" in error_body:
+                    error_detail = f"Token validation failed: {error_body.get('error', 'unknown')}"
+            except Exception:
+                pass
+            
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=error_detail,
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        token_info = response.json()
+
+        if not token_info.get("active", False):
+            # Token is inactive (expired, revoked, or invalid)
+            error_msg = "Invalid or expired token"
+            # Provide more context if available
+            if "exp" in token_info:
+                error_msg = "Token has expired"
+            
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=error_msg,
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        return token_info
+
+
+# Global bearer scheme for FastAPI
+bearer_scheme = HTTPBearer(auto_error=True)
+
+# Global validator instance
+_validator_instance = None
+
+def get_validator():
+    # Get the global validator instance.
+    global _validator_instance
+    if _validator_instance is None:
+        _validator_instance = create_auth_validator_from_env()
+    return _validator_instance
+
+def verify_token(credentials: HTTPAuthorizationCredentials) -> Dict[str, Any]:
+    # Verify bearer token - use as FastAPI dependency.
+    #
+    # Args:
+    #     credentials: HTTP authorization credentials from bearer_scheme
+    #
+    # Returns:
+    #     Token claims/info from Keycloak introspection
+    #
+    # Raises:
+    #     HTTPException: If token is invalid or validation fails
+    if not credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing authorization credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    if not credentials.credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Empty bearer token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    validator = get_validator()
+    return validator.validate_token(credentials.credentials)
+
+
+def create_auth_validator_from_env() -> BearerTokenValidator:
+    # Create a bearer token validator from environment variables.
+    #
+    # Environment variables:
+    #     AUTH_ENABLED: Set to "false" to disable authentication (default: true for security)
+    #     KEYCLOAK_URL: Keycloak base URL (default: https://localhost:8443)
+    #     KEYCLOAK_REALM: Keycloak realm (default: flowpilot)
+    #     KEYCLOAK_CLIENT_ID: Client ID for introspection (default: flowpilot-agent)
+    #     KEYCLOAK_CLIENT_SECRET: Client secret for introspection (REQUIRED)
+    #
+    # Returns:
+    #     Configured bearer token validator
+    enabled = os.environ.get("AUTH_ENABLED", "true").lower() == "true"
+    keycloak_url = os.environ.get("KEYCLOAK_URL", "https://localhost:8443")
+    realm = os.environ.get("KEYCLOAK_REALM", "flowpilot")
+    client_id = os.environ.get("KEYCLOAK_CLIENT_ID", "flowpilot-agent")
+    client_secret = os.environ.get("KEYCLOAK_CLIENT_SECRET", "")
+
+    if enabled and not client_secret:
+        raise ValueError("KEYCLOAK_CLIENT_SECRET environment variable is required when AUTH_ENABLED=true")
+
+    return BearerTokenValidator(
+        keycloak_url=keycloak_url,
+        realm=realm,
+        client_id=client_id,
+        client_secret=client_secret,
+        enabled=enabled,
+    )
+
+
+# =============================================================================
+# Input Sanitization - Pattern Detection and Validation
+# =============================================================================
 
 # SQL injection patterns to detect
 SQL_INJECTION_PATTERNS = [
@@ -66,9 +267,9 @@ COMMAND_INJECTION_PATTERNS = [
 # Path traversal patterns
 PATH_TRAVERSAL_PATTERNS = [
     r"\.\./",                        # Parent directory
-    r"\.\.\\",                      # Parent directory (Windows)
+    r"\..\\",                        # Parent directory (Windows)
     r"%2e%2e/",                      # URL encoded ..
-    r"%2e%2e\\",                    # URL encoded .. (Windows)
+    r"%2e%2e\\",                      # URL encoded .. (Windows)
     r"\.\.%2f",                      # Mixed encoding
     r"\.\.%5c",                      # Mixed encoding (Windows)
 ]
@@ -101,7 +302,7 @@ class RequestSizeLimiterMiddleware(BaseHTTPMiddleware):
         # Check request size before processing.
         # Get content length from headers
         content_length = request.headers.get("content-length")
-        
+
         if content_length:
             content_length = int(content_length)
             if content_length > self.max_size:
@@ -113,7 +314,7 @@ class RequestSizeLimiterMiddleware(BaseHTTPMiddleware):
                         "max_size_mb": round(self.max_size / 1_048_576, 2),
                     },
                 )
-        
+
         response = await call_next(request)
         return response
 
@@ -184,24 +385,24 @@ def sanitize_string(value: str, max_length: int = MAX_STRING_LENGTH) -> str:
     #     ValueError: If input is too long or contains suspicious patterns
     if not isinstance(value, str):
         return value
-    
+
     # Check length first (fast check)
     if len(value) > max_length:
         raise ValueError(f"Input too long. Maximum length: {max_length} characters")
-    
+
     # Check for injection attacks
     if detect_sql_injection(value):
         raise ValueError("Input contains potentially dangerous SQL patterns")
-    
+
     if detect_xss(value):
         raise ValueError("Input contains potentially dangerous XSS patterns")
-    
+
     if detect_command_injection(value):
         raise ValueError("Input contains potentially dangerous command injection patterns")
-    
+
     if detect_path_traversal(value):
         raise ValueError("Input contains potentially dangerous path traversal patterns")
-    
+
     return value
 
 

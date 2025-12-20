@@ -35,14 +35,14 @@ def wait_for_***REMOVED***(max_attempts=30):
             pass
         print(f"  Waiting... ({i+1}/{max_attempts})")
         time.sleep(2)
-    
+
     print("✗ ***REMOVED*** did not become ready in time")
     return False
 
 def bootstrap_flowpilot_data():
     """
     Bootstrap ***REMOVED*** with sample FlowPilot data.
-    
+
     Creates:
     - A sample user (traveler1)
     - The flowpilot agent
@@ -53,7 +53,7 @@ def bootstrap_flowpilot_data():
     print("\n" + "="*60)
     print("Bootstrapping ***REMOVED*** with FlowPilot sample data")
     print("="*60)
-    
+
     # Create sample objects and relations
     operations = [
         {
@@ -90,7 +90,7 @@ def bootstrap_flowpilot_data():
             }
         }
     ]
-    
+
     for op in operations:
         print(f"\n{op['name']}...")
         try:
@@ -99,7 +99,7 @@ def bootstrap_flowpilot_data():
                 json=op['data'],
                 timeout=5
             )
-            
+
             if response.status_code in [200, 201]:
                 print(f"  ✓ Success")
             elif response.status_code == 409:
@@ -109,7 +109,7 @@ def bootstrap_flowpilot_data():
                 print(f"    Response: {response.text[:200]}")
         except requests.RequestException as e:
             print(f"  ✗ Error: {e}")
-    
+
     print("\n" + "="*60)
     print("Bootstrap complete!")
     print("="*60)
@@ -122,9 +122,9 @@ def bootstrap_flowpilot_data():
 def main():
     if not wait_for_***REMOVED***():
         sys.exit(1)
-    
+
     bootstrap_flowpilot_data()
-    
+
     return 0
 
 if __name__ == "__main__":

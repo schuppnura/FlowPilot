@@ -1,404 +1,192 @@
-# FlowPilot AuthZ API - FastAPI Application
-#
-# Authorization service that provides AuthZEN-style policy evaluation with progressive
-# profiling and ***REMOVED*** integration. Acts as the central authorization decision point
-# for all FlowPilot workflows.
-#
-# Key endpoints:
-# - POST /v1/evaluate: Evaluate authorization request with ***REMOVED*** and progressive profiling
-# - GET/PATCH /v1/profiles/{principal_sub}/policy-parameters: Manage non-PII policy context
-# - GET/PATCH /v1/profiles/{principal_sub}/identity-presence: Manage identity completeness flags
-# - GET /v1/profiles/{principal_sub}: Combined profile view
-# - GET /health: Health check with profile count
-#
-# All endpoints (except health) require bearer token authentication.
+"""
+FlowPilot AuthZ API (OPA-backed, no ***REMOVED***).
 
+This module implements the REST endpoints defined in flowpilot-authz.openapi.yaml.
+
+OPA integration
+- This service calls an OPA server over HTTP.
+- Configure with env vars:
+  - OPA_URL (default: http://opa:8181)
+  - OPA_PACKAGE (default: auto_book)
+
+Where to set these:
+- In docker-compose.yml under the flowpilot-authz-api service:
+    environment:
+      - OPA_URL=http://opa:8181
+      - OPA_PACKAGE=auto_book
+"""
 from __future__ import annotations
 
-import argparse
 import os
-from typing import Any, Dict, Optional
+import uuid
+from typing import Any, Optional
 
-import uvicorn
-from fastapi import Depends, FastAPI, HTTPException, Request
-from pydantic import BaseModel, Field
+from fastapi import Body, Depends, FastAPI, HTTPException
+from fastapi.responses import JSONResponse
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from core import (
-    AuthzService,
-    EvaluateResponseModel,
-)
-from sanitizer import RequestSizeLimiterMiddleware, get_max_request_size
-from shared_auth import bearer_scheme, verify_token
-from utils import load_json_object, merge_config, parse_positive_float, parse_positive_int, validate_non_empty_string
+import security
+from core import OpaClient, OpaConfig, evaluate_request_with_opa
 
+app = FastAPI(title="FlowPilot AuthZ API", version="1.0.0")
 
-DEFAULT_CONFIG: Dict[str, Any] = {
-    "service_name": "authz-api",
-    "log_level": "info",
-
-    # Workflow service (FlowPilot today
-    # other verticals later).
-    "workflow_base_url": "http://flowpilot-api:8003",
-
-    # ***REMOVED*** Directory (Reader gateway by default in this demo stack).
-    "***REMOVED***_dir_base": "http://***REMOVED***:9393",
-    "***REMOVED***_check_path": "/api/v3/directory/check",
-    "***REMOVED***_timeout_connect_seconds": 2.0,
-    "***REMOVED***_timeout_read_seconds": 8.0,
-    "***REMOVED***_trace_default": True,  # Enable trace for complete audit trail
-
-    # Workflow lookup endpoints (kept generic so other verticals can re-use authz-api).
-    "workflow_owner_path_template": "/v1/workflows/{workflow_id}",
-    "workflow_items_path_template": "/v1/workflows/{workflow_id}/items",
-
-    # How to find a workflow-item identifier in the incoming resource JSON.
-    "workflow_item_id_property_names": ["workflow_item_id", "item_id"],
-
-    # Action-to-relation mapping for ***REMOVED*** (can be extended without changing code).
-    # Note: both 'book' and 'auto-book' map to the same ***REMOVED*** relation; ABAC checks apply only to 'auto-book'.
-    "action_relation_map": {"book": "can_execute", "auto-book": "can_execute"},
-
-    # Default auto-book policy parameters (ABAC conditions)
-    # Users can override these via profile API PATCH /v1/profiles/{principal_sub}/policy-parameters
-    "auto_book_consent": False,
-    "auto_book_max_cost_eur": 1500,
-    "auto_book_min_days_advance": 7,
-    "auto_book_max_airline_risk": 5,
-
-    # For progressive profiling: required identity-presence fields per workflow item kind.
-    # These are presence flags only. The actual PII values remain in IdP and are not stored here.
-    "required_identity_fields_default": [],
-    "required_identity_fields_by_item_kind": {
-        "flight": ["full_name", "phone_number", "passport_number", "payment_method"],
-        "hotel": ["full_name", "phone_number", "payment_method"],
-        "restaurant": [],
-        "museum": [],
-        "train": ["full_name", "phone_number", "payment_method"],
-    },
-
-    # Operational defaults.
-    "request_timeout_seconds": 10,
-}
+bearer_scheme = HTTPBearer(auto_error=True)
 
 
-class AuthZenLikeActorModel(BaseModel):
-    type: str = Field(..., description="Actor type (e.g., 'agent' or 'user').")
-    id: str = Field(..., description="Actor identifier. For agents: agent_sub; for users: subject_sub.")
-
-    model_config = {"extra": "allow"}
-
-
-class AuthZenLikeActionModel(BaseModel):
-    name: str = Field(..., description="Action name (e.g., 'book' or 'auto-book'). 'auto-book' enables ABAC checks.")
-    properties: Dict[str, Any] = Field(default_factory=dict)
-
-    model_config = {"extra": "allow"}
+def read_env_string(name: str, default_value: str) -> str:
+    value = os.getenv(name)
+    if value is None or value.strip() == "":
+        return default_value
+    return value.strip()
 
 
-class AuthZenLikeResourceModel(BaseModel):
-    type: str = Field(..., description="Resource type (e.g., 'workflow').")
-    id: str = Field(..., description="Workflow id (e.g., trip id).")
-    properties: Dict[str, Any] = Field(default_factory=dict)
-
-    model_config = {"extra": "allow"}
-
-
-class AuthZenLikeContextModel(BaseModel):
-    principal: Dict[str, Any] = Field(default_factory=dict, description="Principal context; principal.id must be sub UUID.")
-    attributes: Dict[str, Any] = Field(default_factory=dict)
-
-    model_config = {"extra": "allow"}
-
-
-class AuthZenLikeOptionsModel(BaseModel):
-    dry_run: bool = Field(default=True, description="If true, simulate decisions and prefer advice over hard-deny for missing profile.")
-    explain: bool = Field(default=True, description="If true, return debug advice/traces where available.")
-    trace: Optional[bool] = Field(default=None, description="If set, overrides ***REMOVED*** trace behavior.")
-
-    model_config = {"extra": "allow"}
-
-
-class EvaluateRequestModel(BaseModel):
-    subject: AuthZenLikeActorModel
-    action: AuthZenLikeActionModel
-    resource: AuthZenLikeResourceModel
-    context: AuthZenLikeContextModel = Field(default_factory=AuthZenLikeContextModel)
-    options: AuthZenLikeOptionsModel = Field(default_factory=AuthZenLikeOptionsModel)
-
-    model_config = {"extra": "allow"}
-
-
-class PatchPolicyParametersModel(BaseModel):
-    parameters: Dict[str, Any] = Field(default_factory=dict)
-
-    model_config = {"extra": "allow"}
-
-
-class PatchIdentityPresenceModel(BaseModel):
-    presence: Dict[str, bool] = Field(default_factory=dict)
-
-    model_config = {"extra": "allow"}
-
-
-class CreateWorkflowGraphModel(BaseModel):
-    workflow_id: str = Field(..., description="Workflow identifier.")
-    owner_sub: str = Field(..., description="Owner user subject (UUID).")
-    display_name: str = Field(default="", description="Human-readable workflow name.")
-    properties: Dict[str, Any] = Field(default_factory=dict, description="Optional workflow properties.")
-
-    model_config = {"extra": "allow"}
-
-
-class CreateWorkflowItemGraphModel(BaseModel):
-    workflow_item_id: str = Field(..., description="Workflow item identifier.")
-    workflow_id: str = Field(..., description="Parent workflow identifier.")
-    display_name: str = Field(default="", description="Human-readable item name.")
-    properties: Dict[str, Any] = Field(default_factory=dict, description="Optional item properties.")
-
-    model_config = {"extra": "allow"}
-
-
-def build_config(config_path: Optional[str]) -> Dict[str, Any]:
-    # Build runtime config from defaults, optional JSON override, and environment variables
-    # side effect: reads env and file.
-    config = dict(DEFAULT_CONFIG)
-
-    if config_path:
-        config = merge_config(config, load_json_object(config_path))
-
-    config["log_level"] = os.environ.get("LOG_LEVEL", str(config.get("log_level", "info")))
-
-    config["workflow_base_url"] = os.environ.get("WORKFLOW_BASE_URL", str(config["workflow_base_url"]))
-    config["***REMOVED***_dir_base"] = os.environ.get("***REMOVED***_DIR_BASE", str(config["***REMOVED***_dir_base"]))
-    config["***REMOVED***_check_path"] = os.environ.get("***REMOVED***_CHECK_PATH", str(config["***REMOVED***_check_path"]))
-
-    config["***REMOVED***_timeout_connect_seconds"] = parse_positive_float(
-        os.environ.get("***REMOVED***_TIMEOUT_CONNECT_SECONDS", str(config["***REMOVED***_timeout_connect_seconds"])),
-        "***REMOVED***_TIMEOUT_CONNECT_SECONDS",
+def build_opa_client() -> OpaClient:
+    config = OpaConfig(
+        base_url=read_env_string("OPA_URL", "http://opa:8181"),
+        package=read_env_string("OPA_PACKAGE", "auto_book"),
     )
-    config["***REMOVED***_timeout_read_seconds"] = parse_positive_float(
-        os.environ.get("***REMOVED***_TIMEOUT_READ_SECONDS", str(config["***REMOVED***_timeout_read_seconds"])),
-        "***REMOVED***_TIMEOUT_READ_SECONDS",
-    )
+    return OpaClient(config=config)
 
-    # Enable trace by default for audit trail; can be disabled via env var
-    ***REMOVED***_trace_env = os.environ.get("***REMOVED***_TRACE_DEFAULT", str(config["***REMOVED***_trace_default"])).lower()
-    config["***REMOVED***_trace_default"] = ***REMOVED***_trace_env in ("true", "1", "yes")
 
-    # Auto-book policy defaults (can be overridden via environment)
-    auto_book_consent_env = os.environ.get("AUTO_BOOK_CONSENT", str(config["auto_book_consent"])).lower()
-    config["auto_book_consent"] = auto_book_consent_env in ("true", "1", "yes")
+OPA_CLIENT = build_opa_client()
+
+
+def get_token_claims(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)) -> dict[str, Any]:
+    # For development: skip token validation if AUTH_ENABLED=false
+    auth_enabled = os.getenv("AUTH_ENABLED", "true").lower() == "true"
+    if not auth_enabled:
+        return {"sub": "demo_user", "active": True}
     
-    if "AUTO_BOOK_MAX_COST_EUR" in os.environ:
-        config["auto_book_max_cost_eur"] = parse_positive_int(os.environ["AUTO_BOOK_MAX_COST_EUR"], "AUTO_BOOK_MAX_COST_EUR")
+    return security.verify_token(credentials)
 
-    config["request_timeout_seconds"] = parse_positive_int(
-        os.environ.get("REQUEST_TIMEOUT_SECONDS", str(config["request_timeout_seconds"])),
-        "REQUEST_TIMEOUT_SECONDS",
+
+def resolve_principal_sub(
+    request_body: dict[str, Any],
+    token_claims: Optional[dict[str, Any]],
+) -> str:
+    # 1) Prefer explicit context.principal.id in the request
+    context = request_body.get("context") or {}
+    principal = context.get("principal") or {}
+    principal_id = principal.get("id")
+    if isinstance(principal_id, str) and principal_id.strip():
+        return principal_id.strip()
+
+    # 2) Fall back to JWT sub
+    if token_claims is not None:
+        sub = token_claims.get("sub")
+        if isinstance(sub, str) and sub.strip():
+            return sub.strip()
+
+    # 3) Fail closed: require a principal
+    raise HTTPException(status_code=400, detail={"message": "principal_sub missing", "code": "INVALID_REQUEST"})
+
+
+def build_error_response(status_code: int, message: str, code: str = "ERROR", details: Optional[dict[str, Any]] = None) -> JSONResponse:
+    body: dict[str, Any] = {"message": message, "code": code}
+    if details is not None:
+        body["details"] = details
+    return JSONResponse(status_code=status_code, content=body)
+
+
+@app.get("/health")
+def get_health() -> dict[str, Any]:
+    return {"status": "ok"}
+
+
+@app.post("/v1/evaluate")
+def post_evaluate(
+    request_body: dict[str, Any] = Body(...),
+    token_claims: dict[str, Any] = Depends(get_token_claims),
+) -> dict[str, Any]:
+    try:
+        principal_sub = resolve_principal_sub(request_body=request_body, token_claims=token_claims)
+    except HTTPException as exc:
+        raise exc
+
+    # Optional: in future load profile/preferences from your IdP or a profile service.
+    profile: dict[str, Any] = {
+        "preferences": {},
+        "policy_parameters": {},
+    }
+
+    result = evaluate_request_with_opa(
+        opa_client=OPA_CLIENT,
+        request_body=request_body,
+        principal_sub=principal_sub,
+        token_claims=token_claims,
+        profile=profile,
     )
 
-    validate_non_empty_string(str(config.get("workflow_base_url", "")), "workflow_base_url")
-    validate_non_empty_string(str(config.get("***REMOVED***_dir_base", "")), "***REMOVED***_dir_base")
-    validate_non_empty_string(str(config.get("***REMOVED***_check_path", "")), "***REMOVED***_check_path")
-
-    return config
-
-
-def handle_get_health(request: Request) -> Dict[str, Any]:
-    # Return health and basic service stats
-    # why: smoke tests and operational debugging
-    # side effect: none.
-    service: AuthzService = request.app.state.service
     return {
-        "status": "ok",
-        "service": str(request.app.state.config.get("service_name", "authz-api")),
-        "profiles_in_memory": int(service.get_profile_count()),
+        "decision": result.decision,
+        "reason_codes": result.reason_codes,
+        "advice": result.advice,
     }
 
 
-def handle_post_evaluate(request: Request, body: EvaluateRequestModel) -> EvaluateResponseModel:
-    # Evaluate authorization request
-    # why: central PDP adapter around ***REMOVED*** + progressive profiling
-    # side effect: network I/O.
-    service: AuthzService = request.app.state.service
-    try:
-        response = service.evaluate_request(request_model=body)
-        return EvaluateResponseModel(**response)
-    except ValueError as exception:
-        raise HTTPException(status_code=400, detail=str(exception)) from exception
-    except PermissionError as exception:
-        raise HTTPException(status_code=403, detail=str(exception)) from exception
+@app.get("/v1/profiles/{principal_sub}")
+def get_profile(principal_sub: str, token_claims: dict[str, Any] = Depends(get_token_claims)) -> dict[str, Any]:
+    # Placeholder until you wire this to Keycloak / a profile service.
+    return {
+        "principal_sub": principal_sub,
+        "policy_parameters": {},
+        "identity_presence": {"present": True, "source": "token" if token_claims else "unknown"},
+    }
 
 
-def handle_get_policy_parameters(request: Request, principal_sub: str) -> Dict[str, Any]:
-    # Return non-PII policy parameters (preferences) for a principal
-    # why: build policy context without PII.
-    service: AuthzService = request.app.state.service
-    try:
-        principal_sub = validate_non_empty_string(principal_sub, "principal_sub")
-        return {"principal_sub": principal_sub, "parameters": service.get_policy_parameters(principal_sub)}
-    except ValueError as exception:
-        raise HTTPException(status_code=400, detail=str(exception)) from exception
+@app.get("/v1/policy-parameters/{principal_sub}")
+def get_policy_parameters(principal_sub: str, token_claims: dict[str, Any] = Depends(get_token_claims)) -> dict[str, Any]:
+    return {"principal_sub": principal_sub, "policy_parameters": {}}
 
 
-def handle_patch_policy_parameters(request: Request, principal_sub: str, body: PatchPolicyParametersModel) -> Dict[str, Any]:
-    # Patch non-PII policy parameters (preferences)
-    # why: desktop app can enrich preferences over time
-    # side effect: in-memory mutation.
-    service: AuthzService = request.app.state.service
-    try:
-        principal_sub = validate_non_empty_string(principal_sub, "principal_sub")
-        updated = service.patch_policy_parameters(principal_sub=principal_sub, patch=body.parameters)
-        return {"principal_sub": principal_sub, "parameters": updated}
-    except ValueError as exception:
-        raise HTTPException(status_code=400, detail=str(exception)) from exception
+@app.get("/v1/identity-presence/{principal_sub}")
+def get_identity_presence(principal_sub: str, token_claims: dict[str, Any] = Depends(get_token_claims)) -> dict[str, Any]:
+    return {"principal_sub": principal_sub, "identity_presence": {"present": True, "source": "token" if token_claims else "unknown"}}
 
 
-def handle_get_identity_presence(request: Request, principal_sub: str) -> Dict[str, Any]:
-    # Return identity-presence flags (no values)
-    # why: support progressive profiling without leaking PII values.
-    service: AuthzService = request.app.state.service
-    try:
-        principal_sub = validate_non_empty_string(principal_sub, "principal_sub")
-        return {"principal_sub": principal_sub, "presence": service.get_identity_presence(principal_sub)}
-    except ValueError as exception:
-        raise HTTPException(status_code=400, detail=str(exception)) from exception
+@app.post("/v1/graph/workflows")
+def post_graph_workflows(
+    request_body: dict[str, Any] = Body(...),
+    token_claims: dict[str, Any] = Depends(get_token_claims),
+) -> dict[str, Any]:
+    # Minimal stub: acknowledge graph creation so the rest of the system can evolve.
+    workflow_id = request_body.get("workflow_id") or str(uuid.uuid4())
+    return {"status": "created", "workflow_id": workflow_id}
 
 
-def handle_patch_identity_presence(request: Request, principal_sub: str, body: PatchIdentityPresenceModel) -> Dict[str, Any]:
-    # Patch identity-presence flags
-    # why: demo enrichment workflow driven by UI or back-office
-    # side effect: in-memory mutation.
-    service: AuthzService = request.app.state.service
-    try:
-        principal_sub = validate_non_empty_string(principal_sub, "principal_sub")
-        updated = service.patch_identity_presence(principal_sub=principal_sub, patch=body.presence)
-        return {"principal_sub": principal_sub, "presence": updated}
-    except ValueError as exception:
-        raise HTTPException(status_code=400, detail=str(exception)) from exception
+@app.post("/v1/graph/workflows/{workflow_id}/items")
+def post_graph_workflow_items(
+    workflow_id: str,
+    request_body: dict[str, Any] = Body(...),
+    token_claims: dict[str, Any] = Depends(get_token_claims),
+) -> dict[str, Any]:
+    item_id = request_body.get("item_id") or str(uuid.uuid4())
+    return {"status": "created", "workflow_id": workflow_id, "item_id": item_id}
 
 
-def handle_get_profile(request: Request, principal_sub: str) -> Dict[str, Any]:
-    # Return combined profile view (preferences + presence)
-    # why: convenient for demo clients
-    # side effect: none.
-    service: AuthzService = request.app.state.service
-    try:
-        principal_sub = validate_non_empty_string(principal_sub, "principal_sub")
-        return service.get_profile(principal_sub=principal_sub)
-    except ValueError as exception:
-        raise HTTPException(status_code=400, detail=str(exception)) from exception
-
-
-def handle_post_graph_workflow(request: Request, body: CreateWorkflowGraphModel) -> Dict[str, Any]:
-    # Create workflow object and owner relation in ***REMOVED***
-    # why: establish workflow graph for ReBAC authorization
-    # side effect: creates ***REMOVED*** objects/relations.
-    service: AuthzService = request.app.state.service
-    try:
-        return service.create_workflow_graph(
-            workflow_id=body.workflow_id,
-            owner_sub=body.owner_sub,
-            display_name=body.display_name,
-            properties=body.properties,
-        )
-    except ValueError as exception:
-        raise HTTPException(status_code=400, detail=str(exception)) from exception
-    except Exception as exception:
-        raise HTTPException(status_code=500, detail=f"Failed to create workflow graph: {exception}") from exception
-
-
-def handle_post_graph_workflow_item(request: Request, body: CreateWorkflowItemGraphModel) -> Dict[str, Any]:
-    # Create workflow_item object and workflow relation in ***REMOVED***
-    # why: link items to workflows for permission inheritance
-    # side effect: creates ***REMOVED*** objects/relations.
-    service: AuthzService = request.app.state.service
-    try:
-        return service.create_workflow_item_graph(
-            workflow_item_id=body.workflow_item_id,
-            workflow_id=body.workflow_id,
-            display_name=body.display_name,
-            properties=body.properties,
-        )
-    except ValueError as exception:
-        raise HTTPException(status_code=400, detail=str(exception)) from exception
-    except Exception as exception:
-        raise HTTPException(status_code=500, detail=f"Failed to create workflow_item graph: {exception}") from exception
-
-
-def create_app(config: Dict[str, Any]) -> FastAPI:
-    # 
-    # Create FastAPI API endpoints and wire routes
-    #
-    # why: keep web layer thin and delegate to core service
-    # side effect: allocates in-memory stores.
-    api = FastAPI(
-        title="AuthZ API",
-        version="1.0.0",
-        # Limit request body size to 1MB (protects against large payload attacks)
-        swagger_ui_parameters={"defaultModelsExpandDepth": -1},
-    )
-    api.state.config = config
-    api.state.service = AuthzService(config=config)
-    
-    # Add request size limiting middleware
-    api.add_middleware(RequestSizeLimiterMiddleware, max_size=get_max_request_size())
-
-    # Health check - no auth required
-    api.add_api_route("/health", handle_get_health, methods=["GET"])
-
-    # All other endpoints require authentication
-    api.add_api_route("/v1/evaluate", handle_post_evaluate, methods=["POST"], dependencies=[Depends(bearer_scheme)])
-
-    api.add_api_route("/v1/profiles/{principal_sub}", handle_get_profile, methods=["GET"], dependencies=[Depends(bearer_scheme)])
-    api.add_api_route("/v1/profiles/{principal_sub}/policy-parameters", handle_get_policy_parameters, methods=["GET"], dependencies=[Depends(bearer_scheme)])
-    api.add_api_route("/v1/profiles/{principal_sub}/policy-parameters", handle_patch_policy_parameters, methods=["PATCH"], dependencies=[Depends(bearer_scheme)])
-    api.add_api_route("/v1/profiles/{principal_sub}/identity-presence", handle_get_identity_presence, methods=["GET"], dependencies=[Depends(bearer_scheme)])
-    api.add_api_route("/v1/profiles/{principal_sub}/identity-presence", handle_patch_identity_presence, methods=["PATCH"], dependencies=[Depends(bearer_scheme)])
-
-    # Graph write endpoints for workflow/item object creation
-    api.add_api_route("/v1/graph/workflows", handle_post_graph_workflow, methods=["POST"], dependencies=[Depends(bearer_scheme)])
-    api.add_api_route("/v1/graph/workflow-items", handle_post_graph_workflow_item, methods=["POST"], dependencies=[Depends(bearer_scheme)])
-
-    return api
-
-
-def parse_args() -> argparse.Namespace:
-    # Parse CLI args for container entrypoint
-    # why: keep configuration explicit and reproducible.
-    parser = argparse.ArgumentParser(description="AuthZ API service (***REMOVED***-backed)")
-    parser.add_argument("--config", dest="config_path", default=None, help="Path to JSON config file.")
-    parser.add_argument("--host", dest="host", default="0.0.0.0", help="Bind host.")
-    parser.add_argument("--port", dest="port", type=int, default=8002, help="Bind port.")
-    parser.add_argument("--reload", dest="reload", action="store_true", help="Enable auto-reload (local dev).")
-    return parser.parse_args()
-
-
-def main() -> int:
-    # Start the AuthZ API server
-    # side effect: runs a web server and blocks
-    # returns non-zero on config errors.
-    args = parse_args()
-    try:
-        config = build_config(config_path=args.config_path)
-    except ValueError as exception:
-        print(f"[authz-api] Configuration error: {exception}")
-        return 2
-
-    api = create_app(config=config)
-    uvicorn.run(
-        api,
-        host=str(args.host),
-        port=int(args.port),
-        reload=bool(args.reload),
-        log_level=str(config.get("log_level", "info")),
-        # Security: Limit request body size to prevent memory exhaustion
-        limit_max_requests=10000,  # Max requests before worker restart
-        limit_concurrency=100,      # Max concurrent connections
-        timeout_keep_alive=5,        # Keep-alive timeout
-    )
-    return 0
+@app.post("/v1/graph/workflow-items")
+def post_graph_workflow_items_legacy(
+    request_body: dict[str, Any] = Body(...),
+    token_claims: dict[str, Any] = Depends(get_token_claims),
+) -> dict[str, Any]:
+    # Legacy endpoint for services-api compatibility
+    workflow_item_id = request_body.get("workflow_item_id") or str(uuid.uuid4())
+    workflow_id = request_body.get("workflow_id", "unknown")
+    return {"status": "created", "workflow_id": workflow_id, "workflow_item_id": workflow_item_id}
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    import argparse
+    import uvicorn
+
+    parser = argparse.ArgumentParser(description="FlowPilot AuthZ API")
+    parser.add_argument("--host", default="0.0.0.0", help="Bind host")
+    parser.add_argument("--port", type=int, default=8000, help="Bind port")
+    args = parser.parse_args()
+
+    uvicorn.run(
+        app,
+        host=args.host,
+        port=args.port,
+        log_level="info",
+    )

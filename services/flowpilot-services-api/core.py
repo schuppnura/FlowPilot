@@ -5,8 +5,8 @@
 #
 # Key responsibilities:
 # - Workflow creation from templates
-# - Workflow item management and state tracking
-# - Policy enforcement point (PEP) that delegates decisions to AuthZ API
+# - Itinerary item management and state tracking
+# - Policy enforcement point (PEP) that delegates decisions to the PDP via AuthZ API
 # - Dry-run semantics for workflow execution
 # - In-memory workflow storage (demo only)
 #
@@ -24,7 +24,7 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
-from template_loader import load_trip_templates_from_directory
+from template_loader import load_workflow_templates_from_directory
 from utils import build_url, http_post_json, validate_non_empty_string
 
 # Token cache for service-to-service auth
@@ -41,21 +41,21 @@ def get_service_token() -> Optional[str]:
     auth_enabled = os.environ.get("AUTH_ENABLED", "true").lower() == "true"
     if not auth_enabled:
         return None
-    
+
     # Check token cache
     if "token" in _token_cache and "expires_at" in _token_cache:
         if time.time() < _token_cache["expires_at"] - 30:  # 30s buffer
             return _token_cache["token"]
-    
+
     # Get new token from Keycloak
     keycloak_url = os.environ.get("KEYCLOAK_URL", "https://keycloak:8443")
     realm = os.environ.get("KEYCLOAK_REALM", "flowpilot")
     client_id = os.environ.get("KEYCLOAK_CLIENT_ID", "flowpilot-agent")
     client_secret = os.environ.get("KEYCLOAK_CLIENT_SECRET", "")
     verify_ssl = os.environ.get("KEYCLOAK_VERIFY_SSL", "false").lower() == "true"
-    
+
     token_url = f"{keycloak_url}/realms/{realm}/protocol/openid-connect/token"
-    
+
     try:
         response = requests.post(
             token_url,
@@ -67,7 +67,7 @@ def get_service_token() -> Optional[str]:
             timeout=5,
             verify=verify_ssl,
         )
-        
+
         if response.status_code == 200:
             token_data = response.json()
             _token_cache["token"] = token_data["access_token"]
@@ -75,7 +75,7 @@ def get_service_token() -> Optional[str]:
             return _token_cache["token"]
     except Exception:
         pass  # Fall through to return None
-    
+
     return None
 
 
@@ -93,7 +93,7 @@ class FlowPilotService:
         # side effect: none.
         self._config = dict(config)
         self._templates: Dict[str, Dict[str, Any]] = {}
-        self._workflows: Dict[str, Dict[str, Any]] = {}  # Stores workflows (API: trip_id for compatibility)
+        self._workflows: Dict[str, Dict[str, Any]] = {}
 
     def load_templates(self) -> None:
         # Load templates from directory
@@ -101,7 +101,7 @@ class FlowPilotService:
         # side effect: filesystem reads.
         domain = validate_non_empty_string(str(self._config.get("domain", "")), "domain")
         template_directory = validate_non_empty_string(str(self._config.get("template_directory", "")), "template_directory")
-        self._templates = load_trip_templates_from_directory(template_directory=template_directory, domain=domain)
+        self._templates = load_workflow_templates_from_directory(template_directory=template_directory, domain=domain)
 
     def get_template_count(self) -> int:
         # Return number of loaded templates
@@ -133,18 +133,17 @@ class FlowPilotService:
         return templates
 
     def create_workflow_from_template(self, template_id: str, owner_sub: str, start_date: str) -> Dict[str, Any]:
-        # Create a workflow and items from a template
+        # Create a workflow and itinerary items from a template
         # side effect: stores a new workflow in memory.
-        # Note: Returns trip_id in API response for backward compatibility
         template_id = validate_non_empty_string(template_id, "template_id")
         owner_sub = validate_non_empty_string(owner_sub, "owner_sub")
-        start_date = validate_non_empty_string(start_date, "start_date")
+        # Note: start_date parameter is accepted but not used (for API compatibility)
 
         if template_id not in self._templates:
             raise KeyError(f"Template not found: {template_id}")
 
         template = self._templates[template_id]
-        workflow_id = "t_" + uuid.uuid4().hex[:8]
+        workflow_id = "w_" + uuid.uuid4().hex[:8]
         created_at = get_utc_now_iso()
 
         items: List[Dict[str, Any]] = []
@@ -155,35 +154,27 @@ class FlowPilotService:
                     continue
                 item_id = "i_" + uuid.uuid4().hex[:8]
                 kind = str(raw.get("kind", "unknown"))
-                item_dict: Dict[str, Any] = {
-                    "item_id": item_id,
-                    "kind": kind,
-                    "title": str(raw.get("title", kind)),
-                    "planned_for": raw.get("planned_for"),
-                    "planned_price": raw.get("planned_price"),
-                    "status": "planned",
-                    "last_decision": None,
-                    "last_reason_codes": [],
-                    "last_advice": [],
-                }
-                # Preserve all item-level attributes from template
-                for key in ["airline_risk_score", "type", "city", "neighborhood", "star_rating", 
-                           "departure_airport", "arrival_airport", "cuisine"]:
-                    if key in raw:
-                        item_dict[key] = raw[key]
-                items.append(item_dict)
+                items.append(
+                    {
+                        "item_id": item_id,
+                        "kind": kind,
+                        "title": str(raw.get("title", kind)),
+                        "planned_for": raw.get("planned_for"),
+                        "planned_price": raw.get("planned_price"),
+                        "status": "planned",
+                        "last_decision": None,
+                        "last_reason_codes": [],
+                        "last_advice": [],
+                    }
+                )
 
         workflow: Dict[str, Any] = {
             "workflow_id": workflow_id,
             "template_id": template_id,
             "owner_sub": owner_sub,
             "created_at": created_at,
-            "start_date": start_date,
             "items": items,
         }
-        # Preserve trip-level attributes for auto-book policy (e.g., departure_date)
-        if "departure_date" in template:
-            workflow["departure_date"] = template["departure_date"]
         self._workflows[workflow_id] = workflow
 
         # Create workflow and workflow_item objects in ***REMOVED*** via AuthZ API
@@ -197,14 +188,14 @@ class FlowPilotService:
                     item_kind=str(item.get("kind", "unknown")),
                 )
         except Exception as graph_error:
-            # Log but don't fail the trip creation if graph write fails
+            # Log but don't fail the workflow creation if graph write fails
             print(f"Warning: Failed to create ***REMOVED*** graph for workflow {workflow_id}: {graph_error}")
 
         return {"workflow_id": workflow_id, "owner_sub": owner_sub, "created_at": created_at, "item_count": len(items)}
 
     def get_workflow(self, workflow_id: str) -> Dict[str, Any]:
         # Return a workflow record
-        # assumptions: trip exists
+        # assumptions: workflow exists
         # side effect: none.
         workflow_id = validate_non_empty_string(workflow_id, "workflow_id")
         if workflow_id not in self._workflows:
@@ -220,7 +211,7 @@ class FlowPilotService:
 
     def get_workflow_items(self, workflow_id: str) -> Dict[str, Any]:
         # Return workflow items for agent-runner
-        # assumptions: trip exists
+        # assumptions: workflow exists
         # side effect: none.
         workflow_id = validate_non_empty_string(workflow_id, "workflow_id")
         if workflow_id not in self._workflows:
@@ -231,19 +222,14 @@ class FlowPilotService:
         for item in workflow.get("items", []):
             if not isinstance(item, dict):
                 continue
-            # Build base item response
-            item_response: Dict[str, Any] = {
-                "item_id": str(item.get("item_id")),
-                "kind": str(item.get("kind", "unknown")),
-                "title": str(item.get("title", "")),
-                "status": str(item.get("status", "unknown")),
-            }
-            # Include all additional attributes if present
-            for key in ["type", "city", "neighborhood", "star_rating", 
-                       "departure_airport", "arrival_airport", "cuisine"]:
-                if key in item:
-                    item_response[key] = item[key]
-            items_out.append(item_response)
+            items_out.append(
+                {
+                    "item_id": str(item.get("item_id")),
+                    "kind": str(item.get("kind", "unknown")),
+                    "title": str(item.get("title", "")),
+                    "status": str(item.get("status", "unknown")),
+                }
+            )
 
         return {"workflow_id": workflow_id, "items": items_out}
 
@@ -260,8 +246,9 @@ class FlowPilotService:
 
         item = self._get_workflow_item_or_raise(workflow=workflow, item_id=workflow_item_id)
         decision_payload = self._call_authz_for_item(
-            workflow=workflow,
-            item=item,
+            workflow_id=workflow_id,
+            item_id=workflow_item_id,
+            item_kind=str(item.get("kind", "unknown")),
             principal_sub=principal_sub,
             dry_run=bool(dry_run),
         )
@@ -326,58 +313,27 @@ class FlowPilotService:
         if principal_sub != owner_sub:
             raise PermissionError(f"Principal mismatch: principal_sub={principal_sub} is not owner_sub={owner_sub}")
 
-    def _call_authz_for_item(self, workflow: Dict[str, Any], item: Dict[str, Any], principal_sub: str, dry_run: bool) -> Dict[str, Any]:
-        # Call AuthZ /v1/evaluate for this workflow item.
-        # why: PEP delegates to AuthZ API for ReBAC (***REMOVED***) and, for action 'auto-book', ABAC checks.
-        # details: we include attributes (total cost, departure_date, airline_risk_score) in resource.properties so the
-        #          AuthZ API can evaluate the auto-book policy. When action='auto-book', the PDP façade enforces
-        #          consent/cost/advance/risk constraints after delegation is verified by ***REMOVED***.
+    def _call_authz_for_item(self, workflow_id: str, item_id: str, item_kind: str, principal_sub: str, dry_run: bool) -> Dict[str, Any]:
+        # Call AuthZ /v1/evaluate
+        # why: authorization and ***REMOVED*** relationship checks live there
         # side effect: network I/O.
         authz_base_url = validate_non_empty_string(str(self._config.get("authz_base_url", "")), "authz_base_url")
         agent_sub = validate_non_empty_string(str(self._config.get("agent_sub", "")), "agent_sub")
         timeout_seconds = int(self._config.get("request_timeout_seconds", 10))
         domain = validate_non_empty_string(str(self._config.get("domain", "")), "domain")
 
-        workflow_id = str(workflow.get("workflow_id", ""))
-        item_id = str(item.get("item_id", ""))
-        item_kind = str(item.get("kind", "unknown"))
-
-        # Extract attributes for auto-book policy evaluation
-        resource_properties: Dict[str, Any] = {
-            "domain": domain,
-            "workflow_item_id": item_id,
-            "workflow_item_kind": item_kind,
-        }
-        
-        # Add departure_date from trip-level (if present)
-        if "departure_date" in workflow:
-            resource_properties["departure_date"] = workflow["departure_date"]
-        
-        # Add airline_risk_score from item-level (if present)
-        if "airline_risk_score" in item:
-            resource_properties["airline_risk_score"] = item["airline_risk_score"]
-        
-        # Calculate total trip cost from all items' planned_price
-        # Note: This is the total cost across ALL items in the trip (hotels, flights, etc.)
-        #       Used by auto-book policy to enforce cost limits
-        total_cost = 0.0
-        for workflow_item in workflow.get("items", []):
-            if isinstance(workflow_item, dict):
-                planned_price = workflow_item.get("planned_price")
-                if isinstance(planned_price, dict):
-                    amount = planned_price.get("amount")
-                    if isinstance(amount, (int, float)):
-                        total_cost += float(amount)
-        resource_properties["planned_price"] = total_cost
-
         url = build_url(authz_base_url, "/v1/evaluate")
         body: Dict[str, Any] = {
             "subject": {"type": "agent", "id": agent_sub},
-            "action": {"name": "auto-book"},
+            "action": {"name": "book"},
             "resource": {
                 "type": "workflow",
                 "id": workflow_id,
-                "properties": resource_properties,
+                "properties": {
+                    "domain": domain,
+                    "workflow_item_id": item_id,
+                    "workflow_item_kind": item_kind,
+                },
             },
             "context": {"principal": {"type": "user", "id": principal_sub}},
             "options": {"dry_run": bool(dry_run), "explain": True, "metrics": False},
@@ -386,7 +342,7 @@ class FlowPilotService:
         # Get service token for authentication
         token = get_service_token()
         headers = {"Authorization": f"Bearer {token}"} if token else None
-        
+
         response = requests.post(url, json=body, timeout=timeout_seconds, headers=headers, verify=False)
         if response.status_code not in (200, 201):
             raise RuntimeError(f"AuthZ evaluate failed: HTTP {response.status_code}: {response.text}")
@@ -411,11 +367,11 @@ class FlowPilotService:
             "display_name": template_name,
             "properties": {"domain": domain},
         }
-        
+
         # Get service token for authentication
         token = get_service_token()
         headers = {"Authorization": f"Bearer {token}"} if token else None
-        
+
         response = requests.post(url, json=body, timeout=timeout_seconds, headers=headers, verify=False)
         if response.status_code not in (200, 201):
             raise RuntimeError(f"Failed to create workflow graph: HTTP {response.status_code}: {response.text}")
@@ -439,11 +395,11 @@ class FlowPilotService:
             "display_name": item_title,
             "properties": {"kind": item_kind},
         }
-        
+
         # Get service token for authentication
         token = get_service_token()
         headers = {"Authorization": f"Bearer {token}"} if token else None
-        
+
         response = requests.post(url, json=body, timeout=timeout_seconds, headers=headers, verify=False)
         if response.status_code not in (200, 201):
             raise RuntimeError(f"Failed to create workflow_item graph: HTTP {response.status_code}: {response.text}")
