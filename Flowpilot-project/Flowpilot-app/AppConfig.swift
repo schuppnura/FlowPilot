@@ -26,7 +26,7 @@ struct AppConfig {
     static let authzBaseUrlUrl: URL = URL(string: authzBaseUrl) ?? URL(string: "http://localhost:8002")!
 
     /// Domain/services API base URL.
-    /// Default assumption: Docker publishes services-api on localhost:8003.
+    /// Default assumption: Docker publishes domain-services-api on localhost:8003.
     static let servicesBaseUrl: URL = urlValue(
         key: "FLOWPILOT_SERVICES_BASE_URL",
         infoPlistKey: "FLOWPILOT_SERVICES_BASE_URL",
@@ -69,7 +69,7 @@ struct AppConfig {
     static let oidcScopes: String = stringValue(
         key: "FLOWPILOT_OIDC_SCOPES",
         infoPlistKey: "FLOWPILOT_OIDC_SCOPES",
-        defaultValue: "openid profile"
+        defaultValue: "openid profile autobook"
     )
 
     /// Custom scheme part of `oidcRedirectUri` used by ASWebAuthenticationSession.

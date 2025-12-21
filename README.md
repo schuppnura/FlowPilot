@@ -12,7 +12,7 @@ This repository previously experimented with ***REMOVED***, OCI policy bundles, 
 
 1. PDP: OPA server for ABAC. It evaluates relationship-based delegation and permissions via an authorization graph.
 
-2. An AuthZ integration layer that acts as integration beteeen PEP and PDP and maintaing the graph for workflow ownership relations enriches requests with profile attributes.
+2. An AuthZ integration layer that acts as integration between PEP and PDP and maintaining the graph for workflow ownership relations. It validates AuthZEN-compliant requests and extracts user claims from the AuthZEN context.principal.claims.
 
 3. PEP using PDP authorization as a domain backend that owns workflow state (system of record) in the context of a travel agent use case: autonomous booking is gated by attribute-based policy conditions (consent, cost, advance days, airline risk) after delegation is verified.
 
@@ -128,8 +128,9 @@ All API responses include security headers:
 ### Authorization Architecture
 
 - **`flowpilot-authz-api`** - Authorization façade for policy decisions
-  - Validates access tokens via JWKS
-  - Extracts identity context from JWT claims
+  - Validates access tokens via JWKS (for service-to-service authentication)
+  - Validates AuthZEN-compliant requests (requires context.principal with id and claims)
+  - Extracts user claims from AuthZEN context.principal.claims
   - Sanitizes all input payloads before processing
   - Calls OPA to evaluate Rego policies
   - Returns allow/deny decisions with optional reasons/obligations
@@ -213,15 +214,18 @@ Example: evaluate the `auto_book` policy directly in OPA (the repository include
 docker run --rm --network flowpilot_default curlimages/curl:8.5.0 -sS   -H "Content-Type: application/json"   -d '{
     "input": {
       "user": {
-        "auto_book_consent": true,
-        "auto_book_max_cost_eur": 300,
-        "auto_book_min_advance_hours": 24,
-        "risk_profile": "medium"
+        "sub": "test-user-id",
+        "autobook_consent": true,
+        "autobook_price": 1500,
+        "autobook_leadtime": 7,
+        "autobook_risklevel": 2,
+        "claims": {}
       },
-      "trip": {
-        "total_cost_eur": 250,
-        "departure_hours_from_now": 48,
-        "risk_level": "low"
+      "action": {"name": "book"},
+      "resource": {
+        "planned_price": 250,
+        "departure_date": "2026-01-16",
+        "airline_risk_score": 1
       }
     }
   }'   http://opa:8181/v1/data/auto_book/allow

@@ -20,7 +20,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Optional
 
+import utils
 from utils import http_post_json, build_timeouts
+import authz_utils
+from security import verify_token_string
+
+# Default values for autobook attributes when not present in Keycloak token claims
+DEFAULT_AUTOBOOK_CONSENT = "No"  # String value from Keycloak (will be normalized to False)
+DEFAULT_AUTOBOOK_PRICE = 0  # Maximum cost in EUR
+DEFAULT_AUTOBOOK_LEADTIME = 10000  # Minimum days in advance
+DEFAULT_AUTOBOOK_RISKLEVEL = 0  # Maximum airline risk level
 
 
 @dataclass(frozen=True)
@@ -28,7 +37,7 @@ class OpaConfig:
     base_url: str
     package: str
     allow_rule: str = "allow"
-    reason_rule: str = "reason"
+    reason_rule: str = "reasons"
     connect_timeout_seconds: float = 3.0
     read_timeout_seconds: float = 10.0
 
@@ -71,80 +80,117 @@ class EvaluateResult:
     advice: list[dict[str, Any]]
 
 
+def coerce_dict(value: Any) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return value
+    return {}
+
+
+def extract_jwt_from_authzen_context_token(context_token: Any) -> Optional[str]:
+    """
+    AuthZEN context.token can be:
+    - a raw JWT string
+    - a dict that contains a JWT under common keys (access_token, token, jwt, value)
+    """
+    if isinstance(context_token, str):
+        token_string = context_token.strip()
+        return token_string or None
+
+    if isinstance(context_token, dict):
+        for key in ["access_token", "token", "jwt", "value"]:
+            candidate = context_token.get(key)
+            if isinstance(candidate, str) and candidate.strip():
+                return candidate.strip()
+
+    return None
+
+
+def normalize_yes_no_to_bool(value: Any, default: bool) -> bool:
+    """
+    Convert common string/primitive representations to boolean.
+    True: "yes", "y", "true", "1", "on" (case-insensitive)
+    False: any other present value
+    Default applied only when value is None/empty.
+    """
+    if value is None:
+        return default
+
+    if isinstance(value, bool):
+        return value
+
+    if isinstance(value, (int, float)):
+        return bool(value)
+
+    if isinstance(value, list):
+        if not value:
+            return default
+        return normalize_yes_no_to_bool(value[0], default=default)
+
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if not normalized:
+            return default
+        return normalized in {"yes", "y", "true", "t", "1", "on"}
+
+    return bool(value)
+
+
 def build_opa_input(
     *,
-    request_body: dict[str, Any],
-    principal_sub: str,
-    token_claims: Optional[dict[str, Any]] = None,
-    profile: Optional[dict[str, Any]] = None,
+    authzen_request: dict[str, Any],
 ) -> dict[str, Any]:
     """
-    Map the OpenAPI EvaluateRequest into the Rego input your policy expects.
-
-    Policy (auto_book.rego) expects:
-    - input.user.auto_book_consent
-    - input.user.auto_book_max_cost_eur
-    - input.user.auto_book_min_days_advance
-    - input.user.auto_book_max_airline_risk
-    - input.resource.planned_price
-    - input.resource.departure_date
-    - input.resource.airline_risk_score
+    Build OPA input document from AuthZEN request.
+    
+    Args:
+        authzen_request: AuthZEN-compliant request body with context.principal containing claims
     """
-    request_context = (request_body.get("context") or {})
-    request_resource = (request_body.get("resource") or {})
-    request_action = (request_body.get("action") or {})
+    request_context = (authzen_request.get("context") or {})
+    request_resource = (authzen_request.get("resource") or {})
+    request_action = (authzen_request.get("action") or {})
 
-    profile = profile or {}
-    preferences = profile.get("preferences") or {}
-    policy_parameters = profile.get("policy_parameters") or {}
+    resource_properties = coerce_dict(request_resource.get("properties"))
 
-    # Extract resource properties for OPA
-    resource_properties = request_resource.get("properties") or {}
-    
-    # Build user object with flattened auto_book parameters
-    # Use policy_parameters first, then fall back to preferences, then defaults
-    user_data: dict[str, Any] = {
-        "sub": principal_sub,
-        "auto_book_consent": policy_parameters.get("auto_book_consent", preferences.get("auto_book_consent", True)),
-        "auto_book_max_cost_eur": policy_parameters.get("auto_book_max_cost_eur", preferences.get("auto_book_max_cost_eur", 5000)),
-        "auto_book_min_days_advance": policy_parameters.get("auto_book_min_days_advance", preferences.get("auto_book_min_days_advance", 0)),
-        "auto_book_max_airline_risk": policy_parameters.get("auto_book_max_airline_risk", preferences.get("auto_book_max_airline_risk", 10)),
-    }
-    
-    if token_claims is not None:
-        user_data["token"] = token_claims
-    
-    # Build resource object for OPA with the fields from properties
-    resource_data: dict[str, Any] = {
-        "planned_price": resource_properties.get("planned_price"),
-        "departure_date": resource_properties.get("departure_date"),
-        "airline_risk_score": resource_properties.get("airline_risk_score"),
-    }
+    # Extract principal and claims from AuthZEN context.principal
+    principal = request_context.get("principal") or {}
+    principal_sub = principal.get("id", "")
+    principal_claims = coerce_dict(principal.get("claims", {}))
 
-    opa_input: dict[str, Any] = {
-        "user": user_data,
+    return {
+        "user": {
+            "sub": principal_sub,
+            "autobook_consent": bool(normalize_yes_no_to_bool(
+                principal_claims.get("autobook_consent", DEFAULT_AUTOBOOK_CONSENT), default=False
+            )),
+            "autobook_price": authz_utils.to_int(principal_claims.get("autobook_price"), DEFAULT_AUTOBOOK_PRICE),
+            "autobook_leadtime": authz_utils.to_int(principal_claims.get("autobook_leadtime"), DEFAULT_AUTOBOOK_LEADTIME), 
+            "autobook_risklevel": authz_utils.to_int(principal_claims.get("autobook_risklevel"), DEFAULT_AUTOBOOK_RISKLEVEL),
+            "claims": principal_claims,
+        },
         "action": request_action,
-        "resource": resource_data,
+        "resource": {
+            "planned_price": resource_properties.get("planned_price"),
+            "departure_date": resource_properties.get("departure_date"),
+            "airline_risk_score": resource_properties.get("airline_risk_score"),
+        },
         "context": request_context,
     }
-
-    return opa_input
 
 
 def evaluate_request_with_opa(
     *,
     opa_client: OpaClient,
-    request_body: dict[str, Any],
-    principal_sub: str,
-    token_claims: Optional[dict[str, Any]] = None,
-    profile: Optional[dict[str, Any]] = None,
+    authzen_request: dict[str, Any],
 ) -> EvaluateResult:
     input_document = build_opa_input(
-        request_body=request_body,
-        principal_sub=principal_sub,
-        token_claims=token_claims,
-        profile=profile,
+        authzen_request=authzen_request,
     )
+    
+    # Debug: Log OPA input to help diagnose issues
+    import json
+    import os
+    if os.environ.get("DEBUG_OPA_INPUT", "0") == "1":
+        print(f"[DEBUG] OPA Input: {json.dumps(input_document, indent=2)}", flush=True)
 
     try:
         is_allowed = opa_client.evaluate_allow(input_document=input_document)

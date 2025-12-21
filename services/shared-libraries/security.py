@@ -5,11 +5,13 @@ import hashlib
 import json
 import os
 import re
+import ssl
 import time
 from dataclasses import dataclass
 from typing import Any, Callable, Optional
 
 import jwt
+import requests
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -119,12 +121,19 @@ class JWTValidator:
         self.issuer = issuer
         self.audience = audience
         
+        # For local development with self-signed certificates, disable SSL verification
+        # WARNING: This should NEVER be used in production!
+        ssl_context = ssl.create_default_context()
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+        
         # PyJWKClient caches JWKS and only refetches when needed
         self.jwks_client = PyJWKClient(
             jwks_uri,
             cache_keys=True,
             max_cached_keys=16,
             lifespan=cache_ttl_seconds,  # Cache lifespan in seconds
+            ssl_context=ssl_context,  # Disable SSL verification for local dev
         )
 
     def validate(self, token: str) -> dict[str, Any]:
@@ -166,15 +175,22 @@ class JWTValidator:
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token expired",
             )
-        except jwt.InvalidIssuerError:
+        except jwt.InvalidIssuerError as e:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token issuer",
+                detail=f"Invalid token issuer: expected {self.issuer}, got {str(e)}",
             )
-        except jwt.InvalidAudienceError:
+        except jwt.InvalidAudienceError as e:
+            token_aud = None
+            try:
+                # Try to decode without validation to see what audience is in the token
+                unverified = jwt.decode(token, options={"verify_signature": False})
+                token_aud = unverified.get("aud")
+            except Exception:
+                pass
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token audience",
+                detail=f"Invalid token audience: expected {self.audience}, got {token_aud}",
             )
         except jwt.InvalidSignatureError:
             raise HTTPException(
@@ -214,6 +230,7 @@ class JWTValidator:
     
     def _validate_subject(self, claims: dict[str, Any]) -> None:
         # Best practice: require subject claim
+        # The 'sub' claim should always be present in OIDC tokens (required by spec)
         sub = claims.get("sub")
         if not sub or not isinstance(sub, str) or not sub.strip():
             raise HTTPException(
@@ -277,6 +294,85 @@ def verify_token(
     token = credentials.credentials
     validator = _get_jwt_validator()
     return validator.validate(token)
+
+
+def verify_token_string(token: str) -> dict[str, Any]:
+    # Validate a raw JWT token string using JWKS (without FastAPI dependency).
+    # Returns decoded claims if valid, raises HTTPException if invalid.
+    validator = _get_jwt_validator()
+    return validator.validate(token)
+
+
+#
+# ---------------------------------------------------------------------------
+# Service-to-service authentication (client credentials)
+# ---------------------------------------------------------------------------
+#
+
+_service_token_cache: Optional[dict[str, Any]] = None
+
+
+def get_service_token() -> Optional[str]:
+    # Get service-to-service access token using Keycloak client credentials flow.
+    # Caches token and refreshes when expired.
+    # Returns None if service auth is not configured.
+    global _service_token_cache
+    
+    token_url = os.environ.get("KEYCLOAK_TOKEN_URL", "").strip()
+    client_id = os.environ.get("AGENT_CLIENT_ID", "").strip()
+    client_secret = os.environ.get("AGENT_CLIENT_SECRET", "").strip()
+    
+    # Service auth is optional - return None if not configured
+    if not token_url or not client_id or not client_secret:
+        return None
+    
+    # Check if we have a cached token that's still valid
+    if _service_token_cache:
+        expires_at = _service_token_cache.get("expires_at", 0)
+        if time.time() < expires_at - 60:  # Refresh 60 seconds before expiry
+            return _service_token_cache.get("access_token")
+    
+    # Request new token using client credentials flow
+    try:
+        # Get audience from environment (for service-to-service tokens)
+        audience = os.environ.get("KEYCLOAK_AUDIENCE", "").strip()
+        
+        # Disable SSL verification for local development with self-signed certs
+        token_data = {
+            "grant_type": "client_credentials",
+            "client_id": client_id,
+            "client_secret": client_secret,
+        }
+        # Add audience if specified (Keycloak will include it in the token)
+        if audience:
+            token_data["audience"] = audience
+            
+        response = requests.post(
+            token_url,
+            data=token_data,
+            timeout=10,
+            verify=False,  # Disable SSL verification for local dev
+        )
+        
+        if response.status_code != 200:
+            # Log error but don't crash - service can work without s2s auth in some cases
+            return None
+        
+        token_data = response.json()
+        access_token = token_data.get("access_token")
+        expires_in = token_data.get("expires_in", 300)  # Default 5 minutes
+        
+        if access_token:
+            _service_token_cache = {
+                "access_token": access_token,
+                "expires_at": time.time() + expires_in,
+            }
+            return access_token
+    except Exception:
+        # Silently fail - service may work without s2s auth in some configurations
+        pass
+    
+    return None
 
 
 #

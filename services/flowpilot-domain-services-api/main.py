@@ -30,6 +30,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from pydantic import BaseModel, Field, validator
 
 import security
+import api_logging
 from core import FlowPilotService
 from utils import load_json_object, merge_config, parse_positive_int, validate_non_empty_string
 
@@ -73,12 +74,28 @@ class CreateWorkflowRequest(BaseModel):
 
 
 class ExecuteWorkflowItemRequest(BaseModel):
-    principal_sub: str = Field(..., min_length=1, max_length=255, description="Principal subject")
+    # AuthZEN: Accept principal_user object (preferred) or principal_sub (backward compatibility)
+    principal_user: Optional[Dict[str, Any]] = Field(None, description="Principal-user object (AuthZEN format)")
+    principal_sub: Optional[str] = Field(None, min_length=1, max_length=255, description="Principal subject (backward compatibility)")
     dry_run: bool = Field(default=True, description="Dry run flag")
     
     @validator('principal_sub')
-    def sanitize_principal_sub(cls, v: str) -> str:
+    def sanitize_principal_sub(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
         return security.sanitize_string(v, max_length=255)
+    
+    def get_principal_user(self) -> Dict[str, Any]:
+        # AuthZEN: Return principal_user if provided, otherwise construct from principal_sub
+        if self.principal_user:
+            return self.principal_user
+        if self.principal_sub:
+            return {
+                "type": "user",
+                "id": self.principal_sub,
+                "claims": {}
+            }
+        raise ValueError("Either principal_user or principal_sub must be provided")
 
 
 def build_config(config_path: Optional[str], template_directory_override: Optional[str]) -> Dict[str, Any]:
@@ -217,38 +234,80 @@ def handle_post_execute_workflow_item(
     # Execute one itinerary item with AuthZ enforcement
     # why: FlowPilot is PEP and delegates decisions to AuthZ/***REMOVED***.
     service: FlowPilotService = request.app.state.service
+    
+    # Log request
+    api_logging.log_api_request(
+        method="POST",
+        path=f"/v1/workflows/{workflow_id}/items/{workflow_item_id}/execute",
+        request_body=body.dict() if hasattr(body, 'dict') else body,
+        token_claims=token_claims,
+        request=request,
+        path_params={"workflow_id": workflow_id, "workflow_item_id": workflow_item_id},
+    )
+    
     try:
         # Validate path parameters
         workflow_id = security.validate_id(workflow_id, "workflow_id", max_length=255)
         workflow_item_id = security.validate_id(workflow_item_id, "workflow_item_id", max_length=255)
-        # principal_sub already validated by Pydantic
         
-        # Extract raw token from Authorization header
-        user_token = None
-        auth_header = request.headers.get("authorization", "")
-        if auth_header.lower().startswith("bearer "):
-            user_token = auth_header[7:]  # Remove "Bearer " prefix
+        # AuthZEN: Get principal_user object from request
+        principal_user = body.get_principal_user()
         
-        return service.execute_workflow_item(
+        result = service.execute_workflow_item(
             workflow_id=workflow_id,
             workflow_item_id=workflow_item_id,
-            principal_sub=body.principal_sub,
+            principal_user=principal_user,
             dry_run=bool(body.dry_run),
-            user_token=user_token,
         )
+        
+        # Log response
+        api_logging.log_api_response(
+            method="POST",
+            path=f"/v1/workflows/{workflow_id}/items/{workflow_item_id}/execute",
+            status_code=200,
+            response_body=result,
+        )
+        
+        return result
     except security.InputValidationError as exception:
+        error_detail = security.sanitize_error_message(str(exception), INCLUDE_ERROR_DETAILS)
+        api_logging.log_api_response(
+            method="POST",
+            path=f"/v1/workflows/{workflow_id}/items/{workflow_item_id}/execute",
+            status_code=400,
+            error=error_detail,
+        )
         raise HTTPException(
             status_code=400,
-            detail=security.sanitize_error_message(str(exception), INCLUDE_ERROR_DETAILS)
+            detail=error_detail
         ) from exception
     except PermissionError as exception:
+        api_logging.log_api_response(
+            method="POST",
+            path=f"/v1/workflows/{workflow_id}/items/{workflow_item_id}/execute",
+            status_code=403,
+            error="Permission denied",
+        )
         raise HTTPException(status_code=403, detail="Permission denied") from exception
     except KeyError as exception:
+        api_logging.log_api_response(
+            method="POST",
+            path=f"/v1/workflows/{workflow_id}/items/{workflow_item_id}/execute",
+            status_code=404,
+            error="Resource not found",
+        )
         raise HTTPException(status_code=404, detail="Resource not found") from exception
     except ValueError as exception:
+        error_detail = security.sanitize_error_message(str(exception), INCLUDE_ERROR_DETAILS)
+        api_logging.log_api_response(
+            method="POST",
+            path=f"/v1/workflows/{workflow_id}/items/{workflow_item_id}/execute",
+            status_code=400,
+            error=error_detail,
+        )
         raise HTTPException(
             status_code=400,
-            detail=security.sanitize_error_message(str(exception), INCLUDE_ERROR_DETAILS)
+            detail=error_detail
         ) from exception
 
 

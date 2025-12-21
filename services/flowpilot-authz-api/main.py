@@ -26,11 +26,12 @@ import os
 import uuid
 from typing import Any, Optional
 
-from fastapi import Body, Depends, FastAPI, HTTPException
+from fastapi import Body, Depends, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials
 
 import security
+import api_logging
 from core import OpaClient, OpaConfig, evaluate_request_with_opa
 
 app = FastAPI(title="FlowPilot AuthZ API", version="1.0.0")
@@ -131,53 +132,100 @@ def get_health() -> dict[str, Any]:
 
 @app.post("/v1/evaluate")
 def post_evaluate(
+    request: Request,
     request_body: dict[str, Any] = Body(...),
     token_claims: dict[str, Any] = Depends(get_token_claims),
 ) -> dict[str, Any]:
+    
+    # Log every request
+    api_logging.log_api_request(
+        method="POST",
+        path="/v1/evaluate",
+        request_body=request_body,
+        token_claims=token_claims,
+        request=request,
+    )
+    
+    # Sanitize all input before processing
     try:
-        # Sanitize all input before processing
         sanitized_body = security.sanitize_request_json_payload(request_body)
-        
-        principal_sub = resolve_principal_sub(request_body=sanitized_body, token_claims=token_claims)
     except security.InputValidationError as exc:
+        error_detail = security.sanitize_error_message(str(exc), INCLUDE_ERROR_DETAILS)
+        api_logging.log_api_response(
+            method="POST",
+            path="/v1/evaluate",
+            status_code=400,
+            error=error_detail,
+        )
         raise HTTPException(
             status_code=400,
-            detail=security.sanitize_error_message(str(exc), INCLUDE_ERROR_DETAILS)
+            detail=error_detail
         ) from exc
-    except HTTPException as exc:
-        raise exc
 
-    # Extract user token from context if provided
-    user_token_claims: Optional[dict[str, Any]] = None
+    # Validate AuthZEN compliance: must have context.principal with id and claims
     context = sanitized_body.get("context", {})
-    user_token = context.get("user_token")
-    if user_token and isinstance(user_token, str):
-        try:
-            # Decode and validate the user token
-            user_token_claims = security.verify_token_string(user_token)
-        except Exception:
-            # If token is invalid, continue without user claims
-            pass
+    principal = context.get("principal")
+    if not principal or not isinstance(principal, dict):
+        error_detail = "Request must be AuthZEN compliant: context.principal is required"
+        api_logging.log_api_response(
+            method="POST",
+            path="/v1/evaluate",
+            status_code=400,
+            error=error_detail,
+        )
+        raise HTTPException(
+            status_code=400,
+            detail=error_detail
+        )
     
-    # Load user profile with policy parameters
-    profile = PROFILE_STORE.get_profile(principal_sub)
+    principal_id = principal.get("id")
+    if not principal_id or not isinstance(principal_id, str) or not principal_id.strip():
+        error_detail = "Request must be AuthZEN compliant: context.principal.id is required"
+        api_logging.log_api_response(
+            method="POST",
+            path="/v1/evaluate",
+            status_code=400,
+            error=error_detail,
+        )
+        raise HTTPException(
+            status_code=400,
+            detail=error_detail
+        )
+    
+    if "claims" not in principal:
+        error_detail = "Request must be AuthZEN compliant: context.principal.claims is required"
+        api_logging.log_api_response(
+            method="POST",
+            path="/v1/evaluate",
+            status_code=400,
+            error=error_detail,
+        )
+        raise HTTPException(
+            status_code=400,
+            detail=error_detail
+        )
 
-    # Use user token claims if available, otherwise fall back to agent token claims
-    effective_token_claims = user_token_claims if user_token_claims else token_claims
-
+    # Request is AuthZEN compliant, pass it as-is to build_opa_input
     result = evaluate_request_with_opa(
         opa_client=OPA_CLIENT,
-        request_body=sanitized_body,
-        principal_sub=principal_sub,
-        token_claims=effective_token_claims,
-        profile=profile,
+        authzen_request=sanitized_body,
     )
 
-    return {
+    response_body = {
         "decision": result.decision,
         "reason_codes": result.reason_codes,
         "advice": result.advice,
     }
+    
+    # Log response
+    api_logging.log_api_response(
+        method="POST",
+        path="/v1/evaluate",
+        status_code=200,
+        response_body=response_body,
+    )
+    
+    return response_body
 
 
 @app.get("/v1/profiles/{principal_sub}")

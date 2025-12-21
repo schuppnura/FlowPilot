@@ -109,6 +109,42 @@ def parse_policy_deny_from_body(response_text: str) -> tuple[list[str], str]:
     return reason_codes, message
 
 
+def check_workflow_execution_authorization(
+    config: Dict[str, Any],
+    workflow_id: str,
+    principal_user: Dict[str, Any],
+    agent_sub: str,
+) -> Dict[str, Any]:
+    # AuthZEN: Basic anti-spoofing check - verify principal is valid
+    # why: prevent trivial principal spoofing before starting workflow execution
+    # note: Full authorization happens at workflow item level via domain-services-api
+    # side effects: minimal validation, no network I/O required
+    validate_non_empty_string(workflow_id, "workflow_id")
+    if not isinstance(principal_user, dict) or not principal_user.get("id"):
+        return {
+            "decision": "deny",
+            "reason_codes": ["invalid_principal"],
+            "advice": [{"type": "error", "message": "Invalid principal_user object"}]
+        }
+    
+    # Basic validation: principal must have an ID
+    principal_id = principal_user.get("id", "").strip()
+    if not principal_id:
+        return {
+            "decision": "deny",
+            "reason_codes": ["missing_principal_id"],
+            "advice": [{"type": "error", "message": "Principal ID is required"}]
+        }
+    
+    # For now, allow if principal is valid (full authorization happens at item level)
+    # In the future, this could check delegation relationships via authz-api
+    return {
+        "decision": "allow",
+        "reason_codes": [],
+        "advice": []
+    }
+
+
 def post_execute_workflow_item(
     url: str,
     payload: dict[str, Any],
@@ -141,16 +177,18 @@ def execute_workflow_item(
     config: Dict[str, Any],
     workflow_id: str,
     workflow_item_id: str,
-    principal_sub: str,
+    principal_user: Dict[str, Any],
     dry_run: bool,
 ) -> Dict[str, Any]:
     # Execute a single workflow item via the domain service and classify policy denies (HTTP 403) as completed results
     # why: denies are valid authorization outcomes and must not be treated as execution failures
     # assumptions: domain service returns 2xx on allow, 403 on deny, and other 4xx/5xx on true failures
     # side effects: network I/O.
+    # AuthZEN: Pass principal-user object instead of just principal_sub
     validate_non_empty_string(workflow_id, "workflow_id")
     validate_non_empty_string(workflow_item_id, "workflow_item_id")
-    validate_non_empty_string(principal_sub, "principal_sub")
+    if not isinstance(principal_user, dict) or not principal_user.get("id"):
+        raise ValueError("Invalid principal_user object")
 
     base_url = validate_non_empty_string(str(config.get("workflow_base_url", "")), "workflow_base_url")
     template = validate_non_empty_string(
@@ -162,7 +200,8 @@ def execute_workflow_item(
     timeouts = build_timeouts(connect_seconds=timeout_seconds)
 
     url = build_url(base_url, template.format(workflow_id=workflow_id, workflow_item_id=workflow_item_id))
-    payload: Dict[str, Any] = {"principal_sub": principal_sub, "dry_run": bool(dry_run)}
+    # AuthZEN: Pass principal-user object instead of just principal_sub
+    payload: Dict[str, Any] = {"principal_user": principal_user, "dry_run": bool(dry_run)}
 
     status_code, response_json, response_text = post_execute_workflow_item(url=url, payload=payload, timeouts=timeouts)
 
@@ -202,15 +241,17 @@ def execute_workflow_item(
     }
 
 
-def execute_workflow_run(config: Dict[str, Any], workflow_id: str, principal_sub: str, dry_run: bool) -> Dict[str, Any]:
+def execute_workflow_run(config: Dict[str, Any], workflow_id: str, principal_user: Dict[str, Any], dry_run: bool) -> Dict[str, Any]:
     # Execute a workflow by iterating items and delegating execution to domain endpoints,
     # normalizing each item result into a stable schema
     # why: the UI expects consistent status/decision fields even for denies
     # assumptions: execute_workflow_item returns {status, outcome, reason_codes, advice}
     # and may raise ValueError for invalid inputs
     # side effects: network I/O.
+    # AuthZEN: Accept principal-user object instead of just principal_sub
     validate_non_empty_string(workflow_id, "workflow_id")
-    validate_non_empty_string(principal_sub, "principal_sub")
+    if not isinstance(principal_user, dict) or not principal_user.get("id"):
+        raise ValueError("Invalid principal_user object")
 
     run_id = "wr_" + uuid.uuid4().hex[:10]
     items = list_workflow_items(config=config, workflow_id=workflow_id)
@@ -222,7 +263,7 @@ def execute_workflow_run(config: Dict[str, Any], workflow_id: str, principal_sub
                 config=config,
                 workflow_id=workflow_id,
                 workflow_item_id=item.workflow_item_id,
-                principal_sub=principal_sub,
+                principal_user=principal_user,
                 dry_run=dry_run,
             )
 
@@ -256,7 +297,8 @@ def execute_workflow_run(config: Dict[str, Any], workflow_id: str, principal_sub
     return {
         "run_id": run_id,
         "workflow_id": workflow_id,
-        "principal_sub": principal_sub,
+        "principal_sub": principal_user.get("id", ""),  # Keep for backward compatibility
+        "principal_user": principal_user,  # AuthZEN: include full principal-user object
         "dry_run": bool(dry_run),
         "results": results,
     }

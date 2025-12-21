@@ -1,121 +1,260 @@
-// This view expects AppState.workflowTemplates to be [WorkflowTemplate]
+// Nura Travel - Main Content View
+// Travel-focused UI with modern design and Nura branding
 import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject var state: AppState
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            identityPanel
-            workflowTemplatesPanel
-            workflowsPanel
-            agentPanel
-            agentResultsPanel
-            statusPanel
-            Spacer()
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                headerSection
+                identityPanel
+                workflowTemplatesPanel
+                workflowsPanel
+                agentPanel
+                agentResultsPanel
+            }
+            .padding(20)
         }
-        .padding(16)
+        .background(
+            Color(red: 0.98, green: 0.98, blue: 0.98) // Soft neutral background - Nura style
+        )
         // Note: Templates are loaded automatically after sign-in (see AppState.signIn)
     }
     
+    private var headerSection: some View {
+        HStack(spacing: 16) {
+            // Nura Logo - using SF Symbol as placeholder (replace with actual logo image if available)
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color(red: 0.85, green: 0.35, blue: 0.15), // Dark red
+                                Color(red: 0.95, green: 0.55, blue: 0.25)  // Orange
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 60, height: 60)
+                
+                Text("N")
+                    .font(.system(size: 32, weight: .bold, design: .default))
+                    .foregroundStyle(.white)
+            }
+            
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 8) {
+                    Text("Nura")
+                        .font(.system(size: 32, weight: .light, design: .default))
+                        .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.25))
+                    Text("Travel")
+                        .font(.system(size: 24, weight: .light, design: .default))
+                        .foregroundStyle(Color(red: 0.4, green: 0.4, blue: 0.45))
+                }
+                Text("Intelligent travel planning with AI-powered authorization")
+                    .font(.system(.subheadline, design: .default))
+                    .foregroundStyle(Color(red: 0.5, green: 0.5, blue: 0.55))
+            }
+            Spacer()
+        }
+        .padding(.bottom, 8)
+    }
+    
     private var identityPanel: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Identity").font(.headline)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "person.circle.fill")
+                    .foregroundStyle(Color(red: 0.3, green: 0.3, blue: 0.35)) // Soft dark - Nura style
+                Text("Account")
+                    .font(.headline)
+                    .fontWeight(.medium)
+                    .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.25)) // Soft dark - Nura style
+            }
             
             HStack(spacing: 12) {
-                Button("Sign in") {
+                Button(action: {
                     Task { await state.signIn(isRegistrationPreferred: false) }
+                }) {
+                    Label("Sign In", systemImage: "person.badge.key.fill")
+                        .frame(maxWidth: .infinity)
                 }
-                Button("Sign out") {
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .tint(Color(red: 0.95, green: 0.55, blue: 0.25)) // Orange - Nura logo color
+                
+                Button(action: {
                     state.signOut()
+                }) {
+                    Label("Sign Out", systemImage: "person.crop.circle.badge.xmark")
+                        .frame(maxWidth: .infinity)
                 }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
                 .disabled(state.principalSub == nil)
             }
             
-            HStack(spacing: 8) {
-                Text("Principal sub:").foregroundStyle(.secondary)
-                Text(state.principalSub ?? "—").textSelection(.enabled)
+            if let sub = state.principalSub {
+                HStack(spacing: 8) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                    Text("Signed in as:")
+                        .foregroundStyle(.secondary)
+                    Text(sub)
+                        .textSelection(.enabled)
+                        .font(.system(.body, design: .monospaced))
+                        .foregroundStyle(.primary)
+                }
+                .padding(.top, 4)
             }
         }
-        .padding(12)
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.gray.opacity(0.3)))
+        .padding(16)
+        .background(Color.white)
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.03), radius: 4, x: 0, y: 1) // Subtle shadow - Nura style
     }
     
     private var workflowTemplatesPanel: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Workflow templates").font(.headline)
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "map.fill")
+                    .foregroundStyle(Color(red: 0.3, green: 0.3, blue: 0.35)) // Soft dark - Nura style
+                Text("Plan Your Trip")
+                    .font(.headline)
+                    .fontWeight(.medium)
+                    .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.25)) // Soft dark - Nura style
+            }
             
-            Picker("Select template", selection: Binding<String>(
-                get: { state.selectedWorkflowTemplateId ?? "" },
-                set: { newValue in state.selectedWorkflowTemplateId = newValue.isEmpty ? nil : newValue }
-            )) {
-                Text("Select…").tag("")
-                ForEach(state.workflowTemplates, id: \.id) { template in
-                    Text("\(template.name) (\(template.id))").tag(template.id)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Trip Template")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Picker("Select template", selection: Binding<String>(
+                    get: { state.selectedWorkflowTemplateId ?? "" },
+                    set: { newValue in state.selectedWorkflowTemplateId = newValue.isEmpty ? nil : newValue }
+                )) {
+                    Text("Choose a trip template…").tag("")
+                    ForEach(state.workflowTemplates, id: \.id) { template in
+                        Text(template.name).tag(template.id)
+                    }
                 }
+                .pickerStyle(.menu)
+                .controlSize(.large)
             }
-            .pickerStyle(.menu)
             
-            DatePicker(
-                "Start date:",
-                selection: $state.workflowStartDate,
-                displayedComponents: [.date]
-            )
-            .datePickerStyle(.compact)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Departure Date")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                DatePicker(
+                    "",
+                    selection: $state.workflowStartDate,
+                    displayedComponents: [.date]
+                )
+                .datePickerStyle(.compact)
+                .labelsHidden()
+            }
             
-            Button("Create workflow") {
+            Button(action: {
                 Task { await state.createWorkflowFromSelectedTemplate() }
+            }) {
+                Label("Create Trip Itinerary", systemImage: "plus.circle.fill")
+                    .frame(maxWidth: .infinity)
             }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .tint(Color(red: 0.95, green: 0.55, blue: 0.25)) // Orange - Nura logo color
             .disabled(state.principalSub == nil || (state.selectedWorkflowTemplateId ?? "").isEmpty)
         }
-        .padding(12)
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.gray.opacity(0.3)))
+        .padding(16)
+        .background(Color.white)
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.03), radius: 4, x: 0, y: 1) // Subtle shadow - Nura style
     }
     
     private var workflowsPanel: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Workflows").font(.headline)
-            
-            HStack(spacing: 8) {
-                Text("Workflow ID:").foregroundStyle(.secondary)
-                Text(state.workflowId ?? "—").textSelection(.enabled)
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "list.bullet.rectangle.fill")
+                    .foregroundStyle(Color(red: 0.3, green: 0.3, blue: 0.35)) // Soft dark - Nura style
+                Text("Trip Itinerary")
+                    .font(.headline)
+                    .fontWeight(.medium)
+                    .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.25)) // Soft dark - Nura style
             }
             
-            if let startDate = state.workflowStartDateString {
-                HStack(spacing: 8) {
-                    Text("Start date:").foregroundStyle(.secondary)
-                    Text(startDate).textSelection(.enabled)
+            if let workflowId = state.workflowId {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "number.circle.fill")
+                            .foregroundStyle(.secondary)
+                        Text("Trip ID:")
+                            .foregroundStyle(.secondary)
+                        Text(workflowId)
+                            .textSelection(.enabled)
+                            .font(.system(.body, design: .monospaced))
+                    }
+                    
+                    if let startDate = state.workflowStartDateString {
+                        HStack(spacing: 8) {
+                            Image(systemName: "calendar")
+                                .foregroundStyle(.secondary)
+                            Text("Departure:")
+                                .foregroundStyle(.secondary)
+                            Text(startDate)
+                                .textSelection(.enabled)
+                        }
+                    }
                 }
+                .padding(.bottom, 8)
+            } else {
+                Text("No active trip. Create a trip from a template above.")
+                    .foregroundStyle(.secondary)
+                    .italic()
             }
             
             if !state.workflowItems.isEmpty {
                 Divider()
                 
-                Text("Workflow Items (\(state.workflowItems.count))").font(.subheadline).foregroundStyle(.secondary)
+                Text("Itinerary Items (\(state.workflowItems.count))")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 4)
                 
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: 10) {
                         ForEach(state.workflowItems) { item in
                             workflowItemRow(item)
                         }
                     }
                 }
-                .frame(maxHeight: 200)
+                .frame(maxHeight: 250)
             }
         }
-        .padding(12)
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.gray.opacity(0.3)))
+        .padding(16)
+        .background(Color.white)
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.03), radius: 4, x: 0, y: 1) // Subtle shadow - Nura style
     }
     
     private func workflowItemRow(_ item: WorkflowItem) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 12) {
             Text(itemIcon(for: item.kind))
-                .font(.title3)
+                .font(.system(size: 28))
+                .frame(width: 40, height: 40)
+                .background(
+                    Circle()
+                        .fill(Color(red: 0.3, green: 0.3, blue: 0.35).opacity(0.08)) // Subtle background - Nura style
+                )
             
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(item.title)
                     .font(.body)
-                    .fontWeight(.medium)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.primary)
                 
                 // Details line based on item kind
                 if let details = formatItemDetails(item) {
@@ -125,20 +264,43 @@ struct ContentView: View {
                 }
                 
                 // Status badge
-                Text(item.status)
-                    .font(.caption2)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.blue.opacity(0.1))
-                    .foregroundStyle(.blue)
-                    .cornerRadius(3)
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(statusColor(for: item.status))
+                        .frame(width: 6, height: 6)
+                    Text(item.status.capitalized)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                }
+                .foregroundStyle(statusColor(for: item.status).opacity(0.8)) // Softened - Nura style
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(statusColor(for: item.status).opacity(0.08)) // Subtle - Nura style
+                .cornerRadius(6) // Smaller radius - Nura style
             }
             
             Spacer()
         }
-        .padding(8)
-        .background(Color.gray.opacity(0.05))
-        .cornerRadius(6)
+        .padding(12)
+        .background(Color.white)
+        .cornerRadius(10)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color.gray.opacity(0.15), lineWidth: 0.5) // Subtle border - Nura style
+        )
+    }
+    
+    private func statusColor(for status: String) -> Color {
+        switch status.lowercased() {
+        case "planned":
+            return .blue
+        case "executed", "completed":
+            return .green
+        case "denied", "error":
+            return .red
+        default:
+            return .gray
+        }
     }
     
     private func formatItemDetails(_ item: WorkflowItem) -> String? {
@@ -200,38 +362,83 @@ struct ContentView: View {
     }
     
     private var agentPanel: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Agent runner").font(.headline)
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "sparkles")
+                    .foregroundStyle(Color(red: 0.3, green: 0.3, blue: 0.35)) // Soft dark - Nura style
+                Text("AI Authorization Check")
+                    .font(.headline)
+                    .fontWeight(.medium)
+                    .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.25)) // Soft dark - Nura style
+            }
             
-            HStack(spacing: 12) {
-                Button("Execute workflow (dry-run)") {
+            VStack(spacing: 12) {
+                Button(action: {
                     Task { await state.runAgentDryRun() }
+                }) {
+                    Label("Check Authorization (Dry Run)", systemImage: "checkmark.shield.fill")
+                        .frame(maxWidth: .infinity)
                 }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .tint(Color(red: 0.85, green: 0.35, blue: 0.15)) // Dark red - Nura logo color
                 .disabled(state.principalSub == nil || state.workflowId == nil)
                 
-                Button("Apply advice (mark profile fields present)") {
+                Button(action: {
                     Task { await state.completeRequiredProfileFieldsFromAdvice() }
+                }) {
+                    Label("Apply Profile Updates", systemImage: "person.crop.circle.badge.checkmark")
+                        .frame(maxWidth: .infinity)
                 }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
                 .disabled(state.principalSub == nil || state.missingProfileFieldsFromAdvice.isEmpty)
             }
             
             if !state.missingProfileFieldsFromAdvice.isEmpty {
-                Text("Missing profile fields: \(state.missingProfileFieldsFromAdvice.joined(separator: ", "))")
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 8) {
+                    Image(systemName: "info.circle.fill")
+                        .foregroundStyle(.orange)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Profile Updates Available")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                        Text("Missing fields: \(state.missingProfileFieldsFromAdvice.joined(separator: ", "))")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(10)
+                .background(Color.orange.opacity(0.1))
+                .cornerRadius(8)
             }
         }
-        .padding(12)
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.gray.opacity(0.3)))
+        .padding(16)
+        .background(Color.white)
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.03), radius: 4, x: 0, y: 1) // Subtle shadow - Nura style
     }
     
     private var agentResultsPanel: some View {
         Group {
             if let run = state.lastAgentRun {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Agent run results (\(run.run_id))").font(.headline)
+                VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "chart.bar.fill")
+                    .foregroundStyle(Color(red: 0.3, green: 0.3, blue: 0.35)) // Soft dark - Nura style
+                Text("Authorization Results")
+                    .font(.headline)
+                    .fontWeight(.medium)
+                    .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.25)) // Soft dark - Nura style
+                        Spacer()
+                        Text("Run: \(run.run_id)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                    }
                     
                     ScrollView {
-                        VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 12) {
                             ForEach(run.results) { result in
                                 resultItemView(result)
                             }
@@ -239,119 +446,125 @@ struct ContentView: View {
                     }
                     .frame(maxHeight: 400)
                 }
-                .padding(12)
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.gray.opacity(0.3)))
+        .padding(16)
+        .background(Color.white)
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.03), radius: 4, x: 0, y: 1) // Subtle shadow - Nura style
             }
         }
     }
     
     private func resultItemView(_ result: AgentRunItemResult) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text(result.workflow_item_id)
-                    .font(.system(.body, design: .monospaced))
-                    .bold()
+                HStack(spacing: 6) {
+                    Text(itemIcon(for: result.kind))
+                        .font(.title3)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(result.workflow_item_id)
+                            .font(.system(.caption, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                        Text(result.kind.capitalized)
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                    }
+                }
                 Spacer()
-                Text("[\(result.kind)]")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                statusBadge(status: result.status, decision: result.decision)
             }
             
-            HStack(spacing: 8) {
-                statusBadge(status: result.status, decision: result.decision)
-                
-                if let reasonCodes = result.reason_codes, !reasonCodes.isEmpty {
-                    Text("Reasons: \(reasonCodes.joined(separator: ", "))")
+            if let reasonCodes = result.reason_codes, !reasonCodes.isEmpty {
+                HStack(spacing: 6) {
+                    Image(systemName: "info.circle.fill")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Text(reasonCodes.joined(separator: ", "))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
             
             if let advice = result.advice, !advice.isEmpty {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 6) {
                     ForEach(advice) { adviceItem in
-                        HStack(alignment: .top, spacing: 4) {
-                            Text("•")
-                                .font(.caption)
+                        HStack(alignment: .top, spacing: 6) {
+                            Image(systemName: adviceItem.type.lowercased() == "error" ? "exclamationmark.circle.fill" : "info.circle.fill")
+                                .font(.caption2)
+                                .foregroundStyle(adviceItem.type.lowercased() == "error" ? .red : .blue)
                             Text(adviceItem.message)
                                 .font(.caption)
                                 .foregroundStyle(adviceItem.type.lowercased() == "error" ? .red : .secondary)
                         }
                     }
                 }
-                .padding(.leading, 8)
+                .padding(.top, 4)
             }
         }
-        .padding(8)
+        .padding(12)
         .background(resultBackgroundColor(status: result.status, decision: result.decision))
-        .cornerRadius(6)
+        .cornerRadius(10)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(borderColor(status: result.status, decision: result.decision), lineWidth: 0.5) // Subtle border - Nura style
+        )
+    }
+    
+    private func borderColor(status: String, decision: String) -> Color {
+        if status.lowercased() == "error" {
+            return Color.red.opacity(0.15) // Subtle - Nura style
+        } else if decision.lowercased() == "deny" {
+            return Color.orange.opacity(0.15) // Subtle - Nura style
+        } else if decision.lowercased() == "allow" {
+            return Color.green.opacity(0.15) // Subtle - Nura style
+        }
+        return Color.gray.opacity(0.1) // Subtle - Nura style
     }
     
     private func statusBadge(status: String, decision: String) -> some View {
         let color: Color
         let text: String
+        let icon: String
         
         if status.lowercased() == "error" {
             color = .red
             text = "ERROR"
+            icon = "xmark.circle.fill"
         } else if decision.lowercased() == "deny" {
             color = .orange
             text = "DENIED"
+            icon = "xmark.shield.fill"
         } else if decision.lowercased() == "allow" {
             color = .green
             text = "ALLOWED"
+            icon = "checkmark.shield.fill"
         } else {
             color = .gray
             text = status.uppercased()
+            icon = "questionmark.circle.fill"
         }
         
-        return Text(text)
-            .font(.caption)
-            .fontWeight(.semibold)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 2)
-            .background(color.opacity(0.2))
-            .foregroundStyle(color)
-            .cornerRadius(4)
+        return HStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.caption2)
+            Text(text)
+                .font(.caption)
+                .fontWeight(.bold)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(color.opacity(0.08)) // Subtle background - Nura style
+        .foregroundStyle(color.opacity(0.8)) // Softened text - Nura style
+        .cornerRadius(6) // Smaller radius - Nura style
     }
     
     private func resultBackgroundColor(status: String, decision: String) -> Color {
         if status.lowercased() == "error" {
-            return Color.red.opacity(0.05)
+            return Color.red.opacity(0.04) // Very subtle - Nura style
         } else if decision.lowercased() == "deny" {
-            return Color.orange.opacity(0.05)
+            return Color.orange.opacity(0.04) // Very subtle - Nura style
         } else if decision.lowercased() == "allow" {
-            return Color.green.opacity(0.05)
+            return Color.green.opacity(0.04) // Very subtle - Nura style
         }
-        return Color.gray.opacity(0.05)
-    }
-    
-    private var statusPanel: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Status / Errors").font(.headline)
-            
-            if !state.statusMessage.isEmpty {
-                ScrollView {
-                    Text(state.statusMessage)
-                        .font(.system(.body, design: .monospaced))
-                        .textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .frame(maxHeight: 300)
-            }
-            
-            if !state.errorMessage.isEmpty {
-                ScrollView {
-                    Text(state.errorMessage)
-                        .foregroundStyle(.red)
-                        .font(.system(.body, design: .monospaced))
-                        .textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .frame(maxHeight: 150)
-            }
-        }
-        .padding(12)
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.gray.opacity(0.3)))
+        return Color.white
     }
 }

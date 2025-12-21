@@ -7,6 +7,7 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY services/shared-libraries/utils.py /app/utils.py
 COPY services/shared-libraries/security.py /app/security.py
+COPY services/shared-libraries/api_logging.py /app/api_logging.py
 COPY services/flowpilot-ai-agent-api/main.py /app/main.py
 COPY services/flowpilot-ai-agent-api/core.py /app/core.py
 

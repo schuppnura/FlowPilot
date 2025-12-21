@@ -1,22 +1,23 @@
 //
-//  FlowPilotDemoApp.swift
-//  FlowPilot-demo
+//  NuraApp.swift
+//  Nura Travel
 //
-//  Created by Carlo on 15/12/2025.
+//  Nura Travel - Intelligent travel planning with AI-powered authorization
 //
 
 import SwiftUI
 
 @main
-struct FlowPilotDemoApp: App {
+struct NuraApp: App {
     @StateObject private var state = AppState()
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(state)
-                .frame(minWidth: 800, minHeight: 1000)
+                .frame(minWidth: 900, minHeight: 1100)
         }
-        .defaultSize(width: 900, height: 1200)
+        .defaultSize(width: 1000, height: 1300)
+        .windowStyle(.automatic)
     }
 }

@@ -317,6 +317,7 @@ def run_tests():
         print(f"  ✓ Authenticated successfully")
         print(f"  Username: {username}")
         print(f"  User ID (sub): {user_sub}")
+        print(f"  Access Token: {access_token}")
     except Exception as e:
         print(f"  ✗ Authentication failed: {e}")
         return

@@ -38,7 +38,7 @@ services:
       # JWT validation using JWKS (no network calls per request)
       - KEYCLOAK_JWKS_URI=https://keycloak:8443/realms/flowpilot/protocol/openid-connect/certs
       - KEYCLOAK_ISSUER=https://localhost:8443/realms/flowpilot
-      - KEYCLOAK_AUDIENCE=account
+      - KEYCLOAK_AUDIENCE=flowpilot-desktop
       # Optional: Enable payload signature scanning
       - ENABLE_PAYLOAD_SIGNATURE_SCAN=0
       # Optional: Configure request limits
@@ -46,6 +46,8 @@ services:
       - MAX_STRING_LENGTH=10000
       # Error message detail (set to 0 in production)
       - INCLUDE_ERROR_DETAILS=1
+      # API logging (set to 1 to enable JSON logging to stdout)
+      - ENABLE_API_LOGGING=1
     command: ["python", "main.py", "--host", "0.0.0.0", "--port", "8000"]
     ports:
       - "8002:8000"
@@ -63,6 +65,10 @@ services:
       # Domain/workflow API base URL.
       WORKFLOW_BASE_URL: http://flowpilot-domain-services-api:8000
 
+      # AuthZ API base URL for authorization checks
+      AUTHZ_BASE_URL: http://flowpilot-authz-api:8000
+      AGENT_SUB: agent-runner
+
       # Client credentials for service-to-service calls
       KEYCLOAK_TOKEN_URL: https://keycloak:8443/realms/flowpilot/protocol/openid-connect/token
       AGENT_CLIENT_ID: flowpilot-agent
@@ -73,7 +79,7 @@ services:
       # JWT validation using JWKS (no network calls per request)
       KEYCLOAK_JWKS_URI: https://keycloak:8443/realms/flowpilot/protocol/openid-connect/certs
       KEYCLOAK_ISSUER: https://localhost:8443/realms/flowpilot
-      KEYCLOAK_AUDIENCE: account
+      KEYCLOAK_AUDIENCE: flowpilot-desktop
       
       # Optional: Enable payload signature scanning
       ENABLE_PAYLOAD_SIGNATURE_SCAN: "0"
@@ -106,12 +112,14 @@ services:
       # JWT validation using JWKS (no network calls per request)
       KEYCLOAK_JWKS_URI: https://keycloak:8443/realms/flowpilot/protocol/openid-connect/certs
       KEYCLOAK_ISSUER: https://localhost:8443/realms/flowpilot
-      KEYCLOAK_AUDIENCE: account
+      KEYCLOAK_AUDIENCE: flowpilot-desktop
       
       # Optional: Enable payload signature scanning
       ENABLE_PAYLOAD_SIGNATURE_SCAN: "0"
       # Error message detail (set to 0 in production)
       INCLUDE_ERROR_DETAILS: "1"
+      # API logging (set to 1 to enable JSON logging to stdout)
+      ENABLE_API_LOGGING: "1"
     ports:
       - "8003:8000"
     depends_on:

@@ -127,7 +127,7 @@ class FlowPilotService:
             "template_id": template_id,
             "owner_sub": owner_sub,
             "created_at": created_at,
-            "departure_date": template.get("departure_date"),
+            "departure_date": start_date,  # Use the start_date parameter provided by the user
             "items": items,
         }
         self._workflows[workflow_id] = workflow
@@ -188,13 +188,17 @@ class FlowPilotService:
 
         return {"workflow_id": workflow_id, "items": items_out}
 
-    def execute_workflow_item(self, workflow_id: str, workflow_item_id: str, principal_sub: str, dry_run: bool, user_token: Optional[str] = None) -> Dict[str, Any]:
+    def execute_workflow_item(self, workflow_id: str, workflow_item_id: str, principal_user: Dict[str, Any], dry_run: bool) -> Dict[str, Any]:
         # Execute a workflow item with AuthZ decision
         # why: PEP responsibility
         # side effects: network I/O + optional state mutation.
+        # AuthZEN: Accept principal_user object instead of principal_sub and user_token
         workflow_id = validate_non_empty_string(workflow_id, "workflow_id")
         workflow_item_id = validate_non_empty_string(workflow_item_id, "workflow_item_id")
-        principal_sub = validate_non_empty_string(principal_sub, "principal_sub")
+        if not isinstance(principal_user, dict) or not principal_user.get("id"):
+            raise ValueError("Invalid principal_user object")
+        
+        principal_sub = principal_user.get("id", "")
 
         workflow = self._get_workflow_or_raise(workflow_id=workflow_id)
         self._validate_principal_matches_owner(workflow=workflow, principal_sub=principal_sub)
@@ -203,9 +207,8 @@ class FlowPilotService:
         decision_payload = self._call_authz_for_item(
             workflow=workflow,
             item=item,
-            principal_sub=principal_sub,
+            principal_user=principal_user,
             dry_run=bool(dry_run),
-            user_token=user_token,
         )
 
         decision = str(decision_payload.get("decision", "deny"))
@@ -268,10 +271,11 @@ class FlowPilotService:
         if principal_sub != owner_sub:
             raise PermissionError(f"Principal mismatch: principal_sub={principal_sub} is not owner_sub={owner_sub}")
 
-    def _call_authz_for_item(self, workflow: Dict[str, Any], item: Dict[str, Any], principal_sub: str, dry_run: bool, user_token: Optional[str] = None) -> Dict[str, Any]:
+    def _call_authz_for_item(self, workflow: Dict[str, Any], item: Dict[str, Any], principal_user: Dict[str, Any], dry_run: bool) -> Dict[str, Any]:
         # Call AuthZ /v1/evaluate
         # why: authorization and ***REMOVED*** relationship checks live there
         # side effect: network I/O.
+        # AuthZEN: Pass principal_user object instead of principal_sub and user_token
         authz_base_url = validate_non_empty_string(str(self._config.get("authz_base_url", "")), "authz_base_url")
         agent_sub = validate_non_empty_string(str(self._config.get("agent_sub", "")), "agent_sub")
         timeout_seconds = int(self._config.get("request_timeout_seconds", 10))
@@ -307,10 +311,8 @@ class FlowPilotService:
 
         url = build_url(authz_base_url, "/v1/evaluate")
         
-        # Build context with principal and optional user token
-        context: Dict[str, Any] = {"principal": {"type": "user", "id": principal_sub}}
-        if user_token:
-            context["user_token"] = user_token
+        # AuthZEN: Build context with principal-user object (not token)
+        context: Dict[str, Any] = {"principal": principal_user}
         
         body: Dict[str, Any] = {
             "subject": {"type": "agent", "id": agent_sub},

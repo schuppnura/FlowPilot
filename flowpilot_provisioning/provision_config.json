@@ -1,0 +1,7 @@
+{
+  "keycloak": {
+    "base_url": "https://localhost:8443",
+    "target_realm": "flowpilot",
+    "verify_tls": false
+  }
+}

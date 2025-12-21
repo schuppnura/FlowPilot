@@ -8,97 +8,121 @@ package auto_book
 # 2. Total trip cost within limit
 # 3. Sufficient advance notice for departure
 # 4. Airline risk score within threshold
-#
-# Input structure:
-# {
-#   "user": {
-#     "auto_book_consent": bool,
-#     "auto_book_max_cost_eur": number,
-#     "auto_book_min_days_advance": number,
-#     "auto_book_max_airline_risk": number
-#   },
-#   "resource": {
-#     "planned_price": number,      # total trip cost in EUR
-#     "departure_date": string,     # ISO date format YYYY-MM-DD
-#     "airline_risk_score": number  # 0-10 scale
-#   }
-# }
 
-import future.keywords.if
-import future.keywords.in
 
-# Default deny
 default allow := false
 
-default reason := "auto_book.unknown_error"
-
-# Main allow rule - all conditions must be true
+# Main allow rule: all gates must pass
 allow if {
-	has_consent
-	within_cost_limit
-	sufficient_advance
-	acceptable_risk
+  has_consent
+  within_cost_limit
+  sufficient_advance
+  acceptable_risk
 }
 
-# Condition 1: User consent
+# Reason codes returned as a set
+reasons[code] if {
+  code := "auto_book.no_consent"
+  not has_consent
+}
+
+reasons[code] if {
+  code := "auto_book.cost_limit_exceeded"
+  has_consent
+  not within_cost_limit
+}
+
+reasons[code] if {
+  code := "auto_book.insufficient_advance_notice"
+  has_consent
+  within_cost_limit
+  not sufficient_advance
+}
+
+reasons[code] if {
+  code := "auto_book.airline_risk_too_high"
+  has_consent
+  within_cost_limit
+  sufficient_advance
+  not acceptable_risk
+}
+
+# Consent can be derived from:
+# - normalized boolean provided by API: input.user.autobook_consent
+# - or from Keycloak claim in input.user.claims.autobook_consent (string like "Yes")
+
 has_consent if {
-	input.user.auto_book_consent == true
+  input.user.autobook_consent == true
 }
 
-# Condition 2: Cost limit
+has_consent if {
+  not input.user.autobook_consent
+  consent_from_claims == true
+}
+
+consent_from_claims := true if {
+  consent_str := sprintf("%v", [input.user.claims.autobook_consent])
+  lower(trim(consent_str, " ")) == "yes"
+}
+
+consent_from_claims := true if {
+  consent_str := sprintf("%v", [input.user.claims.autobook_consent])
+  lower(trim(consent_str, " ")) == "true"
+}
+
+consent_from_claims := true if {
+  sprintf("%v", [input.user.claims.autobook_consent]) == "1"
+}
+
+# Default to false if claim exists but doesn't match any true condition
+# (no need to explicitly set false - it defaults to undefined/false)
+
+# Cost gate
 within_cost_limit if {
-	input.user.auto_book_max_cost_eur > 0
-	input.resource.planned_price <= input.user.auto_book_max_cost_eur
+  planned_price := to_number(input.resource.planned_price)
+  max_cost := to_number(input.user.autobook_price)
+  planned_price <= max_cost
 }
 
-# Condition 3: Departure advance (days)
+# Advance notice gate (checks if departure is at least autobook_leadtime days in the future)
 sufficient_advance if {
-	input.user.auto_book_min_days_advance >= 0
-	days_until_departure >= input.user.auto_book_min_days_advance
+  departure_date_str := sprintf("%v", [input.resource.departure_date])
+  # Normalize departure date to RFC3339 format
+  normalized_departure := normalize_departure_date(departure_date_str)
+  departure := time.parse_rfc3339_ns(normalized_departure)
+  now := time.now_ns()
+  min_days := to_number(input.user.autobook_leadtime)
+  # Calculate days until departure
+  delta_days := (departure - now) / 1000000000 / 60 / 60 / 24
+  # Departure must be at least min_days in the future
+  delta_days >= min_days
 }
 
-# Condition 4: Airline risk score
+# Helper function to normalize date strings to RFC3339 format
+normalize_departure_date(date_str) := rfc3339_str if {
+  # If it's already RFC3339 format (contains "T"), use as-is
+  contains(date_str, "T")
+  rfc3339_str := date_str
+}
+
+normalize_departure_date(date_str) := rfc3339_str if {
+  # If it's date-only format (YYYY-MM-DD), convert to RFC3339 at midnight UTC
+  not contains(date_str, "T")
+  date_parts := split(date_str, "-")
+  count(date_parts) == 3
+  year := to_number(date_parts[0])
+  month := to_number(date_parts[1])
+  day := to_number(date_parts[2])
+  rfc3339_str := sprintf("%04d-%02d-%02dT00:00:00Z", [year, month, day])
+}
+
+# Airline risk gate; if no score provided, skip the check
 acceptable_risk if {
-	# Check if airline_risk_score exists
-	input.resource.airline_risk_score != null
-	input.resource.airline_risk_score < input.user.auto_book_max_airline_risk
+  not input.resource.airline_risk_score
 }
 
-# Helper: Calculate days until departure
-days_until_departure := days if {
-	# Parse departure date
-	departure_ns := time.parse_rfc3339_ns(sprintf("%sT00:00:00Z", [input.resource.departure_date]))
-	now_ns := time.now_ns()
-
-	# Calculate difference in days
-	diff_ns := departure_ns - now_ns
-	days := diff_ns / (((24 * 60) * 60) * 1000000000)
-}
-
-# Reason code determination
-reason := "auto_book.consent_missing" if {
-	not has_consent
-}
-
-reason := "auto_book.cost_exceeds_limit" if {
-	has_consent
-	not within_cost_limit
-}
-
-reason := "auto_book.insufficient_advance" if {
-	has_consent
-	within_cost_limit
-	not sufficient_advance
-}
-
-reason := "auto_book.airline_risk_too_high" if {
-	has_consent
-	within_cost_limit
-	sufficient_advance
-	not acceptable_risk
-}
-
-# If no airline_risk_score provided, skip that check
 acceptable_risk if {
-	not input.resource.airline_risk_score
+  risk := to_number(input.resource.airline_risk_score)
+  max_risk := to_number(input.user.autobook_risklevel)
+  risk <= max_risk
 }
