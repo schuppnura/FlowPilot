@@ -22,20 +22,157 @@ This repository previously experimented with ***REMOVED***, OCI policy bundles, 
 
 ## Security & Privacy
 
-FlowPilot adopts a strict privacy discipline: no PII exposure to the LLM and no PII handling in the domain backend beyond `sub` (UUID).
+FlowPilot implements **defense-in-depth security** with multiple layers of protection:
 
-All API endpoints (except health) verify and sanitize the inoput, in order to thwart known attack types.
-All API endpoints (except health) verify and validate the access token, to ensure only authenticated calls are accepted and to ensure the access token is issued by the expected IpD and contains the expected fields.
+### Key Security Features ✨
 
+- **JWKS-based JWT validation** - Zero network calls per token validation, locally cached public keys
+- **Comprehensive input validation** - 4-layer validation: Pydantic models, path parameters, string sanitization, request size limits
+- **Injection attack prevention** - Automatic control character rejection, optional signature scanning for SQL/XSS/Command injection
+- **Security headers** - 6 protective HTTP headers on all API responses
+- **Production-safe error handling** - Sanitized error messages prevent information leakage
+- **Privacy by design** - Zero PII exposure to LLMs, minimal PII handling (UUID only)
 
-- `flowpilot-authz-api` is the authorization façade used by other services and clients.
-  - It validates access tokens and extracts identity context.
-  - It calls OPA to evaluate Rego policies.
-  - It returns an allow/deny decision (plus optional reasons/obligations depending on the endpoint).
+### Privacy by Design
+- **Zero PII exposure to LLM**: No personally identifiable information is shared with AI agents
+- **Minimal PII handling**: Backend services only process `sub` (UUID) from tokens
+- **Authorization graph**: Delegation and permissions tracked by subject identifiers
 
-- `opa` is a plain OPA container started in server mode.
-  - Policies are mounted from the repository.
-  - Policies can be edited locally and reloaded via container restart (or via `--watch`, depending on your OPA args).
+### Authentication & Token Validation
+
+All API endpoints (except health checks) require bearer token authentication using **JWKS-based JWT validation** (no network calls per request).
+
+#### JWT Validation Checks (Best Practices) ✓
+
+1. **Signature verification** - Validates JWT signature using JWKS public keys (cached locally)
+2. **Expiration (exp)** - Required and verified, rejects expired tokens
+3. **Not Before (nbf)** - Verified, rejects tokens not yet valid
+4. **Issued At (iat)** - Required and checked for future-dated tokens
+5. **Issuer (iss)** - Required and verified against expected issuer
+6. **Audience (aud)** - Verified if configured
+7. **Subject (sub)** - Required and must be non-empty
+8. **Token Type (typ)** - Validates it's a proper Bearer/Access token
+9. **Clock skew tolerance** - 10 seconds leeway for time differences
+10. **Algorithm whitelist** - Only allows RS256/384/512 and ES256/384/512 (no HS algorithms)
+
+**Protections:**
+- Expired tokens
+- Tokens used before their valid time
+- Tokens from wrong issuers
+- Tokens for wrong audiences
+- Missing required claims
+- Invalid signatures
+- Time manipulation attacks
+- Algorithm confusion attacks
+
+**Configuration:**
+```bash
+# Required environment variables
+export KEYCLOAK_JWKS_URI="https://keycloak.example.com/realms/myrealm/protocol/openid-connect/certs"
+export KEYCLOAK_ISSUER="https://keycloak.example.com/realms/myrealm"
+export KEYCLOAK_AUDIENCE="account"  # Optional
+```
+
+### Input Validation & Sanitization
+
+All API endpoints implement comprehensive input validation:
+
+#### 1. **Pydantic Model Validation**
+- Length constraints (1-255 characters for IDs)
+- Type validation (strings, booleans, dates)
+- Custom validators for IDs, UUIDs, and ISO dates
+- Automatic sanitization of all string inputs
+
+#### 2. **Path Parameter Validation**
+- All URL path parameters validated before processing
+- ID format: alphanumeric, hyphens, underscores only
+- Maximum length enforcement (255 characters)
+
+#### 3. **String Sanitization**
+- Control character rejection (prevents injection attacks)
+- Hard length limits (10,000 characters default)
+- Optional signature scanning for:
+  - SQL injection patterns
+  - XSS patterns
+  - Command injection patterns
+  - Path traversal patterns
+
+#### 4. **Request Body Size Limits**
+- Default: 1MB per request
+- Configurable via `MAX_REQUEST_SIZE_MB` environment variable
+- Protects against memory exhaustion attacks
+
+**Configuration:**
+```bash
+# Optional: Enable payload signature scanning (disabled by default)
+export ENABLE_PAYLOAD_SIGNATURE_SCAN=1
+
+# Optional: Configure request size limits
+export MAX_REQUEST_SIZE_MB=1
+export MAX_STRING_LENGTH=10000
+
+# Optional: Disable detailed error messages in production
+export INCLUDE_ERROR_DETAILS=0
+```
+
+### Security Headers
+
+All API responses include security headers:
+- `X-Content-Type-Options: nosniff` - Prevents MIME sniffing
+- `X-Frame-Options: DENY` - Prevents clickjacking
+- `X-XSS-Protection: 1; mode=block` - XSS protection for older browsers
+- `Content-Security-Policy: default-src 'none'` - Restrictive CSP
+- `Referrer-Policy: no-referrer` - Prevents referrer leakage
+- `Permissions-Policy` - Disables geolocation, microphone, camera
+
+### Authorization Architecture
+
+- **`flowpilot-authz-api`** - Authorization façade for policy decisions
+  - Validates access tokens via JWKS
+  - Extracts identity context from JWT claims
+  - Sanitizes all input payloads before processing
+  - Calls OPA to evaluate Rego policies
+  - Returns allow/deny decisions with optional reasons/obligations
+
+- **`opa`** - Open Policy Agent in server mode
+  - Evaluates attribute-based access control (ABAC) policies
+  - Policies mounted from repository
+  - Supports relationship-based delegation via authorization graph
+  - Local policy editing with hot reload
+
+### Error Handling
+
+- **Production-safe error messages**: Internal details hidden when `INCLUDE_ERROR_DETAILS=0`
+- **Generic error responses**: Database, file system, network errors sanitized
+- **404 responses**: Generic "not found" messages (no enumeration)
+- **403 responses**: Generic "permission denied" (no detailed reasons)
+
+### Security Quick Reference
+
+**Authentication:**
+- All endpoints (except `/health`) require valid JWT bearer tokens
+- Tokens validated locally using JWKS (no network latency)
+- 10 JWT claims verified per best practices
+
+**Input Validation:**
+- All request bodies validated with Pydantic models
+- All path parameters sanitized and length-limited
+- All strings checked for control characters and length limits
+- Optional attack signature scanning (SQL, XSS, command injection, path traversal)
+
+**Defense in Depth:**
+- Request size limits (1MB default)
+- Security headers on all responses
+- Error message sanitization
+- No PII exposure to AI agents
+
+**Production Deployment:**
+```bash
+export INCLUDE_ERROR_DETAILS=0              # Hide internal error details
+export ENABLE_PAYLOAD_SIGNATURE_SCAN=1      # Enable attack signature detection
+export MAX_REQUEST_SIZE_MB=1                # Limit request body size
+export MAX_STRING_LENGTH=10000              # Limit string field lengths
+```
 
 ## Quick start (Docker Compose)
 
@@ -170,7 +307,7 @@ If you see connection errors in `flowpilot-authz-api` logs:
 ## Repository structure (selected)
 
 - `services/flowpilot-authz-api/` authorization API
-- `services/flowpilot-services-api/` business APIs
+- `services/flowpilot-domain-services-api/` travel domain APIs
 - `services/flowpilot-ai-agent-api/` AI agent API
 - `services/shared-libraries/` shared Python utilities
 - `infra/opa/` OPA policy and data (recommended)

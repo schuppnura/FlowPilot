@@ -61,7 +61,7 @@ class OpaClient:
             connect_seconds=self._config.connect_timeout_seconds,
             read_seconds=self._config.read_timeout_seconds,
         )
-        return http_post_json(url=url, body=payload, headers={"Content-Type": "application/json"}, timeout=timeouts)
+        return http_post_json(url=url, payload=payload, timeouts=timeouts)
 
 
 @dataclass(frozen=True)
@@ -82,11 +82,13 @@ def build_opa_input(
     Map the OpenAPI EvaluateRequest into the Rego input your policy expects.
 
     Policy (auto_book.rego) expects:
-    - input.user.persona
-    - input.user.preferences.auto_book_enabled
-    - input.user.policy_parameters.max_budget_eur
-    - input.resource.total_price_eur
-    - input.resource.departure_time_local, input.resource.arrival_time_local
+    - input.user.auto_book_consent
+    - input.user.auto_book_max_cost_eur
+    - input.user.auto_book_min_days_advance
+    - input.user.auto_book_max_airline_risk
+    - input.resource.planned_price
+    - input.resource.departure_date
+    - input.resource.airline_risk_score
     """
     request_context = (request_body.get("context") or {})
     request_resource = (request_body.get("resource") or {})
@@ -96,28 +98,35 @@ def build_opa_input(
     preferences = profile.get("preferences") or {}
     policy_parameters = profile.get("policy_parameters") or {}
 
-    persona = None
-    context_attributes = request_context.get("attributes") or {}
-    if isinstance(context_attributes, dict):
-        persona = context_attributes.get("persona")
-
-    if persona is None:
-        persona = preferences.get("persona")
-
-    opa_input: dict[str, Any] = {
-        "user": {
-            "sub": principal_sub,
-            "persona": persona,
-            "preferences": preferences,
-            "policy_parameters": policy_parameters,
-        },
-        "action": request_action,
-        "resource": request_resource,
-        "context": request_context,
+    # Extract resource properties for OPA
+    resource_properties = request_resource.get("properties") or {}
+    
+    # Build user object with flattened auto_book parameters
+    # Use policy_parameters first, then fall back to preferences, then defaults
+    user_data: dict[str, Any] = {
+        "sub": principal_sub,
+        "auto_book_consent": policy_parameters.get("auto_book_consent", preferences.get("auto_book_consent", True)),
+        "auto_book_max_cost_eur": policy_parameters.get("auto_book_max_cost_eur", preferences.get("auto_book_max_cost_eur", 5000)),
+        "auto_book_min_days_advance": policy_parameters.get("auto_book_min_days_advance", preferences.get("auto_book_min_days_advance", 0)),
+        "auto_book_max_airline_risk": policy_parameters.get("auto_book_max_airline_risk", preferences.get("auto_book_max_airline_risk", 10)),
+    }
+    
+    if token_claims is not None:
+        user_data["token"] = token_claims
+    
+    # Build resource object for OPA with the fields from properties
+    resource_data: dict[str, Any] = {
+        "planned_price": resource_properties.get("planned_price"),
+        "departure_date": resource_properties.get("departure_date"),
+        "airline_risk_score": resource_properties.get("airline_risk_score"),
     }
 
-    if token_claims is not None:
-        opa_input["user"]["token"] = token_claims
+    opa_input: dict[str, Any] = {
+        "user": user_data,
+        "action": request_action,
+        "resource": resource_data,
+        "context": request_context,
+    }
 
     return opa_input
 

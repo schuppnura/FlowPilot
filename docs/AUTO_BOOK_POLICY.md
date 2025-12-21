@@ -136,7 +136,7 @@ curl -X PATCH http://localhost:8002/v1/profiles/{user_sub}/policy-parameters \
 
 ### Services API Changes
 
-**File**: `services/flowpilot-services-api/core.py`
+**File**: `services/flowpilot-domain-services-api/core.py`
 
 1. **Updated Function**: `_call_authz_for_item(trip, item, ...)`
    - Extracts `departure_date` from trip-level properties

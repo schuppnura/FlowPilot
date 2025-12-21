@@ -108,7 +108,8 @@ final class KeycloakOidcClient: NSObject {
         var request = URLRequest(url: discoveryUrl)
         request.httpMethod = "GET"
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        // Use .insecure for local development with self-signed certificates
+        let (data, response) = try await URLSession.insecure.data(for: request)
         guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
             throw OidcClientError.discoveryFailed("HTTP error fetching discovery")
         }
@@ -212,7 +213,8 @@ final class KeycloakOidcClient: NSObject {
         ]
         request.httpBody = encodeForm(form)
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        // Use .insecure for local development with self-signed certificates
+        let (data, response) = try await URLSession.insecure.data(for: request)
         guard let http = response as? HTTPURLResponse else {
             throw OidcClientError.tokenExchangeFailed("Non-HTTP response")
         }

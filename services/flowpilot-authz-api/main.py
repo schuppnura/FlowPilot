@@ -3,17 +3,22 @@ FlowPilot AuthZ API (OPA-backed, no ***REMOVED***).
 
 This module implements the REST endpoints defined in flowpilot-authz.openapi.yaml.
 
+IMPORTANT: This service is DOMAIN-AGNOSTIC. It provides generic authorization
+evaluation that works with any domain (travel, nursing, business events, etc.).
+The domain-specific policy logic lives in the OPA policies, not in this API.
+
 OPA integration
 - This service calls an OPA server over HTTP.
 - Configure with env vars:
   - OPA_URL (default: http://opa:8181)
-  - OPA_PACKAGE (default: auto_book)
+  - OPA_PACKAGE (default: auto_book) - This is travel-specific by default, but
+    can be configured to any policy package for other domains.
 
 Where to set these:
 - In docker-compose.yml under the flowpilot-authz-api service:
     environment:
       - OPA_URL=http://opa:8181
-      - OPA_PACKAGE=auto_book
+      - OPA_PACKAGE=auto_book  # Change to domain-specific package for other domains
 """
 from __future__ import annotations
 
@@ -23,14 +28,19 @@ from typing import Any, Optional
 
 from fastapi import Body, Depends, FastAPI, HTTPException
 from fastapi.responses import JSONResponse
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.security import HTTPAuthorizationCredentials
 
 import security
 from core import OpaClient, OpaConfig, evaluate_request_with_opa
 
 app = FastAPI(title="FlowPilot AuthZ API", version="1.0.0")
 
-bearer_scheme = HTTPBearer(auto_error=True)
+# Add security middlewares before defining routes
+app.add_middleware(security.SecurityHeadersMiddleware)
+app.add_middleware(security.RequestSizeLimiterMiddleware, max_size=security.get_max_request_size())
+
+# Environment flag for detailed error messages (disable in production)
+INCLUDE_ERROR_DETAILS = os.environ.get("INCLUDE_ERROR_DETAILS", "1") == "1"
 
 
 def read_env_string(name: str, default_value: str) -> str:
@@ -51,13 +61,39 @@ def build_opa_client() -> OpaClient:
 OPA_CLIENT = build_opa_client()
 
 
-def get_token_claims(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)) -> dict[str, Any]:
-    # For development: skip token validation if AUTH_ENABLED=false
-    auth_enabled = os.getenv("AUTH_ENABLED", "true").lower() == "true"
-    if not auth_enabled:
-        return {"sub": "demo_user", "active": True}
+# In-memory profile store (for demo purposes)
+# In production, this would be backed by a database or identity provider
+class InMemoryProfileStore:
+    def __init__(self):
+        self._profiles: dict[str, dict[str, Any]] = {}
+        self._default_policy_parameters = {
+            "auto_book_consent": False,  # Default to false - must be set in Keycloak
+            "auto_book_max_cost_eur": 5000,
+            "auto_book_min_days_advance": 0,
+            "auto_book_max_airline_risk": 10,
+        }
     
-    return security.verify_token(credentials)
+    def get_profile(self, principal_sub: str) -> dict[str, Any]:
+        if principal_sub not in self._profiles:
+            # Auto-create profile with defaults
+            self._profiles[principal_sub] = {
+                "principal_sub": principal_sub,
+                "policy_parameters": dict(self._default_policy_parameters),
+            }
+        return self._profiles[principal_sub]
+    
+    def update_policy_parameters(self, principal_sub: str, parameters: dict[str, Any]) -> dict[str, Any]:
+        profile = self.get_profile(principal_sub)
+        profile["policy_parameters"].update(parameters)
+        return profile
+
+
+PROFILE_STORE = InMemoryProfileStore()
+
+
+def get_token_claims(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security.verify_token)) -> dict[str, Any]:
+    # Return JWT claims from validated token
+    return credentials if credentials else {}
 
 
 def resolve_principal_sub(
@@ -99,21 +135,41 @@ def post_evaluate(
     token_claims: dict[str, Any] = Depends(get_token_claims),
 ) -> dict[str, Any]:
     try:
-        principal_sub = resolve_principal_sub(request_body=request_body, token_claims=token_claims)
+        # Sanitize all input before processing
+        sanitized_body = security.sanitize_request_json_payload(request_body)
+        
+        principal_sub = resolve_principal_sub(request_body=sanitized_body, token_claims=token_claims)
+    except security.InputValidationError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=security.sanitize_error_message(str(exc), INCLUDE_ERROR_DETAILS)
+        ) from exc
     except HTTPException as exc:
         raise exc
 
-    # Optional: in future load profile/preferences from your IdP or a profile service.
-    profile: dict[str, Any] = {
-        "preferences": {},
-        "policy_parameters": {},
-    }
+    # Extract user token from context if provided
+    user_token_claims: Optional[dict[str, Any]] = None
+    context = sanitized_body.get("context", {})
+    user_token = context.get("user_token")
+    if user_token and isinstance(user_token, str):
+        try:
+            # Decode and validate the user token
+            user_token_claims = security.verify_token_string(user_token)
+        except Exception:
+            # If token is invalid, continue without user claims
+            pass
+    
+    # Load user profile with policy parameters
+    profile = PROFILE_STORE.get_profile(principal_sub)
+
+    # Use user token claims if available, otherwise fall back to agent token claims
+    effective_token_claims = user_token_claims if user_token_claims else token_claims
 
     result = evaluate_request_with_opa(
         opa_client=OPA_CLIENT,
-        request_body=request_body,
+        request_body=sanitized_body,
         principal_sub=principal_sub,
-        token_claims=token_claims,
+        token_claims=effective_token_claims,
         profile=profile,
     )
 
@@ -126,21 +182,72 @@ def post_evaluate(
 
 @app.get("/v1/profiles/{principal_sub}")
 def get_profile(principal_sub: str, token_claims: dict[str, Any] = Depends(get_token_claims)) -> dict[str, Any]:
-    # Placeholder until you wire this to Keycloak / a profile service.
+    try:
+        # Validate path parameter
+        principal_sub = security.sanitize_string(principal_sub, max_length=255)
+    except security.InputValidationError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=security.sanitize_error_message(str(exc), INCLUDE_ERROR_DETAILS)
+        ) from exc
+    
+    profile = PROFILE_STORE.get_profile(principal_sub)
     return {
         "principal_sub": principal_sub,
-        "policy_parameters": {},
+        "policy_parameters": profile.get("policy_parameters", {}),
         "identity_presence": {"present": True, "source": "token" if token_claims else "unknown"},
     }
 
 
 @app.get("/v1/policy-parameters/{principal_sub}")
 def get_policy_parameters(principal_sub: str, token_claims: dict[str, Any] = Depends(get_token_claims)) -> dict[str, Any]:
-    return {"principal_sub": principal_sub, "policy_parameters": {}}
+    try:
+        # Validate path parameter
+        principal_sub = security.sanitize_string(principal_sub, max_length=255)
+    except security.InputValidationError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=security.sanitize_error_message(str(exc), INCLUDE_ERROR_DETAILS)
+        ) from exc
+    
+    profile = PROFILE_STORE.get_profile(principal_sub)
+    return {"principal_sub": principal_sub, "policy_parameters": profile.get("policy_parameters", {})}
+
+
+@app.patch("/v1/profiles/{principal_sub}/policy-parameters")
+def update_policy_parameters(
+    principal_sub: str,
+    request_body: dict[str, Any] = Body(...),
+    token_claims: dict[str, Any] = Depends(get_token_claims),
+) -> dict[str, Any]:
+    try:
+        # Validate path parameter and sanitize body
+        principal_sub = security.sanitize_string(principal_sub, max_length=255)
+        sanitized_body = security.sanitize_request_json_payload(request_body)
+        parameters = sanitized_body.get("parameters", {})
+        if not isinstance(parameters, dict):
+            raise security.InputValidationError("parameters must be a dictionary")
+    except security.InputValidationError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=security.sanitize_error_message(str(exc), INCLUDE_ERROR_DETAILS)
+        ) from exc
+    
+    profile = PROFILE_STORE.update_policy_parameters(principal_sub, parameters)
+    return {"principal_sub": principal_sub, "policy_parameters": profile.get("policy_parameters", {})}
 
 
 @app.get("/v1/identity-presence/{principal_sub}")
 def get_identity_presence(principal_sub: str, token_claims: dict[str, Any] = Depends(get_token_claims)) -> dict[str, Any]:
+    try:
+        # Validate path parameter
+        principal_sub = security.sanitize_string(principal_sub, max_length=255)
+    except security.InputValidationError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=security.sanitize_error_message(str(exc), INCLUDE_ERROR_DETAILS)
+        ) from exc
+    
     return {"principal_sub": principal_sub, "identity_presence": {"present": True, "source": "token" if token_claims else "unknown"}}
 
 
@@ -150,7 +257,16 @@ def post_graph_workflows(
     token_claims: dict[str, Any] = Depends(get_token_claims),
 ) -> dict[str, Any]:
     # Minimal stub: acknowledge graph creation so the rest of the system can evolve.
-    workflow_id = request_body.get("workflow_id") or str(uuid.uuid4())
+    try:
+        # Sanitize input
+        sanitized_body = security.sanitize_request_json_payload(request_body)
+        workflow_id = sanitized_body.get("workflow_id") or str(uuid.uuid4())
+    except security.InputValidationError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=security.sanitize_error_message(str(exc), INCLUDE_ERROR_DETAILS)
+        ) from exc
+    
     return {"status": "created", "workflow_id": workflow_id}
 
 
@@ -160,7 +276,17 @@ def post_graph_workflow_items(
     request_body: dict[str, Any] = Body(...),
     token_claims: dict[str, Any] = Depends(get_token_claims),
 ) -> dict[str, Any]:
-    item_id = request_body.get("item_id") or str(uuid.uuid4())
+    try:
+        # Validate path parameter and sanitize body
+        workflow_id = security.validate_id(workflow_id, "workflow_id", max_length=255)
+        sanitized_body = security.sanitize_request_json_payload(request_body)
+        item_id = sanitized_body.get("item_id") or str(uuid.uuid4())
+    except security.InputValidationError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=security.sanitize_error_message(str(exc), INCLUDE_ERROR_DETAILS)
+        ) from exc
+    
     return {"status": "created", "workflow_id": workflow_id, "item_id": item_id}
 
 
@@ -169,9 +295,18 @@ def post_graph_workflow_items_legacy(
     request_body: dict[str, Any] = Body(...),
     token_claims: dict[str, Any] = Depends(get_token_claims),
 ) -> dict[str, Any]:
-    # Legacy endpoint for services-api compatibility
-    workflow_item_id = request_body.get("workflow_item_id") or str(uuid.uuid4())
-    workflow_id = request_body.get("workflow_id", "unknown")
+    # Legacy endpoint for domain-services-api compatibility
+    try:
+        # Sanitize input
+        sanitized_body = security.sanitize_request_json_payload(request_body)
+        workflow_item_id = sanitized_body.get("workflow_item_id") or str(uuid.uuid4())
+        workflow_id = sanitized_body.get("workflow_id", "unknown")
+    except security.InputValidationError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=security.sanitize_error_message(str(exc), INCLUDE_ERROR_DETAILS)
+        ) from exc
+    
     return {"status": "created", "workflow_id": workflow_id, "workflow_item_id": workflow_item_id}
 
 
@@ -189,4 +324,8 @@ if __name__ == "__main__":
         host=args.host,
         port=args.port,
         log_level="info",
+        # Security: Limit request body size to prevent memory exhaustion
+        limit_max_requests=10000,
+        limit_concurrency=100,
+        timeout_keep_alive=5,
     )

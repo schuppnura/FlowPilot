@@ -25,13 +25,10 @@ If you need to start services manually:
 # 1. Start containers
 docker compose up -d
 
-# 2. Load ***REMOVED*** manifest
-./bin/***REMOVED***-init.sh
-
-# 3. Wait for Keycloak (important!)
+# 2. Wait for Keycloak (important!)
 sleep 10
 
-# 4. Provision users and agent
+# 3. Provision users and agent
 python3 provision_current_user.py
 ```
 
@@ -74,13 +71,6 @@ python3 provision_current_user.py
 
 ### Clean slate restart
 
-To completely reset ***REMOVED*** (WARNING: deletes all authorization data):
-
-```bash
-docker compose down
-rm -f infra/***REMOVED***/db/*.db*
-./bin/stack-up.sh
-```
 
 ## What Gets Provisioned
 
@@ -105,14 +95,10 @@ Start order matters:
 
 1. **HTTPS Bundle Server** - Must be running before ***REMOVED*** starts (serves OCI policy bundles)
 2. **Keycloak** - Must be fully ready before provisioning
-3. *****REMOVED***** - Must have manifest loaded and policy bundle fetched before creating objects
-4. **Services API** - Creates workflow graphs when workflows are created
-5. **AuthZ API** - Evaluates permissions
+3. **Services API** - Creates workflow graphs when workflows are created
+4. **AuthZ API** - Evaluates permissions
 
 ## Key Files
 
 - `bin/stack-up.sh` - Main startup script
-- `bin/***REMOVED***-init.sh` - Loads ***REMOVED*** manifest
 - `provision_current_user.py` - Provisions users and agent
-- `infra/***REMOVED***/cfg/flowpilot-manifest.yaml` - Authorization model
-- `infra/***REMOVED***/db/flowpilot.db` - ***REMOVED*** authorization database

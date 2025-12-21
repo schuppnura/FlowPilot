@@ -6,7 +6,7 @@ final class AuthzApiClient {
     private let accessTokenProvider: () -> String?
 
     /// Backward compatible initializer (previously took a baseUrl string).
-    init(baseUrl: String, urlSession: URLSession = .shared, accessTokenProvider: @escaping () -> String? = { nil }) {
+    init(baseUrl: String, urlSession: URLSession = .insecure, accessTokenProvider: @escaping () -> String? = { nil }) {
         self.baseUrl = URL(string: baseUrl) ?? AppConfig.authzBaseUrlUrl
         self.urlSession = urlSession
         self.accessTokenProvider = accessTokenProvider
@@ -14,10 +14,11 @@ final class AuthzApiClient {
 
     init(
         baseUrl: URL = AppConfig.authzBaseUrlUrl,
-        urlSession: URLSession = .shared,
+        urlSession: URLSession = .insecure,
         accessTokenProvider: @escaping () -> String? = { nil }
     ) {
         // Initialize client with a base URL; why: keep endpoint routing explicit and testable; side effect: none.
+        // Uses .insecure URLSession by default for local development with self-signed certificates.
         self.baseUrl = baseUrl
         self.urlSession = urlSession
         self.accessTokenProvider = accessTokenProvider

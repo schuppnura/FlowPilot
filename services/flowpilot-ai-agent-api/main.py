@@ -19,11 +19,14 @@ from typing import Any, Dict, Optional
 
 import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, validator
 
+import security
 from core import execute_workflow_run, normalize_workflow_id
-from security import RequestSizeLimiterMiddleware, bearer_scheme, get_max_request_size, verify_token
 from utils import load_json_object, merge_config, parse_positive_int, validate_non_empty_string
+
+# Environment flag for detailed error messages (disable in production)
+INCLUDE_ERROR_DETAILS = os.environ.get("INCLUDE_ERROR_DETAILS", "1") == "1"
 
 
 DEFAULT_CONFIG: Dict[str, Any] = {
@@ -33,7 +36,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     # Workflow (domain) API base. In this demo stack it points to the FlowPilot API.
     "workflow_base_url": "http://flowpilot-api:8003",
 
-    # Workflow item listing and execution endpoints. Defaults map to the FlowPilot trip itinerary model.
+    # Workflow item listing and execution endpoints. These are domain-agnostic and work with any workflow backend.
     "workflow_items_path_template": "/v1/workflows/{workflow_id}/items",
     "workflow_item_execute_path_template": "/v1/workflows/{workflow_id}/items/{workflow_item_id}/execute",
 
@@ -43,9 +46,17 @@ DEFAULT_CONFIG: Dict[str, Any] = {
 
 
 class WorkflowRunRequest(BaseModel):
-    workflow_id: str
-    principal_sub: str
-    dry_run: bool = True
+    workflow_id: str = Field(..., min_length=1, max_length=255, description="Workflow identifier")
+    principal_sub: str = Field(..., min_length=1, max_length=255, description="Principal subject")
+    dry_run: bool = Field(default=True, description="Dry run flag")
+    
+    @validator('workflow_id')
+    def validate_workflow_id(cls, v: str) -> str:
+        return security.validate_id(v, "workflow_id", max_length=255)
+    
+    @validator('principal_sub')
+    def sanitize_principal_sub(cls, v: str) -> str:
+        return security.sanitize_string(v, max_length=255)
 
 
 def build_config(config_path: Optional[str]) -> Dict[str, Any]:
@@ -88,10 +99,18 @@ def handle_post_workflow_runs(request: Request, body: WorkflowRunRequest) -> Dic
 
     try:
         workflow_id = normalize_workflow_id(workflow_id=body.workflow_id)
-        principal_sub = validate_non_empty_string(body.principal_sub, "principal_sub")
+        principal_sub = body.principal_sub  # Already validated by Pydantic
         result = execute_workflow_run(config=config, workflow_id=workflow_id, principal_sub=principal_sub, dry_run=bool(body.dry_run))
+    except security.InputValidationError as exception:
+        raise HTTPException(
+            status_code=400,
+            detail=security.sanitize_error_message(str(exception), INCLUDE_ERROR_DETAILS)
+        ) from exception
     except ValueError as exception:
-        raise HTTPException(status_code=400, detail=str(exception)) from exception
+        raise HTTPException(
+            status_code=400,
+            detail=security.sanitize_error_message(str(exception), INCLUDE_ERROR_DETAILS)
+        ) from exception
 
     return result
 
@@ -117,15 +136,16 @@ def create_app(config: Dict[str, Any]) -> FastAPI:
     )
     api.state.config = config
 
-    # Add request size limiting middleware
-    api.add_middleware(RequestSizeLimiterMiddleware, max_size=get_max_request_size())
+    # Add security middlewares
+    api.add_middleware(security.SecurityHeadersMiddleware)
+    api.add_middleware(security.RequestSizeLimiterMiddleware, max_size=security.get_max_request_size())
 
     # Health check - no auth required
     api.add_api_route("/health", handle_get_health, methods=["GET"])
 
     # All other endpoints require authentication
-    api.add_api_route("/v1/workflow-runs", handle_post_workflow_runs, methods=["POST"], dependencies=[Depends(bearer_scheme)])
-    api.add_api_route("/v1/agent-runs", handle_post_agent_runs, methods=["POST"], dependencies=[Depends(bearer_scheme)])
+    api.add_api_route("/v1/workflow-runs", handle_post_workflow_runs, methods=["POST"], dependencies=[Depends(security.verify_token)])
+    api.add_api_route("/v1/agent-runs", handle_post_agent_runs, methods=["POST"], dependencies=[Depends(security.verify_token)])
 
     return api
 

@@ -117,7 +117,7 @@ server {
     }
     
     location /v1/services/ {
-        proxy_pass http://flowpilot-services-api:8000/;
+        proxy_pass http://flowpilot-domain-services-api:8000/;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
     }
@@ -173,8 +173,8 @@ Before going live:
 5. **Scan for vulnerabilities:**
    ```bash
    # Use security scanners
-   docker scan flowpilot-flowpilot-services-api
-   trivy image flowpilot-flowpilot-services-api
+   docker scan flowpilot-flowpilot-domain-services-api
+   trivy image flowpilot-flowpilot-domain-services-api
    ```
 
 ## Environment Variables Reference

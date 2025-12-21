@@ -35,13 +35,17 @@ services:
     environment:
       - OPA_URL=http://opa:8181
       - OPA_PACKAGE=auto_book
-      # Authentication (enabled by default for security)
-      - AUTH_ENABLED=true
-      - KEYCLOAK_URL=https://keycloak:8443
-      - KEYCLOAK_REALM=flowpilot
-      - KEYCLOAK_CLIENT_ID=flowpilot-agent
-      - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
-      - KEYCLOAK_VERIFY_SSL=${KEYCLOAK_VERIFY_SSL:-false}
+      # JWT validation using JWKS (no network calls per request)
+      - KEYCLOAK_JWKS_URI=https://keycloak:8443/realms/flowpilot/protocol/openid-connect/certs
+      - KEYCLOAK_ISSUER=https://localhost:8443/realms/flowpilot
+      - KEYCLOAK_AUDIENCE=account
+      # Optional: Enable payload signature scanning
+      - ENABLE_PAYLOAD_SIGNATURE_SCAN=0
+      # Optional: Configure request limits
+      - MAX_REQUEST_SIZE_MB=1
+      - MAX_STRING_LENGTH=10000
+      # Error message detail (set to 0 in production)
+      - INCLUDE_ERROR_DETAILS=1
     command: ["python", "main.py", "--host", "0.0.0.0", "--port", "8000"]
     ports:
       - "8002:8000"
@@ -57,32 +61,35 @@ services:
       LOG_LEVEL: info
 
       # Domain/workflow API base URL.
-      WORKFLOW_BASE_URL: http://flowpilot-services-api:8000
+      WORKFLOW_BASE_URL: http://flowpilot-domain-services-api:8000
 
+      # Client credentials for service-to-service calls
       KEYCLOAK_TOKEN_URL: https://keycloak:8443/realms/flowpilot/protocol/openid-connect/token
       AGENT_CLIENT_ID: flowpilot-agent
       AGENT_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
 
       VERIFY_TRAVELER_TOKEN: "false"
 
-      # Authentication (enabled by default for security)
-      AUTH_ENABLED: "true"
-      KEYCLOAK_URL: "https://keycloak:8443"
-      KEYCLOAK_REALM: "flowpilot"
-      KEYCLOAK_CLIENT_ID: "flowpilot-agent"
-      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
-      KEYCLOAK_VERIFY_SSL: ${KEYCLOAK_VERIFY_SSL:-false}
+      # JWT validation using JWKS (no network calls per request)
+      KEYCLOAK_JWKS_URI: https://keycloak:8443/realms/flowpilot/protocol/openid-connect/certs
+      KEYCLOAK_ISSUER: https://localhost:8443/realms/flowpilot
+      KEYCLOAK_AUDIENCE: account
+      
+      # Optional: Enable payload signature scanning
+      ENABLE_PAYLOAD_SIGNATURE_SCAN: "0"
+      # Error message detail (set to 0 in production)
+      INCLUDE_ERROR_DETAILS: "1"
     command: ["python", "main.py", "--host", "0.0.0.0", "--port", "8000"]
     ports:
       - "8004:8000"
     depends_on:
       - keycloak
-      - flowpilot-services-api
+      - flowpilot-domain-services-api
 
-  flowpilot-services-api:
+  flowpilot-domain-services-api:
     build:
       context: .
-      dockerfile: services/flowpilot-services-api/Dockerfile
+      dockerfile: services/flowpilot-domain-services-api/Dockerfile
     environment:
       AUTHZ_BASE_URL: "http://flowpilot-authz-api:8000"
       AGENT_SUB: "agent-runner"
@@ -91,13 +98,20 @@ services:
       # Templates are mounted at /data inside the container.
       TEMPLATE_DIRECTORY: "/data/trip_templates"
 
-      # Authentication (enabled by default for security)
-      AUTH_ENABLED: "true"
-      KEYCLOAK_URL: "https://keycloak:8443"
-      KEYCLOAK_REALM: "flowpilot"
-      KEYCLOAK_CLIENT_ID: "flowpilot-agent"
-      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
-      KEYCLOAK_VERIFY_SSL: ${KEYCLOAK_VERIFY_SSL:-false}
+      # Client credentials for service-to-service calls
+      KEYCLOAK_TOKEN_URL: https://keycloak:8443/realms/flowpilot/protocol/openid-connect/token
+      AGENT_CLIENT_ID: flowpilot-agent
+      AGENT_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+
+      # JWT validation using JWKS (no network calls per request)
+      KEYCLOAK_JWKS_URI: https://keycloak:8443/realms/flowpilot/protocol/openid-connect/certs
+      KEYCLOAK_ISSUER: https://localhost:8443/realms/flowpilot
+      KEYCLOAK_AUDIENCE: account
+      
+      # Optional: Enable payload signature scanning
+      ENABLE_PAYLOAD_SIGNATURE_SCAN: "0"
+      # Error message detail (set to 0 in production)
+      INCLUDE_ERROR_DETAILS: "1"
     ports:
       - "8003:8000"
     depends_on:

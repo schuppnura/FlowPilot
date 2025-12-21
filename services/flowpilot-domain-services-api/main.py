@@ -1,18 +1,23 @@
-# FlowPilot Services API - FastAPI Application
+# FlowPilot Domain Services API - FastAPI Application
 #
-# Domain backend for the travel demo. This is the system of record that owns workflow
+# Travel domain backend implementation. This is the system of record that owns workflow
 # state and enforces authorization as a Policy Enforcement Point (PEP).
 #
+# IMPORTANT: This service is TRAVEL-DOMAIN SPECIFIC. It implements travel workflows
+# with flights, hotels, restaurants, museums, trains, etc. Other domains (nursing,
+# business events) would have their own domain-services-api implementations with
+# domain-specific templates, items, and business logic.
+#
 # Key endpoints:
-# - GET /v1/workflow-templates: List available workflow templates
-# - POST /v1/workflows: Create a new workflow from a template
-# - GET /v1/workflows/{workflow_id}: Get workflow metadata
-# - GET /v1/workflows/{workflow_id}/items: Get workflow items items
-# - POST /v1/workflows/{workflow_id}/items-items/{workflow_item_id}/execute: Execute item with AuthZ check
+# - GET /v1/workflow-templates: List available travel trip templates
+# - POST /v1/workflows: Create a new travel itinerary (workflow) from a template
+# - GET /v1/workflows/{workflow_id}: Get travel itinerary metadata
+# - GET /v1/workflows/{workflow_id}/items: Get itinerary items (flights, hotels, etc.)
+# - POST /v1/workflows/{workflow_id}/items/{workflow_item_id}/execute: Execute item with AuthZ check
 # - GET /health: Health check with workflow/template counts
 #
 # All endpoints (except health) require bearer token authentication.
-# Domain-specific: Travel workflows with flights, hotels, restaurants, museums, trains.
+# Domain context: Travel - workflows represent trips/itineraries with travel-specific items.
 
 from __future__ import annotations
 
@@ -202,7 +207,13 @@ def handle_get_workflow_items(request: Request, workflow_id: str) -> Dict[str, A
         ) from exception
 
 
-def handle_post_execute_workflow_item(request: Request, workflow_id: str, workflow_item_id: str, body: ExecuteWorkflowItemRequest) -> Dict[str, Any]:
+def handle_post_execute_workflow_item(
+    request: Request,
+    workflow_id: str,
+    workflow_item_id: str,
+    body: ExecuteWorkflowItemRequest,
+    token_claims: dict = Depends(security.verify_token),
+) -> Dict[str, Any]:
     # Execute one itinerary item with AuthZ enforcement
     # why: FlowPilot is PEP and delegates decisions to AuthZ/***REMOVED***.
     service: FlowPilotService = request.app.state.service
@@ -211,11 +222,19 @@ def handle_post_execute_workflow_item(request: Request, workflow_id: str, workfl
         workflow_id = security.validate_id(workflow_id, "workflow_id", max_length=255)
         workflow_item_id = security.validate_id(workflow_item_id, "workflow_item_id", max_length=255)
         # principal_sub already validated by Pydantic
+        
+        # Extract raw token from Authorization header
+        user_token = None
+        auth_header = request.headers.get("authorization", "")
+        if auth_header.lower().startswith("bearer "):
+            user_token = auth_header[7:]  # Remove "Bearer " prefix
+        
         return service.execute_workflow_item(
             workflow_id=workflow_id,
             workflow_item_id=workflow_item_id,
             principal_sub=body.principal_sub,
             dry_run=bool(body.dry_run),
+            user_token=user_token,
         )
     except security.InputValidationError as exception:
         raise HTTPException(

@@ -66,12 +66,12 @@ python3 provision_bootstrap.py \
 **Triggered by**: Workflow creation via desktop app
 
 **Service Flow**:
-1. Desktop app → `POST /v1/trips/{template_id}/load` → services-api
-2. Services-api creates workflow in memory
-3. Services-api → `POST /v1/graph/workflows` → authz-api
+1. Desktop app → `POST /v1/workflows` → domain-services-api
+2. Domain-services-api creates workflow in memory
+3. Domain-services-api → `POST /v1/graph/workflows` → authz-api
 4. AuthZ-api creates workflow object + owner relation in ***REMOVED***
 5. For each workflow item:
-   - Services-api → `POST /v1/graph/workflow-items` → authz-api
+   - Domain-services-api → `POST /v1/graph/workflow-items` → authz-api
    - AuthZ-api creates workflow_item object + workflow relation in ***REMOVED***
 
 ## Architecture Components
@@ -95,7 +95,7 @@ python3 provision_bootstrap.py \
 - `create_workflow_graph()` - Orchestrates workflow object + owner relation creation
 - `create_workflow_item_graph()` - Orchestrates item object + workflow relation creation
 
-### Domain Service (`flowpilot-services-api`)
+### Domain Service (`flowpilot-domain-services-api`)
 
 **Responsibilities**:
 - System of record for workflow state
@@ -112,7 +112,7 @@ python3 provision_bootstrap.py \
 
 All graph write operations require service-to-service authentication:
 
-1. Services-api requests token from Keycloak (client credentials grant)
+1. Domain-services-api requests token from Keycloak (client credentials grant)
 2. Token is cached with 30s expiry buffer
 3. Token is included in Authorization header when calling authz-api
 4. AuthZ-api validates token before processing graph writes

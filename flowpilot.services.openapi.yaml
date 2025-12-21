@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: FlowPilot Services API
+  title: FlowPilot Domain Services API
   version: "0.9.0"
   description: >
     FlowPilot domain services API (workflow system-of-record).
@@ -12,7 +12,7 @@ info:
 servers:
   - url: http://127.0.0.1:8003
     description: Local development access
-  - url: http://flowpilot-services-api:8000
+  - url: http://flowpilot-domain-services-api:8000
     description: Docker network (internal)
 security:
   - BearerAuth: []

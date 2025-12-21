@@ -22,10 +22,8 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
+import security
 from utils import build_url, http_get_json, validate_non_empty_string, build_timeouts
-
-# Token cache for service-to-service auth
-_token_cache: dict[str, Any] = {}
 
 
 @dataclass(frozen=True)
@@ -33,52 +31,6 @@ class WorkflowItem:
     workflow_item_id: str
     kind: str
     raw: Dict[str, Any]
-
-
-def get_service_token() -> str | None:
-    # Get service-to-service bearer token from Keycloak.
-    # Check if auth is enabled
-    auth_enabled = os.environ.get("AUTH_ENABLED", "true").lower() == "true"
-    if not auth_enabled:
-        return None
-
-    # Check token cache
-    if "token" in _token_cache and "expires_at" in _token_cache:
-        import time
-        if time.time() < _token_cache["expires_at"] - 30:  # 30s buffer
-            return _token_cache["token"]
-
-    # Get new token from Keycloak
-    keycloak_url = os.environ.get("KEYCLOAK_URL", "https://keycloak:8443")
-    realm = os.environ.get("KEYCLOAK_REALM", "flowpilot")
-    client_id = os.environ.get("KEYCLOAK_CLIENT_ID", "flowpilot-agent")
-    client_secret = os.environ.get("KEYCLOAK_CLIENT_SECRET", "")
-    verify_ssl = os.environ.get("KEYCLOAK_VERIFY_SSL", "false").lower() == "true"
-
-    token_url = f"{keycloak_url}/realms/{realm}/protocol/openid-connect/token"
-
-    try:
-        response = requests.post(
-            token_url,
-            data={
-                "grant_type": "client_credentials",
-                "client_id": client_id,
-                "client_secret": client_secret,
-            },
-            timeout=5,
-            verify=verify_ssl,
-        )
-
-        if response.status_code == 200:
-            token_data = response.json()
-            import time
-            _token_cache["token"] = token_data["access_token"]
-            _token_cache["expires_at"] = time.time() + token_data.get("expires_in", 300)
-            return _token_cache["token"]
-    except Exception:
-        pass  # Fall through to return None
-
-    return None
 
 
 def normalize_workflow_id(workflow_id: str) -> str:
@@ -101,7 +53,7 @@ def list_workflow_items(config: Dict[str, Any], workflow_id: str) -> List[Workfl
     url = build_url(base_url, template.format(workflow_id=workflow_id))
 
     headers = {}
-    token = get_service_token()
+    token = security.get_service_token()
     if token:
         headers["Authorization"] = f"Bearer {token}"
 
@@ -167,7 +119,7 @@ def post_execute_workflow_item(
     # assumptions: JSON body on success and often on failure
     # side effects: network I/O.
     headers = {}
-    token = get_service_token()
+    token = security.get_service_token()
     if token:
         headers["Authorization"] = f"Bearer {token}"
 

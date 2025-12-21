@@ -1,18 +1,21 @@
-# FlowPilot Services API - Core Logic
+# FlowPilot Domain Services API - Core Logic
 #
-# Domain backend for the travel demo. This is the system of record for workflow state
-# and acts as the Policy Enforcement Point (PEP) for authorization decisions.
+# Travel domain backend implementation. This is the system of record for travel workflow
+# state and acts as the Policy Enforcement Point (PEP) for authorization decisions.
+#
+# IMPORTANT: This is TRAVEL-DOMAIN SPECIFIC. It implements travel workflows with
+# flights, hotels, restaurants, museums, trains, etc. Other domains (nursing, business
+# events) would have their own domain-services-api implementations with different
+# templates, items, and business logic, but all follow the same workflow PEP pattern.
 #
 # Key responsibilities:
-# - Workflow creation from templates
-# - Itinerary item management and state tracking
+# - Travel workflow creation from trip templates
+# - Travel itinerary item management and state tracking (flights, hotels, restaurants, etc.)
 # - Policy enforcement point (PEP) that delegates decisions to the PDP via AuthZ API
 # - Dry-run semantics for workflow execution
 # - In-memory workflow storage (demo only)
 #
-# Domain-specific behavior: This service implements travel-specific workflows.
-# The other domains (nursing, logistics) have different incarnations
-# but all follow the same workflow PEP pattern.
+# Domain context: Travel - workflows represent trips/itineraries with travel-specific items.
 
 from __future__ import annotations
 
@@ -185,7 +188,7 @@ class FlowPilotService:
 
         return {"workflow_id": workflow_id, "items": items_out}
 
-    def execute_workflow_item(self, workflow_id: str, workflow_item_id: str, principal_sub: str, dry_run: bool) -> Dict[str, Any]:
+    def execute_workflow_item(self, workflow_id: str, workflow_item_id: str, principal_sub: str, dry_run: bool, user_token: Optional[str] = None) -> Dict[str, Any]:
         # Execute a workflow item with AuthZ decision
         # why: PEP responsibility
         # side effects: network I/O + optional state mutation.
@@ -202,6 +205,7 @@ class FlowPilotService:
             item=item,
             principal_sub=principal_sub,
             dry_run=bool(dry_run),
+            user_token=user_token,
         )
 
         decision = str(decision_payload.get("decision", "deny"))
@@ -264,7 +268,7 @@ class FlowPilotService:
         if principal_sub != owner_sub:
             raise PermissionError(f"Principal mismatch: principal_sub={principal_sub} is not owner_sub={owner_sub}")
 
-    def _call_authz_for_item(self, workflow: Dict[str, Any], item: Dict[str, Any], principal_sub: str, dry_run: bool) -> Dict[str, Any]:
+    def _call_authz_for_item(self, workflow: Dict[str, Any], item: Dict[str, Any], principal_sub: str, dry_run: bool, user_token: Optional[str] = None) -> Dict[str, Any]:
         # Call AuthZ /v1/evaluate
         # why: authorization and ***REMOVED*** relationship checks live there
         # side effect: network I/O.
@@ -302,6 +306,12 @@ class FlowPilotService:
             resource_properties["airline_risk_score"] = airline_risk_score
 
         url = build_url(authz_base_url, "/v1/evaluate")
+        
+        # Build context with principal and optional user token
+        context: Dict[str, Any] = {"principal": {"type": "user", "id": principal_sub}}
+        if user_token:
+            context["user_token"] = user_token
+        
         body: Dict[str, Any] = {
             "subject": {"type": "agent", "id": agent_sub},
             "action": {"name": "book"},
@@ -310,7 +320,7 @@ class FlowPilotService:
                 "id": workflow_id,
                 "properties": resource_properties,
             },
-            "context": {"principal": {"type": "user", "id": principal_sub}},
+            "context": context,
             "options": {"dry_run": bool(dry_run), "explain": True, "metrics": False},
         }
 
@@ -372,7 +382,7 @@ class FlowPilotService:
         }
 
         # Get service token for authentication
-        token = get_service_token()
+        token = security.get_service_token()
         headers = {"Authorization": f"Bearer {token}"} if token else None
 
         response = requests.post(url, json=body, timeout=timeout_seconds, headers=headers, verify=False)
