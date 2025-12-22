@@ -17,6 +17,41 @@ services:
     volumes:
       - ./infra/keycloak:/opt/keycloak/data/import:ro
       - ./infra/keycloak/certs:/opt/keycloak/certs:ro
+      - keycloak_data:/opt/keycloak/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -k -f https://localhost:8443/realms/master || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+  keycloak-setup:
+    image: python:3.11-slim
+    depends_on:
+      keycloak:
+        condition: service_started
+    volumes:
+      - .:/workspace:ro
+    working_dir: /workspace
+    environment:
+      - KEYCLOAK_ADMIN_USERNAME=${KEYCLOAK_ADMIN_USERNAME}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
+      - KEYCLOAK_HOST=keycloak
+      - KEYCLOAK_PORT=8443
+    command:
+      - /bin/bash
+      - -c
+      - |
+        echo "=========================================="
+        echo "Keycloak Setup - Running automatically"
+        echo "=========================================="
+        apt-get update -qq > /dev/null 2>&1 && apt-get install -y -qq curl > /dev/null 2>&1
+        pip install -q requests urllib3 > /dev/null 2>&1
+        chmod +x scripts/setup_keycloak.sh
+        bash scripts/setup_keycloak.sh
+        echo ""
+        echo "✓ Keycloak setup complete!"
+    restart: "no"
 
   opa:
     image: openpolicyagent/opa:latest
@@ -126,3 +161,7 @@ services:
       - flowpilot-authz-api
     volumes:
       - ./data:/data:ro
+
+volumes:
+  keycloak_data:
+    driver: local

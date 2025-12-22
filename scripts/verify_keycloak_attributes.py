@@ -6,14 +6,31 @@ This script ensures the protocol mappers are configured correctly.
 import requests
 import sys
 import os
+import urllib3
 
 # Disable SSL warnings
-requests.packages.urllib3.disable_warnings()
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 KEYCLOAK_URL = "https://localhost:8443"
 REALM = "flowpilot"
-ADMIN_USER = os.getenv("KEYCLOAK_ADMIN_USERNAME", "admin")
-ADMIN_PASS = os.getenv("KEYCLOAK_ADMIN_PASSWORD", "admin")
+
+# Try to get admin credentials from environment or .env file
+def load_env_file():
+    """Load .env file if it exists"""
+    env_vars = {}
+    env_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
+    if os.path.exists(env_file):
+        with open(env_file, "r") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    key, value = line.split("=", 1)
+                    env_vars[key.strip()] = value.strip().strip('"').strip("'")
+    return env_vars
+
+env_vars = load_env_file()
+ADMIN_USER = os.getenv("KEYCLOAK_ADMIN_USERNAME") or env_vars.get("KEYCLOAK_ADMIN_USERNAME", "admin")
+ADMIN_PASS = os.getenv("KEYCLOAK_ADMIN_PASSWORD") or env_vars.get("KEYCLOAK_ADMIN_PASSWORD", "admin")
 
 def get_admin_token():
     """Get admin access token"""

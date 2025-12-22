@@ -1,6 +1,7 @@
-// Nura Travel - Main Content View
-// Travel-focused UI with modern design and Nura branding
+// Policy-driven Authorization - Main Content View
+// Policy-driven authorization UI with modern design
 import SwiftUI
+import AppKit
 
 struct ContentView: View {
     @EnvironmentObject var state: AppState
@@ -12,8 +13,7 @@ struct ContentView: View {
                 identityPanel
                 workflowTemplatesPanel
                 workflowsPanel
-                agentPanel
-                agentResultsPanel
+                authorizationResultsPanel
             }
             .padding(20)
         }
@@ -24,37 +24,18 @@ struct ContentView: View {
     }
     
     private var headerSection: some View {
-        HStack(spacing: 16) {
-            // Nura Logo - using SF Symbol as placeholder (replace with actual logo image if available)
-            ZStack {
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 0.85, green: 0.35, blue: 0.15), // Dark red
-                                Color(red: 0.95, green: 0.55, blue: 0.25)  // Orange
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 60, height: 60)
-                
-                Text("N")
-                    .font(.system(size: 32, weight: .bold, design: .default))
-                    .foregroundStyle(.white)
-            }
+            HStack(spacing: 16) {
+            // Nura Logo
+            Image("nura_logo")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 60, height: 60)
             
             VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 8) {
-                    Text("Nura")
-                        .font(.system(size: 32, weight: .light, design: .default))
-                        .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.25))
-                    Text("Travel")
-                        .font(.system(size: 24, weight: .light, design: .default))
-                        .foregroundStyle(Color(red: 0.4, green: 0.4, blue: 0.45))
-                }
-                Text("Intelligent travel planning with AI-powered authorization")
+                Text("Policy-driven Authorization")
+                    .font(.system(size: 32, weight: .light, design: .default))
+                    .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.25))
+                Text("Policy-driven authorization with AI-powered workflows")
                     .font(.system(.subheadline, design: .default))
                     .foregroundStyle(Color(red: 0.5, green: 0.5, blue: 0.55))
             }
@@ -83,12 +64,22 @@ struct ContentView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
-                .tint(Color(red: 0.95, green: 0.55, blue: 0.25)) // Orange - Nura logo color
+                .tint(Color(red: 0.95, green: 0.55, blue: 0.25))
                 
                 Button(action: {
                     state.signOut()
                 }) {
                     Label("Sign Out", systemImage: "person.crop.circle.badge.xmark")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
+                .disabled(state.principalSub == nil)
+                
+                Button(action: {
+                    state.openKeycloakAccountManagement()
+                }) {
+                    Label("My Account", systemImage: "person.circle")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
@@ -241,53 +232,75 @@ struct ContentView: View {
     }
     
     private func workflowItemRow(_ item: WorkflowItem) -> some View {
-        HStack(spacing: 12) {
-            Text(itemIcon(for: item.kind))
-                .font(.system(size: 28))
-                .frame(width: 40, height: 40)
-                .background(
-                    Circle()
-                        .fill(Color(red: 0.3, green: 0.3, blue: 0.35).opacity(0.08)) // Subtle background - Nura style
-                )
+        HStack(alignment: .top, spacing: 12) {
+            // Kind - aligned with "Itinerary Items" header and bold
+            Text(item.kind)
+                .font(.subheadline)
+                .fontWeight(.bold)
+                .foregroundStyle(.primary)
+                .frame(width: 80, alignment: .leading)
             
-            VStack(alignment: .leading, spacing: 6) {
-                Text(item.title)
-                    .font(.body)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.primary)
-                
-                // Details line based on item kind
-                if let details = formatItemDetails(item) {
-                    Text(details)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                
-                // Status badge
-                HStack(spacing: 4) {
-                    Circle()
-                        .fill(statusColor(for: item.status))
-                        .frame(width: 6, height: 6)
-                    Text(item.status.capitalized)
-                        .font(.caption)
-                        .fontWeight(.medium)
-                }
-                .foregroundStyle(statusColor(for: item.status).opacity(0.8)) // Softened - Nura style
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(statusColor(for: item.status).opacity(0.08)) // Subtle - Nura style
-                .cornerRadius(6) // Smaller radius - Nura style
-            }
+            // Rest of the details
+            Text(formatItemDetailsRest(item))
+                .font(.system(.body, design: .default))
+                .foregroundStyle(.primary)
             
             Spacer()
+            
+            // Status badge
+            HStack(spacing: 4) {
+                Circle()
+                    .fill(statusColor(for: item.status))
+                    .frame(width: 6, height: 6)
+                Text(item.status.capitalized)
+                    .font(.caption)
+                    .fontWeight(.medium)
+            }
+            .foregroundStyle(statusColor(for: item.status).opacity(0.8))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(statusColor(for: item.status).opacity(0.08))
+            .cornerRadius(6)
         }
         .padding(12)
         .background(Color.white)
         .cornerRadius(10)
         .overlay(
             RoundedRectangle(cornerRadius: 10)
-                .stroke(Color.gray.opacity(0.15), lineWidth: 0.5) // Subtle border - Nura style
+                .stroke(Color.gray.opacity(0.15), lineWidth: 0.5)
         )
+    }
+    
+    private func formatItemDetailsRest(_ item: WorkflowItem) -> String {
+        var parts: [String] = []
+        
+        // Show: type, title (kind is shown separately and bold)
+        if let type = item.type {
+            parts.append(type)
+        }
+        parts.append(item.title)
+        
+        // Then add optional fields if present (in specified order)
+        if let star_rating = item.star_rating {
+            parts.append("⭐\(star_rating)")
+        }
+        if let cuisine = item.cuisine {
+            parts.append(cuisine)
+        }
+        if let city = item.city {
+            parts.append(city)
+        }
+        if let neighborhood = item.neighborhood {
+            parts.append(neighborhood)
+        }
+        if let departure_airport = item.departure_airport {
+            parts.append("\(departure_airport)→")
+        }
+        if let arrival_airport = item.arrival_airport {
+            parts.append(arrival_airport)
+        }
+        
+        return parts.joined(separator: " • ")
     }
     
     private func statusColor(for status: String) -> Color {
@@ -361,15 +374,15 @@ struct ContentView: View {
         }
     }
     
-    private var agentPanel: some View {
+    private var authorizationResultsPanel: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Image(systemName: "sparkles")
-                    .foregroundStyle(Color(red: 0.3, green: 0.3, blue: 0.35)) // Soft dark - Nura style
-                Text("AI Authorization Check")
+                Image(systemName: "chart.bar.fill")
+                    .foregroundStyle(Color(red: 0.3, green: 0.3, blue: 0.35))
+                Text("Authorization Results")
                     .font(.headline)
                     .fontWeight(.medium)
-                    .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.25)) // Soft dark - Nura style
+                    .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.25))
             }
             
             VStack(spacing: 12) {
@@ -381,131 +394,69 @@ struct ContentView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
-                .tint(Color(red: 0.85, green: 0.35, blue: 0.15)) // Dark red - Nura logo color
+                .tint(Color(red: 0.85, green: 0.35, blue: 0.15))
                 .disabled(state.principalSub == nil || state.workflowId == nil)
-                
-                Button(action: {
-                    Task { await state.completeRequiredProfileFieldsFromAdvice() }
-                }) {
-                    Label("Apply Profile Updates", systemImage: "person.crop.circle.badge.checkmark")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
-                .disabled(state.principalSub == nil || state.missingProfileFieldsFromAdvice.isEmpty)
             }
             
-            if !state.missingProfileFieldsFromAdvice.isEmpty {
-                HStack(spacing: 8) {
-                    Image(systemName: "info.circle.fill")
-                        .foregroundStyle(.orange)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Profile Updates Available")
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                        Text("Missing fields: \(state.missingProfileFieldsFromAdvice.joined(separator: ", "))")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .padding(10)
-                .background(Color.orange.opacity(0.1))
-                .cornerRadius(8)
-            }
-        }
-        .padding(16)
-        .background(Color.white)
-        .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.03), radius: 4, x: 0, y: 1) // Subtle shadow - Nura style
-    }
-    
-    private var agentResultsPanel: some View {
-        Group {
             if let run = state.lastAgentRun {
-                VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: "chart.bar.fill")
-                    .foregroundStyle(Color(red: 0.3, green: 0.3, blue: 0.35)) // Soft dark - Nura style
-                Text("Authorization Results")
-                    .font(.headline)
-                    .fontWeight(.medium)
-                    .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.25)) // Soft dark - Nura style
-                        Spacer()
-                        Text("Run: \(run.run_id)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .textSelection(.enabled)
-                    }
-                    
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 12) {
-                            ForEach(run.results) { result in
-                                resultItemView(result)
-                            }
+                Divider()
+                    .padding(.vertical, 8)
+                
+                HStack {
+                    Text("Run: \(run.run_id)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                    Spacer()
+                }
+                
+                Text("Authorization Results (\(run.results.count))")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 4)
+                
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 10) {
+                        ForEach(run.results) { result in
+                            resultItemView(result)
                         }
                     }
-                    .frame(maxHeight: 400)
                 }
+                .frame(maxHeight: 400)
+            }
+        }
         .padding(16)
         .background(Color.white)
         .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.03), radius: 4, x: 0, y: 1) // Subtle shadow - Nura style
-            }
-        }
+        .shadow(color: Color.black.opacity(0.03), radius: 4, x: 0, y: 1)
     }
     
     private func resultItemView(_ result: AgentRunItemResult) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                HStack(spacing: 6) {
-                    Text(itemIcon(for: result.kind))
-                        .font(.title3)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(result.workflow_item_id)
-                            .font(.system(.caption, design: .monospaced))
-                            .foregroundStyle(.secondary)
-                        Text(result.kind.capitalized)
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                    }
-                }
-                Spacer()
-                statusBadge(status: result.status, decision: result.decision)
-            }
+        HStack(alignment: .top, spacing: 12) {
+            // Kind - aligned with "Authorization Results" header and bold
+            Text(result.kind)
+                .font(.subheadline)
+                .fontWeight(.bold)
+                .foregroundStyle(.primary)
+                .frame(width: 80, alignment: .leading)
             
-            if let reasonCodes = result.reason_codes, !reasonCodes.isEmpty {
-                HStack(spacing: 6) {
-                    Image(systemName: "info.circle.fill")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    Text(reasonCodes.joined(separator: ", "))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
+            // Workflow item ID
+            Text(result.workflow_item_id)
+                .font(.system(.body, design: .monospaced))
+                .foregroundStyle(.primary)
             
-            if let advice = result.advice, !advice.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
-                    ForEach(advice) { adviceItem in
-                        HStack(alignment: .top, spacing: 6) {
-                            Image(systemName: adviceItem.type.lowercased() == "error" ? "exclamationmark.circle.fill" : "info.circle.fill")
-                                .font(.caption2)
-                                .foregroundStyle(adviceItem.type.lowercased() == "error" ? .red : .blue)
-                            Text(adviceItem.message)
-                                .font(.caption)
-                                .foregroundStyle(adviceItem.type.lowercased() == "error" ? .red : .secondary)
-                        }
-                    }
-                }
-                .padding(.top, 4)
-            }
+            Spacer()
+            
+            // Status badge
+            statusBadge(status: result.status, decision: result.decision)
         }
         .padding(12)
-        .background(resultBackgroundColor(status: result.status, decision: result.decision))
+        .background(Color.white)
         .cornerRadius(10)
         .overlay(
             RoundedRectangle(cornerRadius: 10)
-                .stroke(borderColor(status: result.status, decision: result.decision), lineWidth: 0.5) // Subtle border - Nura style
+                .stroke(Color.gray.opacity(0.15), lineWidth: 0.5)
         )
     }
     

@@ -6,7 +6,9 @@ import json
 import os
 import re
 import ssl
+import sys
 import time
+import traceback
 from dataclasses import dataclass
 from typing import Any, Callable, Optional
 
@@ -182,12 +184,53 @@ class JWTValidator:
             )
         except jwt.InvalidAudienceError as e:
             token_aud = None
+            azp = None
             try:
                 # Try to decode without validation to see what audience is in the token
                 unverified = jwt.decode(token, options={"verify_signature": False})
                 token_aud = unverified.get("aud")
+                azp = unverified.get("azp")
             except Exception:
                 pass
+            
+            # Service account tokens (client credentials flow) may have different audience
+            # If this is a service account token (azp=flowpilot-agent), allow aud=flowpilot-agent
+            is_service_account = azp and isinstance(azp, str) and azp.strip() == "flowpilot-agent"
+            if is_service_account:
+                # Check if token has flowpilot-agent audience (which is correct for service tokens)
+                if isinstance(token_aud, str) and token_aud == "flowpilot-agent":
+                    # Service account token with correct audience - re-validate with correct audience
+                    try:
+                        # Get signing key from JWKS (cached)
+                        signing_key = self.jwks_client.get_signing_key_from_jwt(token)
+                        
+                        # Re-validate with correct audience for service tokens (flowpilot-agent)
+                        decoded = jwt.decode(
+                            token,
+                            signing_key.key,
+                            algorithms=["RS256", "RS384", "RS512", "ES256", "ES384", "ES512"],
+                            options={
+                                "verify_signature": True,
+                                "verify_exp": True,
+                                "verify_iat": True,
+                                "verify_nbf": True,
+                                "verify_iss": True,
+                                "verify_aud": True,  # Validate audience - service tokens must have aud=flowpilot-agent
+                                "require_exp": True,
+                                "require_iat": True,
+                            },
+                            leeway=10,
+                            issuer=self.issuer,
+                            audience="flowpilot-agent",  # Service tokens must have this audience
+                        )
+                        # Continue with other validations (subject, token type, etc.)
+                        self._validate_token_type(decoded)
+                        self._validate_subject(decoded)
+                        self._validate_issued_at(decoded)
+                        return decoded
+                    except Exception:
+                        # If re-validation fails, fall through to raise the original error
+                        pass
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=f"Invalid token audience: expected {self.audience}, got {token_aud}",
@@ -214,9 +257,10 @@ class JWTValidator:
             )
         except Exception as exc:
             # Catch-all for any other JWT validation errors
+            error_detail = f"Token validation failed: {str(exc)}"
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=f"Token validation failed: {str(exc)}",
+                detail=error_detail,
             )
     
     def _validate_token_type(self, claims: dict[str, Any]) -> None:
@@ -229,10 +273,21 @@ class JWTValidator:
             )
     
     def _validate_subject(self, claims: dict[str, Any]) -> None:
-        # Best practice: require subject claim
-        # The 'sub' claim should always be present in OIDC tokens (required by spec)
+        # Best practice: require subject claim for user tokens
+        # Service account tokens (client credentials flow) may not have 'sub' claim
+        # For service accounts, we can use 'azp' (authorized party) as the identifier
         sub = claims.get("sub")
+        azp = claims.get("azp")  # Authorized party - identifies the client
+        
+        # Allow service account tokens to skip 'sub' if they have 'azp'
+        # Service accounts are identified by having 'azp' but no 'sub', or 'sub' matching service account pattern
         if not sub or not isinstance(sub, str) or not sub.strip():
+            # If no 'sub', check if this is a service account token
+            if azp and isinstance(azp, str) and azp.strip():
+                # This is likely a service account token - allow it
+                # Service account tokens use 'azp' to identify the client
+                return
+            # Not a service account token and missing 'sub' - reject
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token missing valid subject claim",
@@ -292,8 +347,17 @@ def verify_token(
     # - KEYCLOAK_ISSUER (e.g., https://keycloak.example.com/realms/myrealm)
     # - KEYCLOAK_AUDIENCE (optional, e.g., account or client_id)
     token = credentials.credentials
-    validator = _get_jwt_validator()
-    return validator.validate(token)
+    try:
+        validator = _get_jwt_validator()
+        claims = validator.validate(token)
+        return claims
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Token verification failed: {str(e)}",
+        ) from e
 
 
 def verify_token_string(token: str) -> dict[str, Any]:
@@ -310,6 +374,12 @@ def verify_token_string(token: str) -> dict[str, Any]:
 #
 
 _service_token_cache: Optional[dict[str, Any]] = None
+
+
+def clear_service_token_cache() -> None:
+    """Clear the service token cache - useful for testing or after Keycloak config changes"""
+    global _service_token_cache
+    _service_token_cache = None
 
 
 def get_service_token() -> Optional[str]:
@@ -355,12 +425,11 @@ def get_service_token() -> Optional[str]:
         )
         
         if response.status_code != 200:
-            # Log error but don't crash - service can work without s2s auth in some cases
             return None
         
-        token_data = response.json()
-        access_token = token_data.get("access_token")
-        expires_in = token_data.get("expires_in", 300)  # Default 5 minutes
+        token_response = response.json()
+        access_token = token_response.get("access_token")
+        expires_in = token_response.get("expires_in", 300)  # Default 5 minutes
         
         if access_token:
             _service_token_cache = {
@@ -368,7 +437,9 @@ def get_service_token() -> Optional[str]:
                 "expires_at": time.time() + expires_in,
             }
             return access_token
-    except Exception:
+        else:
+            return None
+    except Exception as e:
         # Silently fail - service may work without s2s auth in some configurations
         pass
     

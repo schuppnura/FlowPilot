@@ -33,6 +33,10 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 import requests
+import urllib3
+
+# Disable SSL warnings when verify_tls is False
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 @dataclass(frozen=True)
@@ -309,6 +313,10 @@ def request_admin_token(
         "password": admin_password,
     }
 
+    # Suppress SSL warnings if not verifying TLS
+    if not verify_tls:
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    
     response = requests.post(token_url, data=form_data, timeout=30, verify=verify_tls)
     if response.status_code != 200:
         raise RuntimeError(

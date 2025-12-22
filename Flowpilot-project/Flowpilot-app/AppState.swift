@@ -6,6 +6,7 @@
 
 import Foundation
 import Combine
+import AppKit
 
 @MainActor
 final class AppState: ObservableObject {
@@ -100,6 +101,34 @@ final class AppState: ObservableObject {
         } else {
             statusMessage = "Signed out."
         }
+    }
+    
+    func openKeycloakAccountManagement() {
+        // Open Keycloak account management
+        // The account console will handle authentication automatically
+        // If user is not signed in, it will redirect to login
+        let issuerString = AppConfig.keycloakIssuer.absoluteString
+        let baseUrl = issuerString.components(separatedBy: "/realms/").first ?? issuerString
+        let realm = "flowpilot"
+        
+        // Use account-console client with proper OAuth flow
+        // The account console uses client_id=account-console
+        let accountUrl = "\(baseUrl)/realms/\(realm)/protocol/openid-connect/auth?client_id=account-console&redirect_uri=\(baseUrl.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? baseUrl)/realms/\(realm)/account&response_type=code&scope=openid%20profile&code_challenge_method=S256"
+        
+        guard let url = URL(string: accountUrl) else {
+            // Fallback to direct account console URL
+            let fallbackUrl = "\(baseUrl)/realms/\(realm)/account"
+            if let fallback = URL(string: fallbackUrl) {
+                NSWorkspace.shared.open(fallback)
+                statusMessage = "Opening Keycloak account management. Please sign in if prompted."
+            } else {
+                setError("Unable to open Keycloak account management.")
+            }
+            return
+        }
+        
+        NSWorkspace.shared.open(url)
+        statusMessage = "Opening Keycloak account management..."
     }
     
     func signIn(isRegistrationPreferred: Bool) async {

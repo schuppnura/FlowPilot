@@ -107,20 +107,23 @@ class FlowPilotService:
                     continue
                 item_id = "i_" + uuid.uuid4().hex[:8]
                 kind = str(raw.get("kind", "unknown"))
-                items.append(
-                    {
-                        "item_id": item_id,
-                        "kind": kind,
-                        "title": str(raw.get("title", kind)),
-                        "planned_for": raw.get("planned_for"),
-                        "planned_price": raw.get("planned_price"),
-                        "airline_risk_score": raw.get("airline_risk_score"),
-                        "status": "planned",
-                        "last_decision": None,
-                        "last_reason_codes": [],
-                        "last_advice": [],
-                    }
-                )
+                item_dict = {
+                    "item_id": item_id,
+                    "kind": kind,
+                    "title": str(raw.get("title", kind)),
+                    "planned_for": raw.get("planned_for"),
+                    "planned_price": raw.get("planned_price"),
+                    "airline_risk_score": raw.get("airline_risk_score"),
+                    "status": "planned",
+                    "last_decision": None,
+                    "last_reason_codes": [],
+                    "last_advice": [],
+                }
+                # Copy optional detail fields from template to workflow item
+                for field in ["type", "star_rating", "cuisine", "city", "neighborhood", "departure_airport", "arrival_airport"]:
+                    if field in raw:
+                        item_dict[field] = raw[field]
+                items.append(item_dict)
 
         workflow: Dict[str, Any] = {
             "workflow_id": workflow_id,
@@ -177,14 +180,17 @@ class FlowPilotService:
         for item in workflow.get("items", []):
             if not isinstance(item, dict):
                 continue
-            items_out.append(
-                {
-                    "item_id": str(item.get("item_id")),
-                    "kind": str(item.get("kind", "unknown")),
-                    "title": str(item.get("title", "")),
-                    "status": str(item.get("status", "unknown")),
-                }
-            )
+            item_dict = {
+                "item_id": str(item.get("item_id")),
+                "kind": str(item.get("kind", "unknown")),
+                "title": str(item.get("title", "")),
+                "status": str(item.get("status", "unknown")),
+            }
+            # Include all optional detail fields if present
+            for field in ["type", "star_rating", "cuisine", "city", "neighborhood", "departure_airport", "arrival_airport"]:
+                if field in item:
+                    item_dict[field] = item[field]
+            items_out.append(item_dict)
 
         return {"workflow_id": workflow_id, "items": items_out}
 
@@ -328,8 +334,10 @@ class FlowPilotService:
 
         # Get service token for authentication
         token = security.get_service_token()
-        headers = {"Authorization": f"Bearer {token}"} if token else None
-
+        if not token:
+            raise RuntimeError("Service token not available - cannot call authz-api")
+        
+        headers = {"Authorization": f"Bearer {token}"}
         response = requests.post(url, json=body, timeout=timeout_seconds, headers=headers, verify=False)
         if response.status_code not in (200, 201):
             raise RuntimeError(f"AuthZ evaluate failed: HTTP {response.status_code}: {response.text}")
@@ -357,8 +365,10 @@ class FlowPilotService:
 
         # Get service token for authentication
         token = security.get_service_token()
-        headers = {"Authorization": f"Bearer {token}"} if token else None
-
+        if not token:
+            raise RuntimeError("Service token not available - cannot create workflow graph")
+        
+        headers = {"Authorization": f"Bearer {token}"}
         response = requests.post(url, json=body, timeout=timeout_seconds, headers=headers, verify=False)
         if response.status_code not in (200, 201):
             raise RuntimeError(f"Failed to create workflow graph: HTTP {response.status_code}: {response.text}")

@@ -1,14 +1,14 @@
 //
-//  NuraApp.swift
-//  Nura Travel
+//  FlowPilotApp.swift
+//  Policy-driven Authorization
 //
-//  Nura Travel - Intelligent travel planning with AI-powered authorization
+//  Policy-driven Authorization - Policy-driven authorization with AI-powered workflows
 //
 
 import SwiftUI
 
 @main
-struct NuraApp: App {
+struct FlowPilotApp: App {
     @StateObject private var state = AppState()
 
     var body: some Scene {

@@ -40,6 +40,22 @@ app = FastAPI(title="FlowPilot AuthZ API", version="1.0.0")
 app.add_middleware(security.SecurityHeadersMiddleware)
 app.add_middleware(security.RequestSizeLimiterMiddleware, max_size=security.get_max_request_size())
 
+# Custom exception handler for HTTPException to log authentication errors
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    if exc.status_code in (401, 403):
+        # Log authentication/authorization errors for debugging
+        auth_header = request.headers.get("authorization", "")
+        auth_preview = auth_header[:50] + "..." if len(auth_header) > 50 else auth_header or "None"
+        print(f"[authz-api HTTPException {exc.status_code}] Path: {request.url.path}, Detail: {exc.detail}, Auth: {auth_preview}", flush=True)
+        # Also log full request details
+        print(f"[authz-api HTTPException] Full request headers: {dict(request.headers)}", flush=True)
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": str(exc.detail) if hasattr(exc, 'detail') else str(exc)},
+        headers=exc.headers if hasattr(exc, 'headers') else {}
+    )
+
 # Environment flag for detailed error messages (disable in production)
 INCLUDE_ERROR_DETAILS = os.environ.get("INCLUDE_ERROR_DETAILS", "1") == "1"
 
@@ -92,9 +108,10 @@ class InMemoryProfileStore:
 PROFILE_STORE = InMemoryProfileStore()
 
 
-def get_token_claims(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security.verify_token)) -> dict[str, Any]:
+def get_token_claims(token_claims: dict[str, Any] = Depends(security.verify_token)) -> dict[str, Any]:
     # Return JWT claims from validated token
-    return credentials if credentials else {}
+    # verify_token will raise HTTPException if token is invalid, so if we get here, token is valid
+    return token_claims
 
 
 def resolve_principal_sub(
@@ -138,25 +155,14 @@ def post_evaluate(
 ) -> dict[str, Any]:
     
     # Log every request
-    api_logging.log_api_request(
-        method="POST",
-        path="/v1/evaluate",
-        request_body=request_body,
-        token_claims=token_claims,
-        request=request,
-    )
+    api_logging.log_api_request(method="POST", path="/v1/evaluate", request_body=request_body, token_claims=token_claims, request=request)
     
     # Sanitize all input before processing
     try:
         sanitized_body = security.sanitize_request_json_payload(request_body)
     except security.InputValidationError as exc:
         error_detail = security.sanitize_error_message(str(exc), INCLUDE_ERROR_DETAILS)
-        api_logging.log_api_response(
-            method="POST",
-            path="/v1/evaluate",
-            status_code=400,
-            error=error_detail,
-        )
+        api_logging.log_api_response(method="POST", path="/v1/evaluate", status_code=400, error=error_detail)
         raise HTTPException(
             status_code=400,
             detail=error_detail
@@ -167,12 +173,7 @@ def post_evaluate(
     principal = context.get("principal")
     if not principal or not isinstance(principal, dict):
         error_detail = "Request must be AuthZEN compliant: context.principal is required"
-        api_logging.log_api_response(
-            method="POST",
-            path="/v1/evaluate",
-            status_code=400,
-            error=error_detail,
-        )
+        api_logging.log_api_response(method="POST", path="/v1/evaluate", status_code=400, error=error_detail)
         raise HTTPException(
             status_code=400,
             detail=error_detail
@@ -181,12 +182,7 @@ def post_evaluate(
     principal_id = principal.get("id")
     if not principal_id or not isinstance(principal_id, str) or not principal_id.strip():
         error_detail = "Request must be AuthZEN compliant: context.principal.id is required"
-        api_logging.log_api_response(
-            method="POST",
-            path="/v1/evaluate",
-            status_code=400,
-            error=error_detail,
-        )
+        api_logging.log_api_response(method="POST", path="/v1/evaluate", status_code=400, error=error_detail)
         raise HTTPException(
             status_code=400,
             detail=error_detail
@@ -194,12 +190,7 @@ def post_evaluate(
     
     if "claims" not in principal:
         error_detail = "Request must be AuthZEN compliant: context.principal.claims is required"
-        api_logging.log_api_response(
-            method="POST",
-            path="/v1/evaluate",
-            status_code=400,
-            error=error_detail,
-        )
+        api_logging.log_api_response(method="POST", path="/v1/evaluate", status_code=400, error=error_detail)
         raise HTTPException(
             status_code=400,
             detail=error_detail
@@ -218,12 +209,7 @@ def post_evaluate(
     }
     
     # Log response
-    api_logging.log_api_response(
-        method="POST",
-        path="/v1/evaluate",
-        status_code=200,
-        response_body=response_body,
-    )
+    api_logging.log_api_response(method="POST", path="/v1/evaluate", status_code=200, response_body=response_body)
     
     return response_body
 
@@ -301,21 +287,34 @@ def get_identity_presence(principal_sub: str, token_claims: dict[str, Any] = Dep
 
 @app.post("/v1/graph/workflows")
 def post_graph_workflows(
+    request: Request,
     request_body: dict[str, Any] = Body(...),
     token_claims: dict[str, Any] = Depends(get_token_claims),
 ) -> dict[str, Any]:
     # Minimal stub: acknowledge graph creation so the rest of the system can evolve.
     try:
+        # Log the request for debugging
+        api_logging.log_api_request(method="POST", path="/v1/graph/workflows", request_body=request_body, token_claims=token_claims, request=request)
+        
         # Sanitize input
         sanitized_body = security.sanitize_request_json_payload(request_body)
         workflow_id = sanitized_body.get("workflow_id") or str(uuid.uuid4())
+        
+        result = {"status": "created", "workflow_id": workflow_id}
+        
+        api_logging.log_api_response(method="POST", path="/v1/graph/workflows", status_code=200, response_body=result)
+        
+        return result
     except security.InputValidationError as exc:
+        error_detail = security.sanitize_error_message(str(exc), INCLUDE_ERROR_DETAILS)
+        api_logging.log_api_response(method="POST", path="/v1/graph/workflows", status_code=400, error=error_detail)
         raise HTTPException(
             status_code=400,
-            detail=security.sanitize_error_message(str(exc), INCLUDE_ERROR_DETAILS)
+            detail=error_detail
         ) from exc
-    
-    return {"status": "created", "workflow_id": workflow_id}
+    except HTTPException as exc:
+        api_logging.log_api_response(method="POST", path="/v1/graph/workflows", status_code=exc.status_code, error=str(exc.detail) if hasattr(exc, 'detail') else str(exc))
+        raise
 
 
 @app.post("/v1/graph/workflows/{workflow_id}/items")
