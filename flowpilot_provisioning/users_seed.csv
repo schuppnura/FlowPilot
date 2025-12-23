@@ -1,6 +1,6 @@
-username;password;email;firstname;lastname;autobook_consent;autobook_price;autobook_leadtime;autobook_risklevel
-carlo;qkr9AXM3wum8fjt*xnc;carlo.schupp+0@me.com;Carlo;Schupp;Yes;1500;7;2
-peter;qkr9AXM3wum8fjt*xnc;carlo.schupp+1@me.com;Peter;Surnak;No;1500;7;2
-yannick;qkr9AXM3wum8fjt*xnc;carlo.schupp+2@me.com;Yannick;De Backer;Yes;1500;7;2
-sarah;qkr9AXM3wum8fjt*xnc;carlo.schupp+3@me.com;Sarah;Cools;No;1500;7;2
-kathleen;qkr9AXM3wum8fjt*xnc;carlo.schupp+4@me.com;Kathleen;Op De Beeck;Yes;1500;7;2
+username;password;email;firstname;lastname;autobook_consent
+carlo;qkr9AXM3wum8fjt*xnc;carlo.schupp+0@me.com;Carlo;Schupp;Yes
+peter;qkr9AXM3wum8fjt*xnc;carlo.schupp+1@me.com;Peter;Surnak;No
+yannick;qkr9AXM3wum8fjt*xnc;carlo.schupp+2@me.com;Yannick;De Backer;Yes
+sarah;qkr9AXM3wum8fjt*xnc;carlo.schupp+3@me.com;Sarah;Cools;No
+kathleen;qkr9AXM3wum8fjt*xnc;carlo.schupp+4@me.com;Kathleen;Op De Beeck;Yes

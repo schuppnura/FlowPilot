@@ -11,7 +11,8 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, Optional, Tuple
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urljoin
 
 import requests
@@ -22,6 +23,35 @@ def validate_non_empty_string(value: Any, field_name: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{field_name} must be a non-empty string")
     return value.strip()
+
+
+def require_non_empty_string(value: Any, field_name: str) -> str:
+    # Alias for validate_non_empty_string for consistency with other require_* functions.
+    return validate_non_empty_string(value, field_name)
+
+
+def require_optional_string(value: Any, field_name: str) -> Optional[str]:
+    # Validate optional strings without forcing presence, ensuring consistent normalization to None.
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a string or null")
+    stripped = value.strip()
+    return stripped if stripped else None
+
+
+def require_scope_list(value: Any, field_name: str) -> List[str]:
+    # Validate scope arrays as non-empty lists of non-empty strings to prevent unsafe or ambiguous permissions.
+    if not isinstance(value, list) or not value:
+        raise ValueError(f"{field_name} must be a non-empty list of strings")
+
+    normalized: List[str] = []
+    for item in value:
+        if not isinstance(item, str) or not item.strip():
+            raise ValueError(f"{field_name} items must be non-empty strings")
+        normalized.append(item.strip())
+
+    return normalized
 
 
 def parse_positive_int(value: str, variable_name: str) -> int:
@@ -58,11 +88,32 @@ def parse_positive_float(raw_value: str, field_name: str) -> float:
     return parsed_value
 
 
-def build_url(base_url: str, path: str) -> str:
-    # Build a stable absolute URL from base URL + path to avoid double slashes and missing separators.
-    base = base_url.rstrip("/") + "/"
-    relative = path.lstrip("/")
-    return urljoin(base, relative)
+def utc_now_iso() -> str:
+    # Provide a stable UTC timestamp string for created_at and comparisons, avoiding timezone ambiguity.
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def parse_iso_utc(value: Optional[str]) -> Optional[datetime]:
+    # Parse a strict subset of ISO-8601 UTC timestamps used by the service, returning None for missing values.
+    if value is None:
+        return None
+
+    if not isinstance(value, str) or not value.strip():
+        return None
+
+    normalized = value.strip()
+    if normalized.endswith("Z"):
+        normalized = normalized[:-1] + "+00:00"
+
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError:
+        return None
+
+    if parsed.tzinfo is None:
+        return None
+
+    return parsed.astimezone(timezone.utc)
 
 
 def truncate_text(value: Optional[str], max_length: int) -> str:
@@ -73,6 +124,13 @@ def truncate_text(value: Optional[str], max_length: int) -> str:
     if len(stripped) <= max_length:
         return stripped
     return stripped[:max_length] + "…"
+
+
+def build_url(base_url: str, path: str) -> str:
+    # Build a stable absolute URL from base URL + path to avoid double slashes and missing separators.
+    base = base_url.rstrip("/") + "/"
+    relative = path.lstrip("/")
+    return urljoin(base, relative)
 
 
 def parse_json_object(text: str, context: str) -> Dict[str, Any]:

@@ -204,7 +204,7 @@ class JWTValidator:
                         # Get signing key from JWKS (cached)
                         signing_key = self.jwks_client.get_signing_key_from_jwt(token)
                         
-                        # Re-validate with correct audience for service tokens (flowpilot-agent)
+                        # Re-validate with audience for service tokens: flowpilot-agent
                         decoded = jwt.decode(
                             token,
                             signing_key.key,
@@ -215,7 +215,7 @@ class JWTValidator:
                                 "verify_iat": True,
                                 "verify_nbf": True,
                                 "verify_iss": True,
-                                "verify_aud": True,  # Validate audience - service tokens must have aud=flowpilot-agent
+                                "verify_aud": True,
                                 "require_exp": True,
                                 "require_iat": True,
                             },
@@ -382,6 +382,11 @@ def clear_service_token_cache() -> None:
     _service_token_cache = None
 
 
+# Clear service token cache on module import to ensure fresh tokens after code changes
+# This ensures that when services restart, they get new tokens with the correct audience
+clear_service_token_cache()
+
+
 def get_service_token() -> Optional[str]:
     # Get service-to-service access token using Keycloak client credentials flow.
     # Caches token and refreshes when expired.
@@ -404,8 +409,10 @@ def get_service_token() -> Optional[str]:
     
     # Request new token using client credentials flow
     try:
-        # Get audience from environment (for service-to-service tokens)
-        audience = os.environ.get("KEYCLOAK_AUDIENCE", "").strip()
+        # For service-to-service tokens, use the client_id as the audience
+        # This ensures service tokens have aud=flowpilot-agent (not flowpilot-desktop)
+        # The KEYCLOAK_AUDIENCE env var is for user tokens, not service tokens
+        service_audience = client_id  # Service tokens should have aud=flowpilot-agent
         
         # Disable SSL verification for local development with self-signed certs
         token_data = {
@@ -413,9 +420,9 @@ def get_service_token() -> Optional[str]:
             "client_id": client_id,
             "client_secret": client_secret,
         }
-        # Add audience if specified (Keycloak will include it in the token)
-        if audience:
-            token_data["audience"] = audience
+        # Use client_id as audience for service tokens (Keycloak will include it in the token)
+        if service_audience:
+            token_data["audience"] = service_audience
             
         response = requests.post(
             token_url,

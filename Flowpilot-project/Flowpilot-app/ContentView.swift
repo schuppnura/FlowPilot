@@ -379,7 +379,7 @@ struct ContentView: View {
             HStack {
                 Image(systemName: "chart.bar.fill")
                     .foregroundStyle(Color(red: 0.3, green: 0.3, blue: 0.35))
-                Text("Authorization Results")
+                Text("Authorization")
                     .font(.headline)
                     .fontWeight(.medium)
                     .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.25))
@@ -434,17 +434,26 @@ struct ContentView: View {
     
     private func resultItemView(_ result: AgentRunItemResult) -> some View {
         HStack(alignment: .top, spacing: 12) {
-            // Kind - aligned with "Authorization Results" header and bold
+            // Kind - aligned with "Authorization" header and bold
             Text(result.kind)
                 .font(.subheadline)
                 .fontWeight(.bold)
                 .foregroundStyle(.primary)
                 .frame(width: 80, alignment: .leading)
             
-            // Workflow item ID
-            Text(result.workflow_item_id)
-                .font(.system(.body, design: .monospaced))
-                .foregroundStyle(.primary)
+            // Workflow item ID and reason codes on the same line
+            VStack(alignment: .leading, spacing: 4) {
+                Text(result.workflow_item_id)
+                    .font(.system(.body, design: .monospaced))
+                    .foregroundStyle(.primary)
+                
+                // Show reason codes if denied
+                if result.decision.lowercased() == "deny", let reasonCodes = result.reason_codes, !reasonCodes.isEmpty {
+                    Text(reasonCodes.joined(separator: ", "))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
             
             Spacer()
             

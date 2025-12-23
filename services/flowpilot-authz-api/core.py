@@ -18,12 +18,10 @@ Assumptions
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
-import utils
-from utils import http_post_json, build_timeouts
-import authz_utils
-from security import verify_token_string
+import requests
+from utils import http_post_json, build_timeouts, to_int
 
 # Default values for autobook attributes when not present in Keycloak token claims
 DEFAULT_AUTOBOOK_CONSENT = "No"  # String value from Keycloak (will be normalized to False)
@@ -86,25 +84,6 @@ def coerce_dict(value: Any) -> dict[str, Any]:
     return {}
 
 
-def extract_jwt_from_authzen_context_token(context_token: Any) -> Optional[str]:
-    """
-    AuthZEN context.token can be:
-    - a raw JWT string
-    - a dict that contains a JWT under common keys (access_token, token, jwt, value)
-    """
-    if isinstance(context_token, str):
-        token_string = context_token.strip()
-        return token_string or None
-
-    if isinstance(context_token, dict):
-        for key in ["access_token", "token", "jwt", "value"]:
-            candidate = context_token.get(key)
-            if isinstance(candidate, str) and candidate.strip():
-                return candidate.strip()
-
-    return None
-
-
 def normalize_yes_no_to_bool(value: Any, default: bool) -> bool:
     """
     Convert common string/primitive representations to boolean.
@@ -120,11 +99,6 @@ def normalize_yes_no_to_bool(value: Any, default: bool) -> bool:
 
     if isinstance(value, (int, float)):
         return bool(value)
-
-    if isinstance(value, list):
-        if not value:
-            return default
-        return normalize_yes_no_to_bool(value[0], default=default)
 
     if isinstance(value, str):
         normalized = value.strip().lower()
@@ -159,12 +133,10 @@ def build_opa_input(
     return {
         "user": {
             "sub": principal_sub,
-            "autobook_consent": bool(normalize_yes_no_to_bool(
-                principal_claims.get("autobook_consent", DEFAULT_AUTOBOOK_CONSENT), default=False
-            )),
-            "autobook_price": authz_utils.to_int(principal_claims.get("autobook_price"), DEFAULT_AUTOBOOK_PRICE),
-            "autobook_leadtime": authz_utils.to_int(principal_claims.get("autobook_leadtime"), DEFAULT_AUTOBOOK_LEADTIME), 
-            "autobook_risklevel": authz_utils.to_int(principal_claims.get("autobook_risklevel"), DEFAULT_AUTOBOOK_RISKLEVEL),
+            "autobook_consent": normalize_yes_no_to_bool(principal_claims.get("autobook_consent"), DEFAULT_AUTOBOOK_CONSENT),
+            "autobook_price": to_int(principal_claims.get("autobook_price"), DEFAULT_AUTOBOOK_PRICE),
+            "autobook_leadtime": to_int(principal_claims.get("autobook_leadtime"), DEFAULT_AUTOBOOK_LEADTIME), 
+            "autobook_risklevel": to_int(principal_claims.get("autobook_risklevel"), DEFAULT_AUTOBOOK_RISKLEVEL),
             "claims": principal_claims,
         },
         "action": request_action,
@@ -177,6 +149,61 @@ def build_opa_input(
     }
 
 
+def validate_delegation(
+    *,
+    base_url: str,
+    bearer_token: str,
+    principal_id: str,
+    delegate_id: str,
+    workflow_id: Optional[str],
+    timeout_seconds: int = 5,
+) -> Dict[str, Any]:
+    """
+    Call the delegation-api validate endpoint with clear errors so authz-api can fail closed deterministically.
+    
+    Args:
+        base_url: Base URL of the delegation API service
+        bearer_token: Service token for authenticating with delegation API
+        principal_id: Principal ID (user who owns the resource/workflow)
+        delegate_id: Delegate ID (user or agent attempting to act)
+        workflow_id: Optional workflow ID to scope the delegation check
+        timeout_seconds: Request timeout in seconds
+        
+    Returns:
+        Dictionary with 'valid' boolean and 'delegation_chain' list
+        
+    Raises:
+        ValueError: If base_url or bearer_token is invalid
+        RuntimeError: If delegation API returns an error or unexpected response
+    """
+    if not base_url or not base_url.strip():
+        raise ValueError("base_url must be a non-empty string")
+    if not bearer_token or not bearer_token.strip():
+        raise ValueError("bearer_token must be a non-empty string")
+
+    params: Dict[str, str] = {"principal_id": principal_id, "delegate_id": delegate_id}
+    if workflow_id is not None and workflow_id.strip():
+        params["workflow_id"] = workflow_id.strip()
+
+    headers = {"Authorization": f"Bearer {bearer_token.strip()}"}
+    response = requests.get(
+        f"{base_url.rstrip('/')}/v1/delegations/validate",
+        params=params,
+        headers=headers,
+        timeout=timeout_seconds,
+        verify=False,  # Allow self-signed certs for local dev
+    )
+
+    if response.status_code != 200:
+        raise RuntimeError(f"Delegation validate failed ({response.status_code}): {response.text}")
+
+    data = response.json()
+    if not isinstance(data, dict) or "valid" not in data:
+        raise RuntimeError(f"Unexpected response from delegation-api: {data}")
+
+    return data
+
+
 def evaluate_request_with_opa(
     *,
     opa_client: OpaClient,
@@ -185,17 +212,10 @@ def evaluate_request_with_opa(
     input_document = build_opa_input(
         authzen_request=authzen_request,
     )
-    
-    # Debug: Log OPA input to help diagnose issues
-    import json
-    import os
-    if os.environ.get("DEBUG_OPA_INPUT", "0") == "1":
-        print(f"[DEBUG] OPA Input: {json.dumps(input_document, indent=2)}", flush=True)
 
     try:
         is_allowed = opa_client.evaluate_allow(input_document=input_document)
     except Exception:
-        # Fail closed
         is_allowed = False
 
     try:

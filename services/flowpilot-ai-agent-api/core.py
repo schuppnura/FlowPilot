@@ -216,13 +216,34 @@ def execute_workflow_item(
         }
 
     if status_code == 403:
-        reason_codes, message = parse_policy_deny_from_body(response_text)
+        # Extract reason_codes from JSON response if available, otherwise parse from text
+        reason_codes: list[str] = []
+        advice: list[dict[str, Any]] = []
+        if response_json and isinstance(response_json, dict):
+            # Try to get reason_codes from detail object
+            detail = response_json.get("detail", {})
+            if isinstance(detail, dict):
+                reason_codes = list(detail.get("reason_codes", []) or [])
+                advice = list(detail.get("advice", []) or [])
+            elif isinstance(detail, str):
+                # Fallback: parse from string format
+                parsed_reason_codes, message = parse_policy_deny_from_body(response_text)
+                reason_codes = parsed_reason_codes
+                if message:
+                    advice = [{"type": "deny", "message": message}]
+        else:
+            # Fallback: parse from text
+            parsed_reason_codes, message = parse_policy_deny_from_body(response_text)
+            reason_codes = parsed_reason_codes
+            if message:
+                advice = [{"type": "deny", "message": message}]
+        
         return {
             "http_status": status_code,
             "status": "completed",
             "outcome": "deny",
             "reason_codes": reason_codes,
-            "advice": [{"type": "deny", "message": message}],
+            "advice": advice if advice else [{"type": "deny", "message": "Access denied"}],
             "response": response_json,
         }
 

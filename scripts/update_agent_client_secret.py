@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
-Verify and configure the flowpilot-desktop client for user authentication.
-This ensures the client has the audience mapper for proper token validation.
+Update the flowpilot-agent client secret in Keycloak to match .env file.
 """
 import requests
 import sys
@@ -14,7 +13,6 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 KEYCLOAK_URL = "https://localhost:8443"
 REALM = "flowpilot"
 
-# Try to get admin credentials from environment or .env file
 def load_env_file():
     """Load .env file if it exists"""
     env_vars = {}
@@ -31,6 +29,7 @@ def load_env_file():
 env_vars = load_env_file()
 ADMIN_USER = os.getenv("KEYCLOAK_ADMIN_USERNAME") or env_vars.get("KEYCLOAK_ADMIN_USERNAME", "admin")
 ADMIN_PASS = os.getenv("KEYCLOAK_ADMIN_PASSWORD") or env_vars.get("KEYCLOAK_ADMIN_PASSWORD", "admin")
+CLIENT_SECRET = os.getenv("KEYCLOAK_CLIENT_SECRET") or env_vars.get("KEYCLOAK_CLIENT_SECRET")
 
 def get_admin_token():
     """Get admin access token"""
@@ -47,6 +46,7 @@ def get_admin_token():
     )
     if resp.status_code != 200:
         print(f"✗ Authentication failed: {resp.status_code}")
+        print(f"Response: {resp.text}")
         raise RuntimeError(f"Failed to authenticate: {resp.status_code}")
     
     token_data = resp.json()
@@ -70,59 +70,23 @@ def get_client_id(headers, client_id_str):
         return clients[0]['id']
     return None
 
-def verify_desktop_client(headers):
-    """Verify flowpilot-desktop client configuration"""
-    client_uuid = get_client_id(headers, "flowpilot-desktop")
-    if not client_uuid:
-        print("✗ flowpilot-desktop client not found")
-        return False
-    
-    print(f"✓ Found flowpilot-desktop client (id={client_uuid})")
-    
-    # Check for audience mapper
-    resp = requests.get(
-        f'{KEYCLOAK_URL}/admin/realms/{REALM}/clients/{client_uuid}/protocol-mappers/models',
+def update_client_secret(headers, client_uuid, secret):
+    """Update client secret"""
+    resp = requests.put(
+        f'{KEYCLOAK_URL}/admin/realms/{REALM}/clients/{client_uuid}/client-secret',
         headers=headers,
+        json={'value': secret, 'temporary': False},
         verify=False,
         timeout=10
     )
-    resp.raise_for_status()
-    mappers = resp.json()
-    
-    has_audience_mapper = any(m.get("name") == "audience-mapper" for m in mappers)
-    if not has_audience_mapper:
-        print("⚠ Missing audience mapper, creating...")
-        mapper_config = {
-            "name": "audience-mapper",
-            "protocol": "openid-connect",
-            "protocolMapper": "oidc-audience-mapper",
-            "consentRequired": False,
-            "config": {
-                "included.client.audience": "flowpilot-desktop",
-                "id.token.claim": "true",
-                "access.token.claim": "true"
-            }
-        }
-        resp = requests.post(
-            f'{KEYCLOAK_URL}/admin/realms/{REALM}/clients/{client_uuid}/protocol-mappers/models',
-            headers=headers,
-            json=mapper_config,
-            verify=False,
-            timeout=10
-        )
-        if resp.status_code == 201:
-            print("✓ Created audience mapper")
-        else:
-            print(f"⚠ Failed to create mapper: {resp.status_code} - {resp.text[:200]}")
-            return False
-    else:
-        print("✓ Audience mapper exists")
-    
-    print("✓ flowpilot-desktop client is properly configured")
-    return True
+    return resp.status_code == 204
 
 def main():
-    print("Verifying flowpilot-desktop client configuration...")
+    if not CLIENT_SECRET:
+        print("✗ KEYCLOAK_CLIENT_SECRET not found in .env or environment")
+        return 1
+    
+    print("Updating flowpilot-agent client secret...")
     
     try:
         token = get_admin_token()
@@ -131,11 +95,18 @@ def main():
             'Content-Type': 'application/json'
         }
         
-        if verify_desktop_client(headers):
-            print("\n✓ Desktop client verification complete!")
+        client_uuid = get_client_id(headers, "flowpilot-agent")
+        if not client_uuid:
+            print("✗ flowpilot-agent client not found")
+            return 1
+        
+        print(f"✓ Found flowpilot-agent client (id={client_uuid})")
+        
+        if update_client_secret(headers, client_uuid, CLIENT_SECRET):
+            print("✓ Updated client secret")
             return 0
         else:
-            print("\n✗ Desktop client verification failed")
+            print("✗ Failed to update client secret")
             return 1
         
     except Exception as e:
@@ -146,5 +117,4 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-
 

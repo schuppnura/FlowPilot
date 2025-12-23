@@ -12,7 +12,6 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 
 # Shared libs (as top-level modules)
 COPY services/shared-libraries/utils.py /app/utils.py
-COPY services/flowpilot-authz-api/utils.py /app/authz_utils.py
 COPY services/shared-libraries/security.py /app/security.py
 COPY services/shared-libraries/api_logging.py /app/api_logging.py
 

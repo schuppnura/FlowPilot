@@ -109,3 +109,4 @@ brew install jq
 docker compose logs | grep '"type":"api_' | python3 -m json.tool
 ```
 
+

@@ -153,16 +153,16 @@ def handle_get_workflow_templates(request: Request, token_claims: dict = Depends
     # why: allow the client to pick a workflow
     # side effect: none.
     try:
-        api_logging.log_api_request(method="GET", path="/v1/workflow-templates", token_claims=token_claims, request=request)
+        api_logging.log_api_request("GET", "/v1/workflow-templates", None, token_claims, None, request)
         service: FlowPilotService = request.app.state.service
         result = {"templates": service.list_workflow_templates()}
-        api_logging.log_api_response(method="GET", path="/v1/workflow-templates", status_code=200, response_body=result)
+        api_logging.log_api_response("GET", "/v1/workflow-templates", 200, result)
         return result
     except HTTPException as e:
-        api_logging.log_api_response(method="GET", path="/v1/workflow-templates", status_code=e.status_code, error=str(e.detail) if hasattr(e, 'detail') else str(e))
+        api_logging.log_api_response("GET", "/v1/workflow-templates", e.status_code, None, str(e.detail) if hasattr(e, 'detail') else str(e))
         raise
     except Exception as e:
-        api_logging.log_api_response(method="GET", path="/v1/workflow-templates", status_code=500, error=str(e))
+        api_logging.log_api_response("GET", "/v1/workflow-templates", 500, None, str(e))
         raise
 
 
@@ -248,7 +248,7 @@ def handle_post_execute_workflow_item(
     service: FlowPilotService = request.app.state.service
     
     # Log request
-    api_logging.log_api_request(method="POST", path=f"/v1/workflows/{workflow_id}/items/{workflow_item_id}/execute", request_body=body.dict() if hasattr(body, 'dict') else body, token_claims=token_claims, request=request, path_params={"workflow_id": workflow_id, "workflow_item_id": workflow_item_id})
+    api_logging.log_api_request("POST", f"/v1/workflows/{workflow_id}/items/{workflow_item_id}/execute", body.dict() if hasattr(body, 'dict') else body, token_claims, None, request, {"workflow_id": workflow_id, "workflow_item_id": workflow_item_id})
     
     try:
         # Validate path parameters
@@ -266,25 +266,25 @@ def handle_post_execute_workflow_item(
         )
         
         # Log response
-        api_logging.log_api_response(method="POST", path=f"/v1/workflows/{workflow_id}/items/{workflow_item_id}/execute", status_code=200, response_body=result)
+        api_logging.log_api_response("POST", f"/v1/workflows/{workflow_id}/items/{workflow_item_id}/execute", 200, result)
         
         return result
     except security.InputValidationError as exception:
         error_detail = security.sanitize_error_message(str(exception), INCLUDE_ERROR_DETAILS)
-        api_logging.log_api_response(method="POST", path=f"/v1/workflows/{workflow_id}/items/{workflow_item_id}/execute", status_code=400, error=error_detail)
+        api_logging.log_api_response("POST", f"/v1/workflows/{workflow_id}/items/{workflow_item_id}/execute", 400, None, error_detail)
         raise HTTPException(
             status_code=400,
             detail=error_detail
         ) from exception
     except PermissionError as exception:
-        api_logging.log_api_response(method="POST", path=f"/v1/workflows/{workflow_id}/items/{workflow_item_id}/execute", status_code=403, error="Permission denied")
+        api_logging.log_api_response("POST", f"/v1/workflows/{workflow_id}/items/{workflow_item_id}/execute", 403, None, "Permission denied")
         raise HTTPException(status_code=403, detail="Permission denied") from exception
     except KeyError as exception:
-        api_logging.log_api_response(method="POST", path=f"/v1/workflows/{workflow_id}/items/{workflow_item_id}/execute", status_code=404, error="Resource not found")
+        api_logging.log_api_response("POST", f"/v1/workflows/{workflow_id}/items/{workflow_item_id}/execute", 404, None, "Resource not found")
         raise HTTPException(status_code=404, detail="Resource not found") from exception
     except ValueError as exception:
         error_detail = security.sanitize_error_message(str(exception), INCLUDE_ERROR_DETAILS)
-        api_logging.log_api_response(method="POST", path=f"/v1/workflows/{workflow_id}/items/{workflow_item_id}/execute", status_code=400, error=error_detail)
+        api_logging.log_api_response("POST", f"/v1/workflows/{workflow_id}/items/{workflow_item_id}/execute", 400, None, error_detail)
         raise HTTPException(
             status_code=400,
             detail=error_detail
