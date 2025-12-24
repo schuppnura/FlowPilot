@@ -61,4 +61,8 @@ echo "Step 8: Ensuring sub claim in access tokens..."
 python3 scripts/ensure_sub_in_access_token.py || echo "  (sub mapper may need manual configuration)"
 
 echo ""
+echo "Step 9: Configuring persona attribute..."
+python3 scripts/configure_persona_attribute.py || echo "  (persona attribute may need manual configuration)"
+
+echo ""
 echo "✓ Keycloak setup complete!"

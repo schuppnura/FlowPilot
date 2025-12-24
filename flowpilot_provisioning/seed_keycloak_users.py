@@ -53,6 +53,7 @@ class SeedUser:
     email: str
     first_name: str
     last_name: str
+    persona: List[str]  # List of persona strings (e.g., ["traveler", "travel-agent"])
     autobook_consent: str  # "Yes" or "No"
     autobook_price: str  # Max price in EUR (e.g., "5000")
     autobook_leadtime: str  # Minimum lead time in days (e.g., "1")
@@ -203,7 +204,7 @@ def load_users_from_csv(path: str) -> List[SeedUser]:
     with open(path, "r", encoding="utf-8") as file_handle:
         reader = csv.DictReader(file_handle, delimiter=";")
         expected_fields = ["username", "password", "email", "firstname", "lastname"]
-        optional_fields = ["autobook_consent", "autobook_price", "autobook_leadtime", "autobook_risklevel"]
+        optional_fields = ["persona", "autobook_consent", "autobook_price", "autobook_leadtime", "autobook_risklevel"]
         if reader.fieldnames is None:
             raise ValueError("CSV has no header row.")
         
@@ -231,6 +232,11 @@ def load_users_from_csv(path: str) -> List[SeedUser]:
             email = _get_field_value(row, "email", normalized_fieldnames)
             first_name = _get_field_value(row, "firstname", normalized_fieldnames)
             last_name = _get_field_value(row, "lastname", normalized_fieldnames)
+            
+            # Parse persona - comma-separated values, strip whitespace, filter empty
+            persona_raw = _get_field_value(row, "persona", normalized_fieldnames, default="")
+            persona_list = [p.strip() for p in persona_raw.split(",") if p.strip()] if persona_raw else []
+            
             autobook_consent = _get_field_value(row, "autobook_consent", normalized_fieldnames, default="Yes")
             autobook_price = _get_field_value(row, "autobook_price", normalized_fieldnames, default="1500")
             autobook_leadtime = _get_field_value(row, "autobook_leadtime", normalized_fieldnames, default="7")
@@ -263,6 +269,7 @@ def load_users_from_csv(path: str) -> List[SeedUser]:
                     email=email or "",
                     first_name=first_name or "",
                     last_name=last_name or "",
+                    persona=persona_list,
                     autobook_consent=consent_normalized,
                     autobook_price=autobook_price.strip(),
                     autobook_leadtime=autobook_leadtime.strip(),
@@ -510,6 +517,52 @@ def set_user_autobook_attributes(
             print(f"Warning: Attributes for {user.username} may not have persisted. Keycloak may require 'Unmanaged Attributes' to be enabled.")
 
 
+def set_user_persona_attribute(
+    session: requests.Session,
+    base_url: str,
+    realm: str,
+    user_id: str,
+    user: SeedUser,
+    verify_tls: bool,
+) -> None:
+    """Set the persona attribute for a user (multivalued)."""
+    update_url = f"{base_url}/admin/realms/{realm}/users/{user_id}"
+    # Fetch current user data first
+    response = session.get(update_url, timeout=30, verify=verify_tls)
+    if response.status_code != 200:
+        raise RuntimeError(
+            f"Failed to get user data for user_id={user_id} ({response.status_code}): {response.text}"
+        )
+    
+    user_data = response.json()
+    # Initialize attributes if not present
+    if "attributes" not in user_data or user_data["attributes"] is None:
+        user_data["attributes"] = {}
+    
+    # Set the persona attribute as a list (multivalued)
+    # If persona list is empty, set to empty list (required attribute must be present)
+    user_data["attributes"]["persona"] = user.persona if user.persona else []
+    
+    # Remove read-only fields that Keycloak doesn't accept in PUT
+    for field in ["access", "createdTimestamp", "totp", "disableableCredentialTypes", "requiredActions", "notBefore", "federatedIdentities", "self"]:
+        user_data.pop(field, None)
+    
+    # Update user with new attributes
+    response = session.put(update_url, json=user_data, timeout=30, verify=verify_tls)
+    if response.status_code != 204:
+        raise RuntimeError(
+            f"Failed to set persona attribute for user_id={user_id} ({response.status_code}): {response.text}"
+        )
+    
+    # Verify the attribute was set
+    verify_response = session.get(update_url, timeout=30, verify=verify_tls)
+    if verify_response.status_code == 200:
+        verified_user = verify_response.json()
+        verified_attrs = verified_user.get("attributes") or {}
+        if "persona" not in verified_attrs:
+            print(f"Warning: Persona attribute for {user.username} may not have persisted. Keycloak may require 'Unmanaged Attributes' to be enabled.")
+
+
 def seed_users(
     keycloak_config: KeycloakConfig,
     admin_realm: str,
@@ -522,7 +575,8 @@ def seed_users(
         print("DRY RUN: No calls will be made to Keycloak.")
         print(f"Target: {keycloak_config.base_url} realm={keycloak_config.target_realm}")
         for user in users:
-            print(f"- Would create/update user '{user.username}' and set password.")
+            persona_str = ", ".join(user.persona) if user.persona else "(none)"
+            print(f"- Would create/update user '{user.username}' with persona=[{persona_str}] and set password.")
         return
 
     access_token = request_admin_token(
@@ -592,6 +646,20 @@ def seed_users(
             )
         except Exception as exc:
             print(f"Warning: Failed to set autobook attributes for {user.username}: {exc}")
+            # Continue anyway
+
+        # Set persona attribute from CSV
+        try:
+            set_user_persona_attribute(
+                session=session,
+                base_url=keycloak_config.base_url,
+                realm=keycloak_config.target_realm,
+                user_id=user_id,
+                user=user,
+                verify_tls=keycloak_config.verify_tls,
+            )
+        except Exception as exc:
+            print(f"Warning: Failed to set persona attribute for {user.username}: {exc}")
             # Continue anyway
 
         print(f"OK: {user.username} (id={user_id})")

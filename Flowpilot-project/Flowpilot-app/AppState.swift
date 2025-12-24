@@ -13,6 +13,10 @@ final class AppState: ObservableObject {
     @Published var principalSub: String?
     @Published var idToken: String?
     @Published var accessToken: String?
+    @Published var refreshToken: String?
+    
+    @Published var personas: [String] = []
+    @Published var selectedPersona: String?
     
     @Published var workflowTemplates: [WorkflowTemplate] = []
     @Published var selectedWorkflowTemplateId: String?
@@ -70,6 +74,9 @@ final class AppState: ObservableObject {
         principalSub = nil
         idToken = nil
         accessToken = nil
+        refreshToken = nil
+        personas = []
+        selectedPersona = nil
         
         workflowId = nil
         workflowStartDateString = nil
@@ -141,6 +148,11 @@ final class AppState: ObservableObject {
             principalSub = sub
             idToken = tokens.id_token
             accessToken = tokens.access_token
+            refreshToken = tokens.refresh_token
+            
+            // Extract persona from access token
+            extractPersonaFromToken()
+            
             statusMessage = "Signed in. sub=\(sub)"
             
             // Auto-load templates post sign-in; why: remove manual step and keep UX consistent.
@@ -150,6 +162,83 @@ final class AppState: ObservableObject {
             statusMessage = ""
         }
     }
+    
+    func extractPersonaFromToken() {
+        // Extract persona claim from access token; why: get user personas for selection; side effect: updates persona state.
+        guard let token = accessToken else {
+            personas = []
+            selectedPersona = nil
+            print("DEBUG: No access token available for persona extraction")
+            return
+        }
+        
+        do {
+            // Decode access token (JwtUtils.decodeClaims works with any JWT, not just id tokens)
+            let claims = try JwtUtils.decodeClaims(idToken: token)
+            
+            // Debug: print all claim keys to see what's available
+            print("DEBUG: Available claims in access token: \(claims.keys.sorted())")
+            
+            // Extract persona claim - it should be an array of strings (multi-valued attribute)
+            var extractedPersonas: [String] = []
+            
+            if let personaValue = claims["persona"] {
+                print("DEBUG: Found persona claim: \(personaValue) (type: \(type(of: personaValue)))")
+                
+                if let personaArray = personaValue as? [String] {
+                    // Persona is already an array
+                    extractedPersonas = personaArray.filter { !$0.isEmpty }
+                    print("DEBUG: Extracted personas as [String]: \(extractedPersonas)")
+                } else if let personaArray = personaValue as? [Any] {
+                    // Persona is an array of other types, convert to strings
+                    extractedPersonas = personaArray.compactMap { item in
+                        if let str = item as? String, !str.isEmpty {
+                            return str
+                        }
+                        return nil
+                    }
+                    print("DEBUG: Extracted personas as [Any]: \(extractedPersonas)")
+                } else if let personaString = personaValue as? String, !personaString.isEmpty {
+                    // Persona is a single string
+                    extractedPersonas = [personaString]
+                    print("DEBUG: Extracted persona as String: \(extractedPersonas)")
+                } else {
+                    print("DEBUG: Persona value is not in expected format: \(personaValue)")
+                }
+            } else {
+                print("DEBUG: No 'persona' claim found in access token")
+            }
+            
+            personas = extractedPersonas
+            print("DEBUG: Final personas array: \(personas)")
+            
+            // Auto-select if only one persona
+            if personas.count == 1 {
+                selectedPersona = personas.first
+                print("DEBUG: Auto-selected persona: \(selectedPersona ?? "nil")")
+            } else if personas.count > 1 {
+                // If multiple personas and we already have a selection that's still valid, keep it
+                // Otherwise, clear selection
+                if let current = selectedPersona, personas.contains(current) {
+                    // Keep current selection
+                    print("DEBUG: Keeping current persona selection: \(current)")
+                } else {
+                    selectedPersona = nil
+                    print("DEBUG: Cleared persona selection (multiple personas, no valid selection)")
+                }
+            } else {
+                // No personas found
+                selectedPersona = nil
+                print("DEBUG: No personas found, cleared selection")
+            }
+        } catch {
+            // If extraction fails, clear personas
+            personas = []
+            selectedPersona = nil
+            print("DEBUG: Failed to extract persona from token: \(error)")
+        }
+    }
+    
     
     func loadWorkflowTemplates(forceReload: Bool) async {
         // Load workflow templates from backend; why: user selects a workflow template without extra clicks; side effect: network I/O.
@@ -183,6 +272,12 @@ final class AppState: ObservableObject {
             return
         }
         
+        // Check if persona is required and selected
+        if personas.count > 1 && selectedPersona == nil {
+            setError("Please select a persona first.")
+            return
+        }
+        
         // Format start date as ISO 8601 date string (YYYY-MM-DD)
         let dateFormatter = ISO8601DateFormatter()
         dateFormatter.formatOptions = [.withFullDate]
@@ -191,7 +286,10 @@ final class AppState: ObservableObject {
         statusMessage = "Creating workflow…"
         do {
             // Backend still creates a "trip"; we treat it as a workflow id in the UI/state.
-            let newWorkflowId = try await workflowClient.loadTemplate(templateId: templateId, principalSub: sub, startDate: startDateString)
+            // If only one persona exists, use it even if not explicitly selected
+            let personaToSend = selectedPersona ?? (personas.count == 1 ? personas.first : nil)
+            print("DEBUG: Sending persona to workflow API: \(personaToSend ?? "nil") (selectedPersona: \(selectedPersona ?? "nil"), personas: \(personas))")
+            let newWorkflowId = try await workflowClient.loadTemplate(templateId: templateId, principalSub: sub, startDate: startDateString, persona: personaToSend)
             workflowId = newWorkflowId
             workflowStartDateString = startDateString
             
@@ -218,10 +316,19 @@ final class AppState: ObservableObject {
             return
         }
         
+        // Check if persona is required and selected
+        if personas.count > 1 && selectedPersona == nil {
+            setError("Please select a persona first.")
+            return
+        }
+        
         statusMessage = "Running agent (dry-run)…"
         do {
-            // Agent-runner API still expects workflowId; we pass the workflow id.
-            let run = try await agentRunnerClient.runAgent(workflowId: workflow, principalSub: sub, dryRun: true)
+            // Agent-runner API still expects workflowId; we pass the workflow id and selected persona.
+            // If only one persona exists, use it even if not explicitly selected
+            let personaToSend = selectedPersona ?? (personas.count == 1 ? personas.first : nil)
+            print("DEBUG: Sending persona to agent API: \(personaToSend ?? "nil") (selectedPersona: \(selectedPersona ?? "nil"), personas: \(personas))")
+            let run = try await agentRunnerClient.runAgent(workflowId: workflow, principalSub: sub, dryRun: true, persona: personaToSend)
             lastAgentRun = run
             missingProfileFieldsFromAdvice = AdviceUtils.extractMissingProfileFields(from: run)
             let allowedCount = run.results.filter { $0.decision.lowercased() == "allow" }.count

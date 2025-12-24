@@ -12,6 +12,7 @@ struct OidcDiscovery: Codable {
     let authorization_endpoint: String
     let token_endpoint: String
     let end_session_endpoint: String?
+    let token_endpoint_auth_methods_supported: [String]?
 }
 
 struct OidcTokenResponse: Codable {

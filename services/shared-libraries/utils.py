@@ -54,6 +54,16 @@ def require_scope_list(value: Any, field_name: str) -> List[str]:
     return normalized
 
 
+def to_int(value: Any, default: int) -> int:
+    """Convert a value to an integer, returning default if conversion fails or value is None."""
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return default
+
+
 def parse_positive_int(value: str, variable_name: str) -> int:
     # Parse and validate a positive integer from env/CLI to prevent silent misconfiguration.
     try:

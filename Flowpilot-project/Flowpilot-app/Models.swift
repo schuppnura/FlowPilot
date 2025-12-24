@@ -25,6 +25,7 @@ struct LoadTemplateRequest: Codable {
     let template_id: String
     let principal_sub: String
     let start_date: String
+    let persona: String?
 }
 
 struct LoadTemplateResponse: Codable {
@@ -63,6 +64,7 @@ struct AgentRunRequest: Codable {
     let workflow_id: String
     let principal_sub: String
     let dry_run: Bool
+    let persona: String?
 }
 
 struct AgentRunResponse: Codable {

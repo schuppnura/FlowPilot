@@ -72,6 +72,40 @@ final class KeycloakOidcClient: NSObject {
         return (tokenResponse, sub)
     }
     
+    func refreshAccessToken(refreshToken: String) async throws -> OidcTokenResponse {
+        // Refresh the access token using the refresh token
+        // This will get a new access token with updated claims (including persona)
+        let discovery = try await fetchDiscoveryIfNeeded()
+        
+        guard let url = URL(string: discovery.token_endpoint) else {
+            throw OidcClientError.discoveryFailed("Invalid token endpoint URL")
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        
+        let form = [
+            ("grant_type", "refresh_token"),
+            ("client_id", clientId),
+            ("refresh_token", refreshToken)
+        ]
+        request.httpBody = encodeForm(form)
+        
+        // Use .insecure for local development with self-signed certificates
+        let (data, response) = try await URLSession.insecure.data(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw OidcClientError.tokenExchangeFailed("Non-HTTP response")
+        }
+        
+        if http.statusCode != 200 {
+            let bodyText = String(data: data, encoding: .utf8) ?? "<no body>"
+            throw OidcClientError.tokenExchangeFailed("HTTP \(http.statusCode): \(bodyText)")
+        }
+        
+        return try JSONDecoder().decode(OidcTokenResponse.self, from: data)
+    }
+    
     func signOut(idToken: String) async throws {
         // Perform OIDC logout by calling Keycloak's end_session_endpoint
         // This terminates the Keycloak session and clears SSO cookies

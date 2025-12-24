@@ -190,6 +190,22 @@ def main():
                     "access.token.claim": "true",
                     "userinfo.token.claim": "false"
                 }
+            },
+            {
+                "name": "persona",
+                "protocol": "openid-connect",
+                "protocolMapper": "oidc-usermodel-attribute-mapper",
+                "consentRequired": False,
+                "config": {
+                    "user.attribute": "persona",
+                    "claim.name": "persona",
+                    "jsonType.label": "String",
+                    "id.token.claim": "false",
+                    "access.token.claim": "true",
+                    "userinfo.token.claim": "false",
+                    "multivalued": "true",
+                    "aggregate.attrs": "false"
+                }
             }
         ]
         

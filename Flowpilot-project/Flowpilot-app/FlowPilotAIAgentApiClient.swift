@@ -13,7 +13,7 @@ final class FlowPilotAIAgentApiClient {
         self.accessTokenProvider = accessTokenProvider
     }
 
-    func runAgent(workflowId: String, principalSub: String, dryRun: Bool) async throws -> AgentRunResponse {
+    func runAgent(workflowId: String, principalSub: String, dryRun: Bool, persona: String?) async throws -> AgentRunResponse {
         // Run the agent for a workflow; why: execute items item-by-item under policy control; assumptions: POST /v1/agent-runs; side effect: network I/O.
         let url = baseUrl.appendingPathComponent("/v1/agent-runs")
         var request = URLRequest(url: url)
@@ -24,7 +24,7 @@ final class FlowPilotAIAgentApiClient {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
 
-        let payload = AgentRunRequest(workflow_id: workflowId, principal_sub: principalSub, dry_run: dryRun)
+        let payload = AgentRunRequest(workflow_id: workflowId, principal_sub: principalSub, dry_run: dryRun, persona: persona)
         request.httpBody = try JSONEncoder().encode(payload)
 
         do {

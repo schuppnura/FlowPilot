@@ -73,14 +73,31 @@ if [ "$USE_JQ" = true ]; then
         echo ""
     fi
     # Strip service name prefix and show separators + JSON logs
-    $CMD 2>&1 | grep --line-buffered -E '(─{10,}|"type":\s*"(api_request|api_response)")' | sed 's/^[^|]*| //' | while IFS= read -r line || [ -n "$line" ]; do
-        # If it's a separator line, print it directly; otherwise try to parse as JSON
-        if [[ "$line" =~ ^─+$ ]]; then
-            echo "$line"
-        else
-            echo "$line" | jq . 2>/dev/null || echo "$line"
-        fi
-    done
+    # For follow mode, use unbuffered processing to ensure real-time output
+    if [ "$FOLLOW" = true ]; then
+        $CMD 2>&1 | while IFS= read -r line || [ -n "$line" ]; do
+            # Check if line contains API log or separator
+            if echo "$line" | grep -qE '(─{10,}|"type":\s*"(api_request|api_response)")'; then
+                # Strip service name prefix
+                cleaned_line=$(echo "$line" | sed 's/^[^|]*| //')
+                # If it's a separator line, print it directly; otherwise try to parse as JSON
+                if [[ "$cleaned_line" =~ ^─+$ ]]; then
+                    echo "$cleaned_line"
+                else
+                    echo "$cleaned_line" | jq . 2>/dev/null || echo "$cleaned_line"
+                fi
+            fi
+        done
+    else
+        $CMD 2>&1 | grep -E '(─{10,}|"type":\s*"(api_request|api_response)")' | sed 's/^[^|]*| //' | while IFS= read -r line || [ -n "$line" ]; do
+            # If it's a separator line, print it directly; otherwise try to parse as JSON
+            if [[ "$line" =~ ^─+$ ]]; then
+                echo "$line"
+            else
+                echo "$line" | jq . 2>/dev/null || echo "$line"
+            fi
+        done
+    fi
 else
     echo -e "${BLUE}Viewing API logs${NC}"
     if [ "$FOLLOW" = true ]; then
@@ -91,7 +108,15 @@ else
         echo -e "${GREEN}Tip: Install 'jq' (brew install jq) for pretty-printed JSON${NC}"
         echo ""
     fi
-    $CMD 2>&1 | grep --line-buffered -E '"type":\s*"(api_request|api_response)"'
+    if [ "$FOLLOW" = true ]; then
+        $CMD 2>&1 | while IFS= read -r line || [ -n "$line" ]; do
+            if echo "$line" | grep -qE '"type":\s*"(api_request|api_response)"'; then
+                echo "$line"
+            fi
+        done
+    else
+        $CMD 2>&1 | grep -E '"type":\s*"(api_request|api_response)"'
+    fi
 fi
 
 # If no logs found and not following, show a helpful message

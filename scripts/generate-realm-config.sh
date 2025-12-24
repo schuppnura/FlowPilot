@@ -1,5 +1,6 @@
 #!/bin/bash
 # Generate Keycloak realm configuration with secrets from .env
+# Uses the template file and replaces placeholders with actual values
 
 set -e
 
@@ -17,80 +18,16 @@ if [ -z "$KEYCLOAK_CLIENT_SECRET" ] || [ -z "$DEMO_USER_PASSWORD" ]; then
     exit 1
 fi
 
-# Generate realm configuration
-cat > infra/keycloak/realm-flowpilot.json << EOF
-{
-  "realm": "flowpilot",
-  "enabled": true,
-  "registrationAllowed": true,
-  "loginWithEmailAllowed": false,
-  "duplicateEmailsAllowed": true,
-  "users": [
-    {
-      "username": "traveler1",
-      "enabled": true,
-      "firstName": "Demo",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "$DEMO_USER_PASSWORD",
-          "temporary": false
-        }
-      ]
-    }
-  ],
-  "clients": [
-    {
-      "clientId": "flowpilot-desktop",
-      "enabled": true,
-      "protocol": "openid-connect",
-      "publicClient": true,
-      "standardFlowEnabled": true,
-      "directAccessGrantsEnabled": false,
-      "serviceAccountsEnabled": false,
-      "redirectUris": [
-        "flowpilot-demo://oauth/callback",
-        "http://localhost:9999/callback"
-      ],
-      "webOrigins": [
-        "http://localhost:9999"
-      ],
-      "attributes": {
-        "pkce.code.challenge.method": "S256"
-      }
-    },
-    {
-      "clientId": "flowpilot-agent",
-      "enabled": true,
-      "protocol": "openid-connect",
-      "publicClient": false,
-      "serviceAccountsEnabled": true,
-      "standardFlowEnabled": false,
-      "directAccessGrantsEnabled": false,
-      "secret": "$KEYCLOAK_CLIENT_SECRET"
-    },
-    {
-      "clientId": "flowpilot-testing",
-      "name": "FlowPilot Testing Script",
-      "description": "OAuth client for user_based_testing.py script",
-      "enabled": true,
-      "protocol": "openid-connect",
-      "publicClient": true,
-      "standardFlowEnabled": true,
-      "directAccessGrantsEnabled": false,
-      "serviceAccountsEnabled": false,
-      "redirectUris": [
-        "http://localhost:8765/callback"
-      ],
-      "webOrigins": [
-        "http://localhost:8765"
-      ],
-      "attributes": {
-        "pkce.code.challenge.method": "S256"
-      }
-    }
-  ]
-}
-EOF
+# Check if template exists
+TEMPLATE_FILE="infra/keycloak/realm-flowpilot.json.template"
+if [ ! -f "$TEMPLATE_FILE" ]; then
+    echo "Error: Template file not found: $TEMPLATE_FILE"
+    exit 1
+fi
 
-echo "✅ Generated infra/keycloak/realm-flowpilot.json with secrets from .env"
+# Generate realm configuration from template by replacing placeholders
+sed -e "s|DEMO_USER_PASSWORD_HERE|$DEMO_USER_PASSWORD|g" \
+    -e "s|KEYCLOAK_CLIENT_SECRET_HERE|$KEYCLOAK_CLIENT_SECRET|g" \
+    "$TEMPLATE_FILE" > infra/keycloak/realm-flowpilot.json
+
+echo "✅ Generated infra/keycloak/realm-flowpilot.json from template with secrets from .env"

@@ -53,7 +53,7 @@ final class FlowPilotApiClient {
         return decoded.templates
     }
 
-    func loadTemplate(templateId: String, principalSub: String, startDate: String) async throws -> String {
+    func loadTemplate(templateId: String, principalSub: String, startDate: String, persona: String?) async throws -> String {
         // Create a workflow instance from a template; assumptions: POST /v1/workflows; side effect: network I/O + server-side state creation.
         let url = baseUrl.appendingPathComponent("v1/workflows")
         var request = URLRequest(url: url)
@@ -64,7 +64,7 @@ final class FlowPilotApiClient {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
 
-        let payload = LoadTemplateRequest(template_id: templateId, principal_sub: principalSub, start_date: startDate)
+        let payload = LoadTemplateRequest(template_id: templateId, principal_sub: principalSub, start_date: startDate, persona: persona)
         request.httpBody = try JSONEncoder().encode(payload)
 
         let (data, response) = try await urlSession.data(for: request)
@@ -79,8 +79,8 @@ final class FlowPilotApiClient {
 
     // Preferred naming (non-breaking): clearer method names that wrap the legacy ones.
 
-    func createWorkflowFromTemplate(templateId: String, principalSub: String, startDate: String) async throws -> String {
-        return try await loadTemplate(templateId: templateId, principalSub: principalSub, startDate: startDate)
+    func createWorkflowFromTemplate(templateId: String, principalSub: String, startDate: String, persona: String?) async throws -> String {
+        return try await loadTemplate(templateId: templateId, principalSub: principalSub, startDate: startDate, persona: persona)
     }
     
     func fetchWorkflowItems(workflowId: String) async throws -> [WorkflowItem] {

@@ -32,6 +32,14 @@ from template_loader import load_workflow_templates_from_directory
 from utils import build_url, http_post_json, validate_non_empty_string
 
 
+class PolicyDeniedError(PermissionError):
+    """Exception raised when authorization policy denies access, carrying reason codes"""
+    def __init__(self, message: str, reason_codes: List[str], advice: List[Dict[str, Any]]):
+        super().__init__(message)
+        self.reason_codes = reason_codes
+        self.advice = advice
+
+
 def get_utc_now_iso() -> str:
     # Return a stable UTC timestamp string
     # why: deterministic timestamps in responses
@@ -85,7 +93,7 @@ class FlowPilotService:
         templates.sort(key=lambda entry: str(entry.get("template_id", "")))
         return templates
 
-    def create_workflow_from_template(self, template_id: str, owner_sub: str, start_date: str) -> Dict[str, Any]:
+    def create_workflow_from_template(self, template_id: str, owner_sub: str, start_date: str, persona: Optional[str] = None) -> Dict[str, Any]:
         # Create a workflow and itinerary items from a template
         # side effect: stores a new workflow in memory.
         template_id = validate_non_empty_string(template_id, "template_id")
@@ -134,6 +142,20 @@ class FlowPilotService:
             "items": items,
         }
         self._workflows[workflow_id] = workflow
+
+        # Create workflow and workflow_item objects in ***REMOVED*** via AuthZ API
+        try:
+            self._create_workflow_graph(workflow_id=workflow_id, owner_sub=owner_sub, template_name=str(template.get("name", template_id)))
+            for item in items:
+                self._create_workflow_item_graph(
+                    workflow_item_id=str(item["item_id"]),
+                    workflow_id=workflow_id,
+                    item_title=str(item.get("title", "")),
+                    item_kind=str(item.get("kind", "unknown")),
+                )
+        except Exception as graph_error:
+            # Log but don't fail the workflow creation if graph write fails
+            print(f"Warning: Failed to create ***REMOVED*** graph for workflow {workflow_id}: {graph_error}")
 
         return {"workflow_id": workflow_id, "owner_sub": owner_sub, "created_at": created_at, "item_count": len(items)}
 
@@ -211,7 +233,11 @@ class FlowPilotService:
             item["last_decision"] = decision
             item["last_reason_codes"] = reason_codes
             item["last_advice"] = advice
-            raise PermissionError(f"Access denied by policy decision: decision={decision} reason_codes={reason_codes}")
+            raise PolicyDeniedError(
+                f"Access denied by policy decision: decision={decision} reason_codes={reason_codes}",
+                reason_codes=reason_codes,
+                advice=advice
+            )
 
         if not dry_run:
             item["status"] = "executed"
@@ -306,8 +332,34 @@ class FlowPilotService:
         # AuthZEN: Build context with principal-user object (not token)
         context: Dict[str, Any] = {"principal": principal_user}
         
+        # Get service token for authentication
+        token = security.get_service_token()
+        if not token:
+            raise RuntimeError("Service token not available - cannot call authz-api")
+        
+        # Decode service token to get sub or azp for the agent subject
+        try:
+            service_claims = security.verify_token_string(token)
+            service_id = service_claims.get("sub") or service_claims.get("azp") or agent_sub
+        except Exception:
+            # Fallback to agent_sub if token decode fails
+            service_id = agent_sub
+        
+        # Subject is always the agent (service) making the call to authz-api
+        # This is a service-to-service call, so subject identifies the calling service (ai-agent-api)
+        # The user information (with persona) goes in context.principal
+        subject: Dict[str, Any] = {
+            "type": "agent",
+            "id": service_id
+        }
+        
+        # Add owner to resource properties
+        owner_sub = str(workflow.get("owner_sub", ""))
+        if owner_sub:
+            resource_properties["owner"] = {"id": owner_sub}
+        
         body: Dict[str, Any] = {
-            "subject": {"type": "agent", "id": agent_sub},
+            "subject": subject,
             "action": {"name": "book"},
             "resource": {
                 "type": "workflow",
@@ -318,13 +370,66 @@ class FlowPilotService:
             "options": {"dry_run": bool(dry_run), "explain": True, "metrics": False},
         }
 
-        # Get service token for authentication
-        token = security.get_service_token()
-        if not token:
-            raise RuntimeError("Service token not available - cannot call authz-api")
-        
         headers = {"Authorization": f"Bearer {token}"}
         response = requests.post(url, json=body, timeout=timeout_seconds, headers=headers, verify=False)
         if response.status_code not in (200, 201):
             raise RuntimeError(f"AuthZ evaluate failed: HTTP {response.status_code}: {response.text}")
         return response.json()
+
+    def _create_workflow_graph(self, workflow_id: str, owner_sub: str, template_name: str) -> None:
+        # Create workflow object and owner relation in ***REMOVED*** via AuthZ API graph write endpoint
+        # why: establish workflow ownership for ReBAC authorization checks during workflow execution
+        # when: called immediately after creating workflow in memory (in create_trip_from_template)
+        # authorization: uses service-to-service token from Keycloak client credentials
+        # endpoint: POST /v1/graph/workflows on authz-api
+        # side effect: network I/O to authz-api, which creates objects/relations in ***REMOVED***
+        # raises: RuntimeError if authz-api returns non-2xx (logged but doesn't fail workflow creation)
+        authz_base_url = validate_non_empty_string(str(self._config.get("authz_base_url", "")), "authz_base_url")
+        timeout_seconds = int(self._config.get("request_timeout_seconds", 10))
+        domain = validate_non_empty_string(str(self._config.get("domain", "")), "domain")
+
+        url = build_url(authz_base_url, "/v1/graph/workflows")
+        body: Dict[str, Any] = {
+            "workflow_id": workflow_id,
+            "owner_sub": owner_sub,
+            "display_name": template_name,
+            "properties": {"domain": domain},
+        }
+
+        # Get service token for authentication
+        token = security.get_service_token()
+        if not token:
+            raise RuntimeError("Service token not available - cannot create workflow graph")
+        
+        headers = {"Authorization": f"Bearer {token}"}
+        response = requests.post(url, json=body, timeout=timeout_seconds, headers=headers, verify=False)
+        if response.status_code not in (200, 201):
+            raise RuntimeError(f"Failed to create workflow graph: HTTP {response.status_code}: {response.text}")
+
+    def _create_workflow_item_graph(self, workflow_item_id: str, workflow_id: str, item_title: str, item_kind: str) -> None:
+        # Create workflow_item object and workflow relation in ***REMOVED*** via AuthZ API graph write endpoint
+        # why: link items to parent workflow for permission inheritance via ReBAC
+        # when: called for each workflow item during workflow creation
+        # authorization: uses service-to-service token from Keycloak client credentials
+        # endpoint: POST /v1/graph/workflow-items on authz-api
+        # permission chain: workflow_item.can_execute resolves via workflow relation to workflow.can_execute
+        # side effect: network I/O to authz-api, which creates objects/relations in ***REMOVED***
+        # raises: RuntimeError if authz-api returns non-2xx (logged but doesn't fail workflow creation)
+        authz_base_url = validate_non_empty_string(str(self._config.get("authz_base_url", "")), "authz_base_url")
+        timeout_seconds = int(self._config.get("request_timeout_seconds", 10))
+
+        url = build_url(authz_base_url, "/v1/graph/workflow-items")
+        body: Dict[str, Any] = {
+            "workflow_item_id": workflow_item_id,
+            "workflow_id": workflow_id,
+            "display_name": item_title,
+            "properties": {"kind": item_kind},
+        }
+
+        # Get service token for authentication
+        token = security.get_service_token()
+        headers = {"Authorization": f"Bearer {token}"} if token else None
+
+        response = requests.post(url, json=body, timeout=timeout_seconds, headers=headers, verify=False)
+        if response.status_code not in (200, 201):
+            raise RuntimeError(f"Failed to create workflow_item graph: HTTP {response.status_code}: {response.text}")

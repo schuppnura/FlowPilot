@@ -370,4 +370,3 @@ Response:
 6. **Build MacOS UI**
 7. **Test end-to-end flow**
 
-

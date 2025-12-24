@@ -69,7 +69,7 @@ struct AppConfig {
     static let oidcScopes: String = stringValue(
         key: "FLOWPILOT_OIDC_SCOPES",
         infoPlistKey: "FLOWPILOT_OIDC_SCOPES",
-        defaultValue: "openid profile"
+        defaultValue: "openid profile autobook"
     )
 
     /// Custom scheme part of `oidcRedirectUri` used by ASWebAuthenticationSession.

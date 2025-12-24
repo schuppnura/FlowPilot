@@ -76,15 +76,50 @@ struct ContentView: View {
                 .controlSize(.large)
                 .disabled(state.principalSub == nil)
                 
-                Button(action: {
-                    state.openKeycloakAccountManagement()
-                }) {
-                    Label("My Account", systemImage: "person.circle")
+                // Persona display/selector - replaces "My Account" button position
+                if let _ = state.principalSub {
+                    if state.personas.count == 1 {
+                        // Single persona - display it in the button row
+                        HStack(spacing: 8) {
+                            Image(systemName: "person.badge.shield.checkmark.fill")
+                                .foregroundStyle(Color(red: 0.95, green: 0.55, blue: 0.25))
+                            Text(state.personas.first ?? "")
+                                .font(.body)
+                                .foregroundStyle(.primary)
+                        }
                         .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 12)
+                        .background(Color(red: 0.98, green: 0.98, blue: 0.98))
+                        .cornerRadius(8)
+                    } else if state.personas.count > 1 {
+                        // Multiple personas - show selector in the button row
+                        Picker("Select persona", selection: Binding<String>(
+                            get: { state.selectedPersona ?? "" },
+                            set: { newValue in
+                                state.selectedPersona = newValue.isEmpty ? nil : newValue
+                            }
+                        )) {
+                            Text("Select persona").tag("")
+                            ForEach(state.personas, id: \.self) { persona in
+                                Text(persona).tag(persona)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .controlSize(.large)
+                        .frame(maxWidth: .infinity)
+                    } else {
+                        // No personas found - show placeholder for debugging
+                        Text("No persona")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .padding(.horizontal, 12)
+                            .background(Color(red: 0.98, green: 0.98, blue: 0.98))
+                            .cornerRadius(8)
+                    }
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
-                .disabled(state.principalSub == nil)
             }
             
             if let sub = state.principalSub {
@@ -108,7 +143,9 @@ struct ContentView: View {
     }
     
     private var workflowTemplatesPanel: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        let personaRequired = state.personas.count > 1 && state.selectedPersona == nil
+        
+        return VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Image(systemName: "map.fill")
                     .foregroundStyle(Color(red: 0.3, green: 0.3, blue: 0.35)) // Soft dark - Nura style
@@ -116,6 +153,17 @@ struct ContentView: View {
                     .font(.headline)
                     .fontWeight(.medium)
                     .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.25)) // Soft dark - Nura style
+            }
+            
+            if personaRequired {
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                    Text("Please select a persona first")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 8)
             }
             
             VStack(alignment: .leading, spacing: 8) {
@@ -133,6 +181,7 @@ struct ContentView: View {
                 }
                 .pickerStyle(.menu)
                 .controlSize(.large)
+                .disabled(personaRequired)
             }
             
             VStack(alignment: .leading, spacing: 8) {
@@ -146,6 +195,7 @@ struct ContentView: View {
                 )
                 .datePickerStyle(.compact)
                 .labelsHidden()
+                .disabled(personaRequired)
             }
             
             Button(action: {
@@ -157,7 +207,11 @@ struct ContentView: View {
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
             .tint(Color(red: 0.95, green: 0.55, blue: 0.25)) // Orange - Nura logo color
-            .disabled(state.principalSub == nil || (state.selectedWorkflowTemplateId ?? "").isEmpty)
+            .disabled(
+                state.principalSub == nil || 
+                (state.selectedWorkflowTemplateId ?? "").isEmpty ||
+                (state.personas.count > 1 && state.selectedPersona == nil)
+            )
         }
         .padding(16)
         .background(Color.white)
@@ -166,7 +220,9 @@ struct ContentView: View {
     }
     
     private var workflowsPanel: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        let personaRequired = state.personas.count > 1 && state.selectedPersona == nil
+        
+        return VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Image(systemName: "list.bullet.rectangle.fill")
                     .foregroundStyle(Color(red: 0.3, green: 0.3, blue: 0.35)) // Soft dark - Nura style
@@ -229,6 +285,7 @@ struct ContentView: View {
         .background(Color.white)
         .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.03), radius: 4, x: 0, y: 1) // Subtle shadow - Nura style
+        .opacity(personaRequired ? 0.5 : 1.0)
     }
     
     private func workflowItemRow(_ item: WorkflowItem) -> some View {
@@ -375,7 +432,9 @@ struct ContentView: View {
     }
     
     private var authorizationResultsPanel: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        let personaRequired = state.personas.count > 1 && state.selectedPersona == nil
+        
+        return VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Image(systemName: "chart.bar.fill")
                     .foregroundStyle(Color(red: 0.3, green: 0.3, blue: 0.35))
@@ -395,7 +454,7 @@ struct ContentView: View {
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
                 .tint(Color(red: 0.85, green: 0.35, blue: 0.15))
-                .disabled(state.principalSub == nil || state.workflowId == nil)
+                .disabled(state.principalSub == nil || state.workflowId == nil || personaRequired)
             }
             
             if let run = state.lastAgentRun {
@@ -430,6 +489,7 @@ struct ContentView: View {
         .background(Color.white)
         .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.03), radius: 4, x: 0, y: 1)
+        .opacity(personaRequired ? 0.5 : 1.0)
     }
     
     private func resultItemView(_ result: AgentRunItemResult) -> some View {
