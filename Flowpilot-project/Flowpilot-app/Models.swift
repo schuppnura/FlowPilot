@@ -116,3 +116,52 @@ struct AgentAdvice: Codable, Identifiable {
         try container.encode(message, forKey: .message)
     }
 }
+
+// MARK: - Workflows
+
+struct Workflow: Codable, Identifiable {
+    let workflow_id: String
+    let template_id: String
+    let owner_sub: String
+    let created_at: String
+    let departure_date: String?
+    let item_count: Int
+    
+    var id: String { workflow_id }
+}
+
+struct WorkflowsResponse: Codable {
+    let workflows: [Workflow]
+}
+
+// MARK: - Delegation
+
+struct CreateDelegationRequest: Codable {
+    let principal_id: String
+    let delegate_id: String
+    let workflow_id: String?
+    let expires_in_days: Int
+}
+
+struct DelegationResponse: Codable {
+    let principal_id: String
+    let delegate_id: String
+    let workflow_id: String?
+    let expires_at: String
+    let created_at: String
+    let revoked_at: String?
+}
+
+struct TravelAgentUser: Codable, Identifiable {
+    let id: String
+    let username: String
+    let email: String?
+    
+    var displayName: String {
+        username
+    }
+}
+
+struct UsersByPersonaResponse: Codable {
+    let users: [TravelAgentUser]
+}

@@ -25,6 +25,13 @@ final class AppState: ObservableObject {
     @Published var workflowStartDateString: String?
     @Published var workflowItems: [WorkflowItem] = []
     
+    @Published var workflows: [Workflow] = []
+    @Published var selectedWorkflowId: String?
+    
+    @Published var travelAgents: [TravelAgentUser] = []
+    @Published var selectedDelegateId: String?
+    @Published var delegationExpiresInDays: Int = 7
+    
     @Published var lastAgentRun: AgentRunResponse?
     @Published var missingProfileFieldsFromAdvice: [String] = []
     
@@ -51,6 +58,10 @@ final class AppState: ObservableObject {
     // Profile API is now embedded into authz-api; keep it as an AuthZ client.
     lazy var authzClient: AuthzApiClient = {
         AuthzApiClient(baseUrl: AppConfig.authzBaseUrl, accessTokenProvider: { [weak self] in self?.accessToken })
+    }()
+    
+    lazy var delegationClient: DelegationApiClient = {
+        DelegationApiClient(accessTokenProvider: { [weak self] in self?.accessToken })
     }()
     
     func clearError() {
@@ -83,6 +94,11 @@ final class AppState: ObservableObject {
         workflowItems = []
         workflowTemplates = []
         selectedWorkflowTemplateId = nil
+        workflows = []
+        selectedWorkflowId = nil
+        travelAgents = []
+        selectedDelegateId = nil
+        delegationExpiresInDays = 7
         
         lastAgentRun = nil
         missingProfileFieldsFromAdvice = []
@@ -155,8 +171,10 @@ final class AppState: ObservableObject {
             
             statusMessage = "Signed in. sub=\(sub)"
             
-            // Auto-load templates post sign-in; why: remove manual step and keep UX consistent.
+            // Auto-load templates, workflows, and travel agents post sign-in; why: remove manual step and keep UX consistent.
             await loadWorkflowTemplates(forceReload: true)
+            await loadWorkflows()
+            await loadTravelAgents()
         } catch {
             setError("Sign-in failed: \(error)")
             statusMessage = ""
@@ -291,6 +309,7 @@ final class AppState: ObservableObject {
             print("DEBUG: Sending persona to workflow API: \(personaToSend ?? "nil") (selectedPersona: \(selectedPersona ?? "nil"), personas: \(personas))")
             let newWorkflowId = try await workflowClient.loadTemplate(templateId: templateId, principalSub: sub, startDate: startDateString, persona: personaToSend)
             workflowId = newWorkflowId
+            selectedWorkflowId = newWorkflowId
             workflowStartDateString = startDateString
             
             // Fetch workflow items immediately after creation
@@ -304,6 +323,117 @@ final class AppState: ObservableObject {
         }
     }
     
+    func refreshAccessTokenIfNeeded() async -> Bool {
+        // Refresh access token to get latest autobook attributes; why: ensure token has latest claims before execute; side effect: updates access token.
+        guard let refreshTokenValue = refreshToken else {
+            return false
+        }
+        
+        do {
+            let tokenResponse = try await oidcClient.refreshAccessToken(refreshToken: refreshTokenValue)
+            accessToken = tokenResponse.access_token
+            if let newRefreshToken = tokenResponse.refresh_token {
+                refreshToken = newRefreshToken
+            }
+            // Re-extract persona after refresh
+            extractPersonaFromToken()
+            return true
+        } catch {
+            setError("Token refresh failed: \(error)")
+            return false
+        }
+    }
+    
+    func loadWorkflows() async {
+        // Load all workflows from backend; why: allow user to select existing workflow; side effect: network I/O.
+        clearError()
+        guard principalSub != nil else {
+            setError("You must sign in first.")
+            return
+        }
+        
+        statusMessage = "Loading workflows…"
+        do {
+            let loaded = try await workflowClient.fetchWorkflows()
+            workflows = loaded
+            statusMessage = "Loaded \(loaded.count) workflows."
+        } catch {
+            setError("Load workflows failed: \(error)")
+            statusMessage = ""
+        }
+    }
+    
+    func selectWorkflow(_ workflowId: String) async {
+        // Select an existing workflow and load its items; why: allow user to work with existing workflows; side effect: network I/O.
+        clearError()
+        guard principalSub != nil else {
+            setError("You must sign in first.")
+            return
+        }
+        
+        selectedWorkflowId = workflowId
+        self.workflowId = workflowId
+        
+        statusMessage = "Loading workflow items…"
+        do {
+            let items = try await workflowClient.fetchWorkflowItems(workflowId: workflowId)
+            workflowItems = items
+            statusMessage = "Selected workflow: \(workflowId) with \(items.count) items"
+        } catch {
+            setError("Load workflow items failed: \(error)")
+            statusMessage = ""
+        }
+    }
+    
+    func loadTravelAgents() async {
+        // Load travel agents (users with persona "travel-agent"); why: populate delegation target list; side effect: network I/O.
+        clearError()
+        
+        statusMessage = "Loading travel agents…"
+        do {
+            let users = try await delegationClient.listUsersByPersona(persona: "travel-agent")
+            travelAgents = users
+            statusMessage = "Loaded \(users.count) travel agent(s)."
+        } catch {
+            setError("Load travel agents failed: \(error)")
+            statusMessage = ""
+            travelAgents = []
+        }
+    }
+    
+    func createDelegation() async {
+        // Create a delegation relationship; why: delegate workflow to travel agent; side effect: network I/O.
+        clearError()
+        guard let principalId = principalSub else {
+            setError("You must sign in first.")
+            return
+        }
+        guard let delegateId = selectedDelegateId else {
+            setError("Select a travel agent first.")
+            return
+        }
+        guard let workflowIdToDelegate = selectedWorkflowId ?? workflowId else {
+            setError("Select or create a workflow first.")
+            return
+        }
+        
+        statusMessage = "Creating delegation…"
+        do {
+            _ = try await delegationClient.createDelegation(
+                principalId: principalId,
+                delegateId: delegateId,
+                workflowId: workflowIdToDelegate,
+                expiresInDays: delegationExpiresInDays
+            )
+            statusMessage = "Delegation created successfully for workflow \(workflowIdToDelegate). Expires in \(delegationExpiresInDays) days."
+            // Clear selection after successful delegation
+            selectedDelegateId = nil
+        } catch {
+            setError("Create delegation failed: \(error)")
+            statusMessage = ""
+        }
+    }
+    
     func runAgentDryRun() async {
         // Run the agent-runner in dry-run; why: demonstrate delegated authorization and deny/advice flows; side effect: network I/O.
         clearError()
@@ -312,7 +442,7 @@ final class AppState: ObservableObject {
             return
         }
         guard let workflow = workflowId else {
-            setError("Create a workflow first.")
+            setError("Create or select a workflow first.")
             return
         }
         
@@ -320,6 +450,14 @@ final class AppState: ObservableObject {
         if personas.count > 1 && selectedPersona == nil {
             setError("Please select a persona first.")
             return
+        }
+        
+        // Refresh token before execute to get latest autobook attributes
+        statusMessage = "Refreshing access token…"
+        let refreshed = await refreshAccessTokenIfNeeded()
+        if !refreshed {
+            // Token refresh failed, but continue with existing token
+            statusMessage = "Token refresh failed, continuing with existing token…"
         }
         
         statusMessage = "Running agent (dry-run)…"
@@ -379,5 +517,6 @@ final class AppState: ObservableObject {
             statusMessage = ""
         }
     }
+    
 }
 

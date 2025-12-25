@@ -79,6 +79,18 @@ services:
       # Optional: Configure request limits
       - MAX_REQUEST_SIZE_MB=1
       - MAX_STRING_LENGTH=10000
+      # Delegation API integration
+      - DELEGATION_API_BASE_URL=http://flowpilot-delegation-api:8000
+      # Service-to-service authentication for delegation-api calls
+      - KEYCLOAK_TOKEN_URL=https://keycloak:8443/realms/flowpilot/protocol/openid-connect/token
+      - AGENT_CLIENT_ID=flowpilot-agent
+      - AGENT_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
+      # Keycloak admin API (for fetching owner attributes when travel-agent persona)
+      - KEYCLOAK_BASE_URL=https://keycloak:8443
+      - KEYCLOAK_REALM=flowpilot
+      - KEYCLOAK_ADMIN_USERNAME=admin
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
+      - VERIFY_TLS=false
       # Error message detail (set to 0 in production)
       - INCLUDE_ERROR_DETAILS=1
       # API logging (set to 1 to enable JSON logging to stdout)
@@ -89,6 +101,7 @@ services:
     depends_on:
       - opa
       - keycloak
+      - flowpilot-delegation-api
 
   flowpilot-ai-agent-api:
     build:
@@ -162,6 +175,44 @@ services:
     volumes:
       - ./data:/data:ro
 
+  flowpilot-delegation-api:
+    build:
+      context: .
+      dockerfile: services/flowpilot-delegation-api/Dockerfile
+    platform: linux/amd64
+    environment:
+      # JWT validation using JWKS
+      - KEYCLOAK_JWKS_URI=https://keycloak:8443/realms/flowpilot/protocol/openid-connect/certs
+      - KEYCLOAK_ISSUER=https://localhost:8443/realms/flowpilot
+      - KEYCLOAK_AUDIENCE=flowpilot-desktop
+      # Service-to-service authentication
+      - KEYCLOAK_TOKEN_URL=https://keycloak:8443/realms/flowpilot/protocol/openid-connect/token
+      - AGENT_CLIENT_ID=flowpilot-agent
+      - AGENT_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
+      # Database
+      - DB_PATH=/app/delegations.db
+      # Keycloak admin API (for user queries)
+      - KEYCLOAK_BASE_URL=https://keycloak:8443
+      - KEYCLOAK_REALM=flowpilot
+      - KEYCLOAK_ADMIN_USERNAME=admin
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
+      - VERIFY_TLS=false
+      # Optional: Enable payload signature scanning
+      - ENABLE_PAYLOAD_SIGNATURE_SCAN=0
+      # Error message detail (set to 0 in production)
+      - INCLUDE_ERROR_DETAILS=1
+      # API logging (set to 1 to enable JSON logging to stdout)
+      - ENABLE_API_LOGGING=1
+    command: ["python", "main.py", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8005:8000"
+    depends_on:
+      - keycloak
+    volumes:
+      - delegation_db:/app
+
 volumes:
   keycloak_data:
+    driver: local
+  delegation_db:
     driver: local

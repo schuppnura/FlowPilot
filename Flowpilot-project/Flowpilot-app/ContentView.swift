@@ -13,6 +13,7 @@ struct ContentView: View {
                 identityPanel
                 workflowTemplatesPanel
                 workflowsPanel
+                delegationPanel
                 authorizationResultsPanel
             }
             .padding(20)
@@ -166,11 +167,12 @@ struct ContentView: View {
                 .padding(.vertical, 8)
             }
             
-            VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .center, spacing: 12) {
                 Text("Trip Template")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                Picker("Select template", selection: Binding<String>(
+                    .frame(width: 100, alignment: .leading)
+                Picker("", selection: Binding<String>(
                     get: { state.selectedWorkflowTemplateId ?? "" },
                     set: { newValue in state.selectedWorkflowTemplateId = newValue.isEmpty ? nil : newValue }
                 )) {
@@ -184,10 +186,11 @@ struct ContentView: View {
                 .disabled(personaRequired)
             }
             
-            VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .center, spacing: 12) {
                 Text("Departure Date")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+                    .frame(width: 100, alignment: .leading)
                 DatePicker(
                     "",
                     selection: $state.workflowStartDate,
@@ -232,8 +235,53 @@ struct ContentView: View {
                     .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.25)) // Soft dark - Nura style
             }
             
+            // Workflow selection (existing workflows)
+            HStack(alignment: .center, spacing: 12) {
+                Text("Trip Itinerary")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 100, alignment: .leading)
+                Picker("", selection: Binding<String>(
+                    get: { state.selectedWorkflowId ?? "" },
+                    set: { newValue in
+                        state.selectedWorkflowId = newValue.isEmpty ? nil : newValue
+                        if !newValue.isEmpty {
+                            Task { await state.selectWorkflow(newValue) }
+                        }
+                    }
+                )) {
+                    Text("Choose an existing trip…").tag("")
+                    ForEach(state.workflows, id: \.id) { workflow in
+                        Text("\(workflow.workflow_id) - \(workflow.template_id) (\(workflow.item_count) items)").tag(workflow.id)
+                    }
+                }
+                .pickerStyle(.menu)
+                .controlSize(.large)
+                .disabled(personaRequired)
+            }
+            
             if let workflowId = state.workflowId {
+                Divider()
+                
                 VStack(alignment: .leading, spacing: 8) {
+                    // Show delegation info if travel-agent persona and not the owner
+                    if state.selectedPersona == "travel-agent",
+                       let principalSub = state.principalSub,
+                       let currentWorkflow = state.workflows.first(where: { $0.workflow_id == workflowId }),
+                       currentWorkflow.owner_sub != principalSub {
+                        HStack(spacing: 8) {
+                            Image(systemName: "person.2.badge.gearshape.fill")
+                                .foregroundStyle(.orange)
+                            Text("Delegated by owner:")
+                                .foregroundStyle(.secondary)
+                            Text(currentWorkflow.owner_sub)
+                                .textSelection(.enabled)
+                                .font(.system(.body, design: .monospaced))
+                                .foregroundStyle(.primary)
+                        }
+                        .padding(.bottom, 4)
+                    }
+                    
                     HStack(spacing: 8) {
                         Image(systemName: "number.circle.fill")
                             .foregroundStyle(.secondary)
@@ -257,9 +305,10 @@ struct ContentView: View {
                 }
                 .padding(.bottom, 8)
             } else {
-                Text("No active trip. Create a trip from a template above.")
+                Text("No active trip. Create a trip from a template above or select an existing trip.")
                     .foregroundStyle(.secondary)
                     .italic()
+                    .padding(.top, 8)
             }
             
             if !state.workflowItems.isEmpty {
@@ -285,6 +334,89 @@ struct ContentView: View {
         .background(Color.white)
         .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.03), radius: 4, x: 0, y: 1) // Subtle shadow - Nura style
+        .opacity(personaRequired ? 0.5 : 1.0)
+    }
+    
+    private var delegationPanel: some View {
+        let personaRequired = state.personas.count > 1 && state.selectedPersona == nil
+        
+        return VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "person.2.badge.gearshape.fill")
+                    .foregroundStyle(Color(red: 0.3, green: 0.3, blue: 0.35))
+                Text("Delegation")
+                    .font(.headline)
+                    .fontWeight(.medium)
+                    .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.25))
+            }
+            
+            if personaRequired {
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                    Text("Please select a persona first")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 8)
+            }
+            
+            HStack(alignment: .center, spacing: 12) {
+                Text("Travel Agent")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 100, alignment: .leading)
+                Picker("", selection: Binding<String>(
+                    get: { state.selectedDelegateId ?? "" },
+                    set: { newValue in state.selectedDelegateId = newValue.isEmpty ? nil : newValue }
+                )) {
+                    Text("Choose a travel agent…").tag("")
+                    ForEach(state.travelAgents) { agent in
+                        Text(agent.displayName).tag(agent.id)
+                    }
+                }
+                .pickerStyle(.menu)
+                .controlSize(.large)
+                .disabled(personaRequired)
+                .onAppear {
+                    if state.travelAgents.isEmpty {
+                        Task { await state.loadTravelAgents() }
+                    }
+                }
+            }
+            
+            HStack(alignment: .center, spacing: 12) {
+                Text("Expiration (days)")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 100, alignment: .leading)
+                Stepper(value: $state.delegationExpiresInDays, in: 1...365, step: 1) {
+                    Text("\(state.delegationExpiresInDays) days")
+                        .foregroundStyle(.primary)
+                }
+                .disabled(personaRequired)
+            }
+            
+            Button(action: {
+                Task { await state.createDelegation() }
+            }) {
+                Label("Delegate Trip", systemImage: "arrow.right.circle.fill")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .tint(Color(red: 0.95, green: 0.55, blue: 0.25))
+            .disabled(
+                state.principalSub == nil ||
+                (state.selectedDelegateId ?? "").isEmpty ||
+                (state.workflowId ?? "").isEmpty ||
+                (state.personas.count > 1 && state.selectedPersona == nil)
+            )
+        }
+        .padding(16)
+        .background(Color.white)
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.03), radius: 4, x: 0, y: 1)
         .opacity(personaRequired ? 0.5 : 1.0)
     }
     

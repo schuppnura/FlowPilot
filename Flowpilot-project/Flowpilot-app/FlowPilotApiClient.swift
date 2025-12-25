@@ -102,6 +102,26 @@ final class FlowPilotApiClient {
         let decoded = try JSONDecoder().decode(WorkflowItemsResponse.self, from: data)
         return decoded.items
     }
+    
+    func fetchWorkflows() async throws -> [Workflow] {
+        // Fetch all workflows; assumptions: GET /v1/workflows; side effect: network I/O.
+        let url = baseUrl.appendingPathComponent("v1/workflows")
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        
+        if let token = accessTokenProvider(), !token.isEmpty {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        
+        let (data, response) = try await urlSession.data(for: request)
+        let http = try requireHttpResponse(response: response, data: data)
+        if http.statusCode != 200 {
+            throw ApiClientError.httpError(http.statusCode, stringBody(data))
+        }
+        
+        let decoded = try JSONDecoder().decode(WorkflowsResponse.self, from: data)
+        return decoded.workflows
+    }
 
     // MARK: - Internals
 

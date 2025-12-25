@@ -40,6 +40,14 @@ struct AppConfig {
         infoPlistKey: "FLOWPILOT_AGENT_RUNNER_BASE_URL",
         defaultValue: "http://127.0.0.1:8004"
     )
+    
+    /// Delegation API base URL.
+    /// Default assumption: Docker publishes delegation-api on localhost:8005.
+    static let delegationBaseUrl: URL = urlValue(
+        key: "FLOWPILOT_DELEGATION_BASE_URL",
+        infoPlistKey: "FLOWPILOT_DELEGATION_BASE_URL",
+        defaultValue: "http://127.0.0.1:8005"
+    )
 
     // MARK: - OIDC (Keycloak)
 

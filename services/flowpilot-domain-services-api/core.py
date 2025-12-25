@@ -75,6 +75,25 @@ class FlowPilotService:
         # why: health/debug
         # side effect: none.
         return len(self._workflows)
+    
+    def list_workflows(self) -> List[Dict[str, Any]]:
+        # Return minimal workflow metadata for all workflows
+        # why: allow clients to select an existing workflow
+        # side effect: none.
+        workflows: List[Dict[str, Any]] = []
+        for workflow_id, workflow in self._workflows.items():
+            if not isinstance(workflow, dict):
+                continue
+            workflows.append({
+                "workflow_id": str(workflow.get("workflow_id", workflow_id)),
+                "template_id": str(workflow.get("template_id", "")),
+                "owner_sub": str(workflow.get("owner_sub", "")),
+                "created_at": str(workflow.get("created_at", "")),
+                "departure_date": str(workflow.get("departure_date", "")),
+                "item_count": len(workflow.get("items", [])) if isinstance(workflow.get("items", []), list) else 0,
+            })
+        workflows.sort(key=lambda w: str(w.get("created_at", "")), reverse=True)  # Most recent first
+        return workflows
 
     def list_workflow_templates(self) -> List[Dict[str, Any]]:
         # Return minimal template metadata
@@ -215,7 +234,9 @@ class FlowPilotService:
         principal_sub = principal_user.get("id", "")
 
         workflow = self._get_workflow_or_raise(workflow_id=workflow_id)
-        self._validate_principal_matches_owner(workflow=workflow, principal_sub=principal_sub)
+        # Note: We no longer validate principal matches owner here because delegation
+        # allows other principals (travel agents) to act on behalf of the owner.
+        # The authz-api will check both spoofing (principal_id vs owner_id) and delegation.
 
         item = self._get_workflow_item_or_raise(workflow=workflow, item_id=workflow_item_id)
         decision_payload = self._call_authz_for_item(
@@ -312,6 +333,7 @@ class FlowPilotService:
         # Build resource properties for OPA policy
         resource_properties: Dict[str, Any] = {
             "domain": domain,
+            "workflow_id": workflow_id,
             "workflow_item_id": item_id,
             "workflow_item_kind": item_kind,
             "planned_price": planned_price_eur,

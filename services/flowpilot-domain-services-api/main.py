@@ -174,6 +174,24 @@ def handle_get_workflow_templates(request: Request, token_claims: dict = Depends
         raise
 
 
+def handle_get_workflows(request: Request, token_claims: dict = Depends(security.verify_token)) -> Dict[str, Any]:
+    # List all workflows
+    # why: allow clients to select an existing workflow for delegation
+    # side effect: none.
+    try:
+        api_logging.log_api_request(method="GET", path="/v1/workflows", token_claims=token_claims, request=request)
+        service: FlowPilotService = request.app.state.service
+        result = {"workflows": service.list_workflows()}
+        api_logging.log_api_response(method="GET", path="/v1/workflows", status_code=200, response_body=result)
+        return result
+    except HTTPException as e:
+        api_logging.log_api_response(method="GET", path="/v1/workflows", status_code=e.status_code, error=str(e.detail) if hasattr(e, 'detail') else str(e))
+        raise
+    except Exception as e:
+        api_logging.log_api_response(method="GET", path="/v1/workflows", status_code=500, error=str(e))
+        raise
+
+
 def handle_post_workflows(request: Request, body: CreateWorkflowRequest) -> Dict[str, Any]:
     # Create a workflow from a template
     # assumptions: principal_sub is authenticated upstream
@@ -348,6 +366,7 @@ def create_app(config: Dict[str, Any]) -> FastAPI:
 
     # All other endpoints require authentication
     api.add_api_route("/v1/workflow-templates", handle_get_workflow_templates, methods=["GET"], dependencies=[Depends(security.verify_token)])
+    api.add_api_route("/v1/workflows", handle_get_workflows, methods=["GET"], dependencies=[Depends(security.verify_token)])
     api.add_api_route("/v1/workflows", handle_post_workflows, methods=["POST"], dependencies=[Depends(security.verify_token)])
     api.add_api_route("/v1/workflows/{workflow_id}", handle_get_workflow, methods=["GET"], dependencies=[Depends(security.verify_token)])
     api.add_api_route("/v1/workflows/{workflow_id}/items", handle_get_workflow_items, methods=["GET"], dependencies=[Depends(security.verify_token)])

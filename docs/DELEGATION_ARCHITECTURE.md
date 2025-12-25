@@ -31,59 +31,11 @@ travel_agent (user) --delegates_to--> ai_agent (service)
 - `GET /v1/delegations/validate` - Validate if delegation chain exists
 - `DELETE /v1/delegations/{delegation_id}` - Revoke delegation
 
-### 2. Graph Storage Options
-
-**Option A: ***REMOVED*** (Recommended for Production)**
-- Relationship-based access control (ReBAC) graph database
-- Built-in permission resolution
-- Supports complex delegation chains
-- Already mentioned in existing docs
-
-**Option B: Simple Graph Database (For Demo)**
-- In-memory graph (Python `networkx` or similar)
-- Lightweight, easy to understand
-- Good for demo purposes
-- Can migrate to ***REMOVED*** later
-
-**Option C: SQL Database with Graph Queries**
-- PostgreSQL with recursive CTEs
-- Simple to implement
-- Scales well
-- Requires graph query logic
-
 ### 3. Integration with AuthZ API
 
-The authz-api queries the delegation-api to check if a delegation chain exists before evaluating OPA policies.
+The authz-api queries the delegation-api to prepare OPA. OPA policies then check if a delegation chain exists.
+If a request is denied due to something missing in the delegation chain, OPA and the autz-api need to feed back the exact reason for deny.
 
-**Flow:**
-```
-Request → AuthZ API
-    ↓
-1. Extract principal from AuthZEN context
-    ↓
-2. Query delegation-api: "Can agent X act on behalf of principal Y?"
-    ↓
-3. If delegation exists → Evaluate OPA policy
-    ↓
-4. If no delegation → Deny immediately
-```
-
-### 4. OPA Policy Updates
-
-The OPA policy needs to be aware of delegation context:
-
-```rego
-# Check if delegation exists (provided by authz-api)
-allow {
-    input.delegation.valid == true
-    # ... existing policy conditions ...
-}
-
-# Deny if no valid delegation
-deny {
-    not input.delegation.valid
-}
-```
 
 ## Delegation Data Model
 

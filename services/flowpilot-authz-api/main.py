@@ -35,7 +35,8 @@ from fastapi.security import HTTPAuthorizationCredentials
 
 import security
 import api_logging
-from core import OpaClient, OpaConfig, evaluate_request_with_opa
+from core import OpaClient, OpaConfig, evaluate_request_with_opa, fetch_delegations_for_opa
+import core
 
 app = FastAPI(title="FlowPilot AuthZ API", version="1.0.0")
 
@@ -79,6 +80,12 @@ def build_opa_client() -> OpaClient:
 
 
 OPA_CLIENT = build_opa_client()
+DELEGATION_API_BASE_URL = read_env_string("DELEGATION_API_BASE_URL", "http://flowpilot-delegation-api:8000")
+KEYCLOAK_BASE_URL = read_env_string("KEYCLOAK_BASE_URL", "https://keycloak:8443")
+KEYCLOAK_REALM = read_env_string("KEYCLOAK_REALM", "flowpilot")
+KEYCLOAK_ADMIN_USERNAME = read_env_string("KEYCLOAK_ADMIN_USERNAME", "admin")
+KEYCLOAK_ADMIN_PASSWORD = read_env_string("KEYCLOAK_ADMIN_PASSWORD", "")
+VERIFY_TLS = os.environ.get("VERIFY_TLS", "false").lower() == "true"
 
 
 # In-memory profile store (for demo purposes)
@@ -199,10 +206,61 @@ def post_evaluate(
             detail=error_detail
         )
 
-    # Request is AuthZEN compliant, pass it as-is to build_opa_input
+    # Fetch delegation data and owner attributes for OPA policy evaluation (PIP - Policy Information Point)
+    delegations_data = None
+    owner_attributes = None
+    request_resource = sanitized_body.get("resource", {})
+    resource_properties = request_resource.get("properties", {})
+    owner = resource_properties.get("owner")
+    
+    # Extract principal persona to check if we need owner's attributes
+    principal_persona = principal.get("persona")
+    
+    if owner and isinstance(owner, dict):
+        owner_id = owner.get("id")
+        workflow_id_param = request_resource.get("id")
+        
+        if owner_id and principal_id:
+            # Get service token for delegation-api
+            service_token = security.get_service_token()
+            if service_token:
+                try:
+                    # Fetch delegations (both outgoing from owner and incoming to principal)
+                    # This acts as PIP - providing data for OPA to evaluate
+                    delegations_data = fetch_delegations_for_opa(
+                        base_url=DELEGATION_API_BASE_URL,
+                        bearer_token=service_token,
+                        owner_id=str(owner_id),
+                        principal_id=principal_id,
+                        workflow_id=str(workflow_id_param) if workflow_id_param else None,
+                    )
+                except Exception as delegation_error:
+                    # Log but don't fail - OPA can handle missing delegation data (will deny with reason code)
+                    print(f"[authz-api] Failed to fetch delegations: {delegation_error}", flush=True)
+            
+            # If principal has persona="travel-agent", fetch owner's autobook attributes
+            # Travel agent acts on behalf of owner, so use owner's preferences
+            if principal_persona == "travel-agent":
+                try:
+                    owner_attributes = core.fetch_owner_attributes_from_keycloak(
+                        keycloak_base_url=KEYCLOAK_BASE_URL,
+                        keycloak_realm=KEYCLOAK_REALM,
+                        keycloak_admin_username=KEYCLOAK_ADMIN_USERNAME,
+                        keycloak_admin_password=KEYCLOAK_ADMIN_PASSWORD,
+                        owner_id=str(owner_id),
+                        verify_tls=VERIFY_TLS,
+                    )
+                except Exception as owner_attr_error:
+                    # Log but don't fail - will fall back to principal's attributes
+                    print(f"[authz-api] Failed to fetch owner attributes: {owner_attr_error}", flush=True)
+
+    # Request is AuthZEN compliant, pass it with delegation data and owner attributes to OPA
+    # OPA policy (single PDP) will evaluate delegation declaratively
     result = evaluate_request_with_opa(
         opa_client=OPA_CLIENT,
         authzen_request=sanitized_body,
+        delegations_data=delegations_data,
+        owner_attributes=owner_attributes,
     )
 
     response_body = {

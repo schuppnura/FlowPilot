@@ -9,3 +9,4 @@ python3 seed_keycloak_users.py \
   --env-file ../.env \
   "$@"
 
+
