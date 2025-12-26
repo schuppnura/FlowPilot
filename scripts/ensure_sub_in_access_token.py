@@ -185,19 +185,20 @@ def main():
             'Content-Type': 'application/json'
         }
         
-        # Get profile scope
-        profile_scope_id = get_client_scope_id(headers, "profile")
-        if not profile_scope_id:
-            print("✗ profile scope not found")
-            return 1
-        
-        print(f"✓ Found profile scope (id={profile_scope_id})")
-        
-        # Add sub mapper to profile scope (for user tokens)
-        if add_sub_mapper_to_access_token(headers, profile_scope_id):
-            print("✓ Profile scope configured")
+        # Get persona scope (which replaces the old profile scope)
+        persona_scope_id = get_client_scope_id(headers, "persona")
+        if not persona_scope_id:
+            print("⚠ persona scope not found - sub should be included by default in Keycloak tokens")
+            print("  If sub is missing, create the persona scope first")
         else:
-            return 1
+            print(f"✓ Found persona scope (id={persona_scope_id})")
+            
+            # Add sub mapper to persona scope (for user tokens) - though sub should be included by default
+            # This ensures sub is explicitly included
+            if add_sub_mapper_to_access_token(headers, persona_scope_id):
+                print("✓ Persona scope configured with sub mapper")
+            else:
+                print("⚠ Failed to add sub mapper to persona scope - sub should still be included by default")
         
         # Ensure service account tokens also have sub
         ensure_service_account_has_sub(headers)

@@ -36,7 +36,7 @@ struct ContentView: View {
                 Text("FlowPilot")
                     .font(.system(size: 32, weight: .light, design: .default))
                     .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.25))
-                Text("App to demonstrate policy-driven authorization for AI-powered workflows")
+                Text("App to demonstrate policy-driven authorization & delegation for AI-powered workflows")
                     .font(.system(.subheadline, design: .default))
                     .foregroundStyle(Color(red: 0.5, green: 0.5, blue: 0.55))
             }
@@ -46,95 +46,107 @@ struct ContentView: View {
     }
     
     private var identityPanel: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "person.circle.fill")
-                    .foregroundStyle(Color(red: 0.3, green: 0.3, blue: 0.35)) // Soft dark - Nura style
-                Text("Account")
-                    .font(.headline)
-                    .fontWeight(.medium)
-                    .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.25)) // Soft dark - Nura style
-            }
-            
-            HStack(spacing: 12) {
-                Button(action: {
-                    if state.principalSub == nil {
-                        Task { await state.signIn(isRegistrationPreferred: false) }
-                    } else {
-                        state.signOut()
-                    }
-                }) {
-                    if state.principalSub == nil {
-                        Label("Sign In", systemImage: "person.badge.key.fill")
-                            .frame(maxWidth: .infinity)
-                    } else {
-                        Label("Sign Out", systemImage: "person.crop.circle.badge.xmark")
-                            .frame(maxWidth: .infinity)
-                    }
+        HStack(alignment: .top, spacing: 16) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Image(systemName: "person.circle.fill")
+                        .foregroundStyle(Color(red: 0.3, green: 0.3, blue: 0.35)) // Soft dark - Nura style
+                    Text("Account")
+                        .font(.headline)
+                        .fontWeight(.medium)
+                        .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.25)) // Soft dark - Nura style
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .tint(Color(red: 0.95, green: 0.55, blue: 0.25))
                 
-                // Persona display/selector - replaces "My Account" button position
-                if let _ = state.principalSub {
-                    if state.personas.count == 1 {
-                        // Single persona - display it in the button row
-                        HStack(spacing: 8) {
-                            Image(systemName: "person.badge.shield.checkmark.fill")
-                                .foregroundStyle(Color(red: 0.95, green: 0.55, blue: 0.25))
-                            Text(state.personas.first ?? "")
+                if let sub = state.principalSub {
+                    HStack(spacing: 8) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                        Text("Signed in as:")
+                            .foregroundStyle(.secondary)
+                        if let username = state.username, !username.isEmpty {
+                            Text(username)
                                 .font(.body)
                                 .foregroundStyle(.primary)
+                            Text("(\(sub))")
+                                .textSelection(.enabled)
+                                .font(.system(.body, design: .monospaced))
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text(sub)
+                                .textSelection(.enabled)
+                                .font(.system(.body, design: .monospaced))
+                                .foregroundStyle(.primary)
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .padding(.horizontal, 12)
-                        .background(Color(red: 0.98, green: 0.98, blue: 0.98))
-                        .cornerRadius(8)
-                    } else if state.personas.count > 1 {
-                        // Multiple personas - show selector in the button row
-                        Picker("Select persona", selection: Binding<String>(
-                            get: { state.selectedPersona ?? "" },
-                            set: { newValue in
-                                state.selectedPersona = newValue.isEmpty ? nil : newValue
+                    }
+                } else {
+                    Text("Not signed in")
+                        .foregroundStyle(.secondary)
+                }
+                
+                // Persona selector - formatted like other pickers
+                if let _ = state.principalSub {
+                    if state.personas.count > 1 {
+                        HStack(alignment: .center, spacing: 12) {
+                            Text("User persona")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .frame(width: 100, alignment: .leading)
+                            Picker("", selection: Binding<String>(
+                                get: { state.selectedPersona ?? "" },
+                                set: { newValue in
+                                    state.selectedPersona = newValue.isEmpty ? nil : newValue
+                                }
+                            )) {
+                                Text("Select persona…").tag("")
+                                ForEach(state.personas, id: \.self) { persona in
+                                    Text(persona).tag(persona)
+                                }
                             }
-                        )) {
-                            Text("Select persona").tag("")
-                            ForEach(state.personas, id: \.self) { persona in
-                                Text(persona).tag(persona)
-                            }
+                            .pickerStyle(.menu)
+                            .controlSize(.large)
                         }
-                        .pickerStyle(.menu)
-                        .controlSize(.large)
-                        .frame(maxWidth: .infinity)
-                    } else {
-                        // No personas found - show placeholder for debugging
-                        Text("No persona")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
+                    } else if state.personas.count == 1 {
+                        HStack(alignment: .center, spacing: 12) {
+                            Text("Persona")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .frame(width: 100, alignment: .leading)
+                            HStack(spacing: 8) {
+                                Image(systemName: "person.badge.shield.checkmark.fill")
+                                    .foregroundStyle(Color(red: 0.95, green: 0.55, blue: 0.25))
+                                Text(state.personas.first ?? "")
+                                    .font(.body)
+                                    .foregroundStyle(.primary)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.vertical, 8)
                             .padding(.horizontal, 12)
                             .background(Color(red: 0.98, green: 0.98, blue: 0.98))
                             .cornerRadius(8)
+                        }
                     }
                 }
             }
             
-            if let sub = state.principalSub {
-                HStack(spacing: 8) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
-                    Text("Signed in as:")
-                        .foregroundStyle(.secondary)
-                    Text(sub)
-                        .textSelection(.enabled)
-                        .font(.system(.body, design: .monospaced))
-                        .foregroundStyle(.primary)
+            Spacer()
+            
+            Button(action: {
+                if state.principalSub == nil {
+                    Task { await state.signIn(isRegistrationPreferred: false) }
+                } else {
+                    state.signOut()
                 }
-                .padding(.top, 4)
+            }) {
+                if state.principalSub == nil {
+                    Label("Sign In", systemImage: "person.badge.key.fill")
+                } else {
+                    Label("Sign Out", systemImage: "person.crop.circle.badge.xmark")
+                }
             }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .tint(Color(red: 0.95, green: 0.55, blue: 0.25))
+            .frame(width: 140)
         }
         .padding(16)
         .background(Color.white)
@@ -145,66 +157,69 @@ struct ContentView: View {
     private var workflowTemplatesPanel: some View {
         let personaRequired = state.personas.count > 1 && state.selectedPersona == nil
         
-        return VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: "map.fill")
-                    .foregroundStyle(Color(red: 0.3, green: 0.3, blue: 0.35)) // Soft dark - Nura style
-                Text("Plan Your Trip")
-                    .font(.headline)
-                    .fontWeight(.medium)
-                    .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.25)) // Soft dark - Nura style
-            }
-            
-            if personaRequired {
-                HStack(spacing: 8) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
-                    Text("Please select a persona first")
+        return HStack(alignment: .top, spacing: 16) {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    Image(systemName: "map.fill")
+                        .foregroundStyle(Color(red: 0.3, green: 0.3, blue: 0.35)) // Soft dark - Nura style
+                    Text("Plan Your Trip")
+                        .font(.headline)
+                        .fontWeight(.medium)
+                        .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.25)) // Soft dark - Nura style
+                }
+                
+                if personaRequired {
+                    HStack(spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                        Text("Please select a persona first")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 8)
+                }
+                
+                HStack(alignment: .center, spacing: 12) {
+                    Text("Trip Template")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                }
-                .padding(.vertical, 8)
-            }
-            
-            HStack(alignment: .center, spacing: 12) {
-                Text("Trip Template")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .frame(width: 100, alignment: .leading)
-                Picker("", selection: Binding<String>(
-                    get: { state.selectedWorkflowTemplateId ?? "" },
-                    set: { newValue in state.selectedWorkflowTemplateId = newValue.isEmpty ? nil : newValue }
-                )) {
-                    Text("Choose a trip template…").tag("")
-                    ForEach(state.workflowTemplates, id: \.id) { template in
-                        Text(template.name).tag(template.id)
+                        .frame(width: 100, alignment: .leading)
+                    Picker("", selection: Binding<String>(
+                        get: { state.selectedWorkflowTemplateId ?? "" },
+                        set: { newValue in state.selectedWorkflowTemplateId = newValue.isEmpty ? nil : newValue }
+                    )) {
+                        Text("Choose a trip template…").tag("")
+                        ForEach(state.workflowTemplates, id: \.id) { template in
+                            Text(template.name).tag(template.id)
+                        }
                     }
+                    .pickerStyle(.menu)
+                    .controlSize(.large)
+                    .disabled(personaRequired)
                 }
-                .pickerStyle(.menu)
-                .controlSize(.large)
-                .disabled(personaRequired)
+                
+                HStack(alignment: .center, spacing: 12) {
+                    Text("Departure Date")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 100, alignment: .leading)
+                    DatePicker(
+                        "",
+                        selection: $state.workflowStartDate,
+                        displayedComponents: [.date]
+                    )
+                    .datePickerStyle(.compact)
+                    .labelsHidden()
+                    .disabled(personaRequired)
+                }
             }
             
-            HStack(alignment: .center, spacing: 12) {
-                Text("Departure Date")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .frame(width: 100, alignment: .leading)
-                DatePicker(
-                    "",
-                    selection: $state.workflowStartDate,
-                    displayedComponents: [.date]
-                )
-                .datePickerStyle(.compact)
-                .labelsHidden()
-                .disabled(personaRequired)
-            }
+            Spacer()
             
             Button(action: {
                 Task { await state.createWorkflowFromSelectedTemplate() }
             }) {
                 Label("Create Trip Itinerary", systemImage: "plus.circle.fill")
-                    .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
@@ -214,6 +229,7 @@ struct ContentView: View {
                 (state.selectedWorkflowTemplateId ?? "").isEmpty ||
                 (state.personas.count > 1 && state.selectedPersona == nil)
             )
+            .frame(width: 180)
         }
         .padding(16)
         .background(Color.white)
@@ -235,28 +251,47 @@ struct ContentView: View {
             }
             
             // Workflow selection (existing workflows)
+            if personaRequired {
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                    Text("Please select a persona first")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 8)
+            }
+            
             HStack(alignment: .center, spacing: 12) {
                 Text("Trip Itinerary")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .frame(width: 100, alignment: .leading)
-                Picker("", selection: Binding<String>(
-                    get: { state.selectedWorkflowId ?? "" },
-                    set: { newValue in
-                        state.selectedWorkflowId = newValue.isEmpty ? nil : newValue
-                        if !newValue.isEmpty {
-                            Task { await state.selectWorkflow(newValue) }
+                if state.workflows.isEmpty {
+                    Text("No trips available. Create a trip from a template above.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 8)
+                } else {
+                    Picker("", selection: Binding<String>(
+                        get: { state.selectedWorkflowId ?? "" },
+                        set: { newValue in
+                            state.selectedWorkflowId = newValue.isEmpty ? nil : newValue
+                            if !newValue.isEmpty {
+                                Task { await state.selectWorkflow(newValue) }
+                            }
+                        }
+                    )) {
+                        Text("Choose an existing trip…").tag("")
+                        ForEach(state.workflows, id: \.id) { workflow in
+                            Text("\(workflow.workflow_id) - \(workflow.template_id) (\(workflow.item_count) items)").tag(workflow.id)
                         }
                     }
-                )) {
-                    Text("Choose an existing trip…").tag("")
-                    ForEach(state.workflows, id: \.id) { workflow in
-                        Text("\(workflow.workflow_id) - \(workflow.template_id) (\(workflow.item_count) items)").tag(workflow.id)
-                    }
+                    .pickerStyle(.menu)
+                    .controlSize(.large)
+                    .disabled(personaRequired)
                 }
-                .pickerStyle(.menu)
-                .controlSize(.large)
-                .disabled(personaRequired)
             }
             
             if let workflowId = state.workflowId {
@@ -339,68 +374,73 @@ struct ContentView: View {
     private var delegationPanel: some View {
         let personaRequired = state.personas.count > 1 && state.selectedPersona == nil
         
-        return VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: "person.2.badge.gearshape.fill")
-                    .foregroundStyle(Color(red: 0.3, green: 0.3, blue: 0.35))
-                Text("Delegation")
-                    .font(.headline)
-                    .fontWeight(.medium)
-                    .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.25))
-            }
-            
-            if personaRequired {
-                HStack(spacing: 8) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
-                    Text("Please select a persona first")
+        return HStack(alignment: .top, spacing: 16) {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    Image(systemName: "person.2.badge.gearshape.fill")
+                        .foregroundStyle(Color(red: 0.3, green: 0.3, blue: 0.35))
+                    Text("Delegation")
+                        .font(.headline)
+                        .fontWeight(.medium)
+                        .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.25))
+                }
+                
+                if personaRequired {
+                    HStack(spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                        Text("Please select a persona first")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 8)
+                }
+                
+                HStack(alignment: .center, spacing: 12) {
+                    Text("Travel Agent")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                }
-                .padding(.vertical, 8)
-            }
-            
-            HStack(alignment: .center, spacing: 12) {
-                Text("Travel Agent")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .frame(width: 100, alignment: .leading)
-                Picker("", selection: Binding<String>(
-                    get: { state.selectedDelegateId ?? "" },
-                    set: { newValue in state.selectedDelegateId = newValue.isEmpty ? nil : newValue }
-                )) {
-                    Text("Choose a travel agent…").tag("")
-                    ForEach(state.travelAgents) { agent in
-                        Text(agent.displayName).tag(agent.id)
+                        .frame(width: 100, alignment: .leading)
+                    Picker("", selection: Binding<String>(
+                        get: { state.selectedDelegateId ?? "" },
+                        set: { newValue in state.selectedDelegateId = newValue.isEmpty ? nil : newValue }
+                    )) {
+                        Text("Choose a travel agent…").tag("")
+                        ForEach(state.travelAgents) { agent in
+                            Text(agent.displayName).tag(agent.id)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .controlSize(.large)
+                    .disabled(personaRequired)
+                    .task {
+                        // Use .task instead of .onAppear to ensure it only runs once per view lifecycle
+                        // Only load if signed in and agents list is empty
+                        if state.principalSub != nil && state.travelAgents.isEmpty {
+                            await state.loadTravelAgents()
+                        }
                     }
                 }
-                .pickerStyle(.menu)
-                .controlSize(.large)
-                .disabled(personaRequired)
-                .onAppear {
-                    if state.travelAgents.isEmpty {
-                        Task { await state.loadTravelAgents() }
+                
+                HStack(alignment: .center, spacing: 12) {
+                    Text("Expiration (days)")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 100, alignment: .leading)
+                    Stepper(value: $state.delegationExpiresInDays, in: 1...365, step: 1) {
+                        Text("\(state.delegationExpiresInDays) days")
+                            .foregroundStyle(.primary)
                     }
+                    .disabled(personaRequired)
                 }
             }
             
-            HStack(alignment: .center, spacing: 12) {
-                Text("Expiration (days)")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .frame(width: 100, alignment: .leading)
-                Stepper(value: $state.delegationExpiresInDays, in: 1...365, step: 1) {
-                    Text("\(state.delegationExpiresInDays) days")
-                        .foregroundStyle(.primary)
-                }
-                .disabled(personaRequired)
-            }
+            Spacer()
             
             Button(action: {
                 Task { await state.createDelegation() }
             }) {
                 Label("Delegate Trip", systemImage: "arrow.right.circle.fill")
-                    .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
@@ -411,6 +451,7 @@ struct ContentView: View {
                 (state.workflowId ?? "").isEmpty ||
                 (state.personas.count > 1 && state.selectedPersona == nil)
             )
+            .frame(width: 150)
         }
         .padding(16)
         .background(Color.white)
@@ -566,26 +607,28 @@ struct ContentView: View {
         let personaRequired = state.personas.count > 1 && state.selectedPersona == nil
         
         return VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: "chart.bar.fill")
-                    .foregroundStyle(Color(red: 0.3, green: 0.3, blue: 0.35))
-                Text("Authorization")
-                    .font(.headline)
-                    .fontWeight(.medium)
-                    .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.25))
-            }
-            
-            VStack(spacing: 12) {
+            HStack(alignment: .top, spacing: 16) {
+                HStack {
+                    Image(systemName: "chart.bar.fill")
+                        .foregroundStyle(Color(red: 0.3, green: 0.3, blue: 0.35))
+                    Text("Authorization")
+                        .font(.headline)
+                        .fontWeight(.medium)
+                        .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.25))
+                }
+                
+                Spacer()
+                
                 Button(action: {
                     Task { await state.runAgentDryRun() }
                 }) {
                     Label("Check Authorization (Dry Run)", systemImage: "checkmark.shield.fill")
-                        .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
                 .tint(Color(red: 0.85, green: 0.35, blue: 0.15))
                 .disabled(state.principalSub == nil || state.workflowId == nil || personaRequired)
+                .frame(width: 220)
             }
             
             if let run = state.lastAgentRun {

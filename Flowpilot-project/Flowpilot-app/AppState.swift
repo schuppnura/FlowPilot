@@ -11,6 +11,7 @@ import AppKit
 @MainActor
 final class AppState: ObservableObject {
     @Published var principalSub: String?
+    @Published var username: String?
     @Published var idToken: String?
     @Published var accessToken: String?
     @Published var refreshToken: String?
@@ -31,6 +32,7 @@ final class AppState: ObservableObject {
     @Published var travelAgents: [TravelAgentUser] = []
     @Published var selectedDelegateId: String?
     @Published var delegationExpiresInDays: Int = 7
+    private var isLoadingTravelAgents: Bool = false
     
     @Published var lastAgentRun: AgentRunResponse?
     @Published var missingProfileFieldsFromAdvice: [String] = []
@@ -83,6 +85,7 @@ final class AppState: ObservableObject {
         
         // Clear local state immediately
         principalSub = nil
+        username = nil
         idToken = nil
         accessToken = nil
         refreshToken = nil
@@ -166,8 +169,9 @@ final class AppState: ObservableObject {
             accessToken = tokens.access_token
             refreshToken = tokens.refresh_token
             
-            // Extract persona from access token
+            // Extract persona and username from access token
             extractPersonaFromToken()
+            extractUsernameFromToken()
             
             statusMessage = "Signed in. sub=\(sub)"
             
@@ -257,6 +261,38 @@ final class AppState: ObservableObject {
         }
     }
     
+    func extractUsernameFromToken() {
+        // Extract username claim from access token; why: display username in Account pane; side effect: updates username state.
+        guard let token = accessToken else {
+            username = nil
+            print("DEBUG: No access token available for username extraction")
+            return
+        }
+        
+        do {
+            let claims = try JwtUtils.decodeClaims(idToken: token)
+            
+            // Debug: print all claim keys to see what's available
+            print("DEBUG: Available claims in access token: \(claims.keys.sorted())")
+            
+            // Try both "username" and "preferred_username" (Keycloak might use either)
+            if let usernameValue = claims["username"] as? String, !usernameValue.isEmpty {
+                username = usernameValue
+                print("DEBUG: Extracted username from 'username' claim: \(username ?? "nil")")
+            } else if let preferredUsername = claims["preferred_username"] as? String, !preferredUsername.isEmpty {
+                username = preferredUsername
+                print("DEBUG: Extracted username from 'preferred_username' claim: \(username ?? "nil")")
+            } else {
+                username = nil
+                print("DEBUG: No 'username' or 'preferred_username' claim found in access token")
+                print("DEBUG: Token claims: \(claims)")
+            }
+        } catch {
+            print("DEBUG: Extracting username failed: \(error)")
+            username = nil
+        }
+    }
+    
     
     func loadWorkflowTemplates(forceReload: Bool) async {
         // Load workflow templates from backend; why: user selects a workflow template without extra clicks; side effect: network I/O.
@@ -337,6 +373,7 @@ final class AppState: ObservableObject {
             }
             // Re-extract persona after refresh
             extractPersonaFromToken()
+            extractUsernameFromToken()
             return true
         } catch {
             setError("Token refresh failed: \(error)")
@@ -387,6 +424,12 @@ final class AppState: ObservableObject {
     
     func loadTravelAgents() async {
         // Load travel agents (users with persona "travel-agent"); why: populate delegation target list; side effect: network I/O.
+        // Prevent concurrent/duplicate calls
+        guard !isLoadingTravelAgents && travelAgents.isEmpty else {
+            return
+        }
+        
+        isLoadingTravelAgents = true
         clearError()
         
         statusMessage = "Loading travel agents…"
@@ -399,6 +442,7 @@ final class AppState: ObservableObject {
             statusMessage = ""
             travelAgents = []
         }
+        isLoadingTravelAgents = false
     }
     
     func createDelegation() async {

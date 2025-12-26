@@ -45,27 +45,31 @@ echo "Step 4: Assigning client scopes..."
 python3 scripts/assign_client_scopes.py
 
 echo ""
-echo "Step 5: Verifying Keycloak attributes..."
+echo "Step 5: Configuring persona scope..."
+python3 scripts/configure_persona_scope.py || echo "  (persona scope may need manual configuration)"
+
+echo ""
+echo "Step 6: Verifying Keycloak attributes..."
 python3 scripts/verify_keycloak_attributes.py
 
 echo ""
-echo "Step 6: Verifying desktop client..."
+echo "Step 7: Verifying desktop client..."
 python3 scripts/verify_desktop_client.py || echo "  (desktop client may need manual configuration)"
 
 echo ""
-echo "Step 7: Verifying agent client..."
+echo "Step 8: Verifying agent client..."
 python3 scripts/verify_agent_client.py || echo "  (agent client may need manual configuration)"
 
 echo ""
-echo "Step 7b: Granting admin roles to agent service account..."
+echo "Step 8b: Granting admin roles to agent service account..."
 python3 scripts/grant_agent_admin_role.py || echo "  (admin roles may already be assigned)"
 
 echo ""
-echo "Step 8: Ensuring sub claim in access tokens..."
+echo "Step 9: Ensuring sub claim in access tokens..."
 python3 scripts/ensure_sub_in_access_token.py || echo "  (sub mapper may need manual configuration)"
 
 echo ""
-echo "Step 9: Configuring persona attribute..."
+echo "Step 10: Configuring persona attribute..."
 python3 scripts/configure_persona_attribute.py || echo "  (persona attribute may need manual configuration)"
 
 echo ""

@@ -52,7 +52,7 @@ reasons[code] if {
 
 # Also handle case where principal_persona is not set/undefined (backward compatibility)
 reasons[code] if {
-  code := "auto_book.principal_spoofing"
+  code := "auto_book.principal_missing"
   principal_id := input.user.sub
   owner_id := input.resource.owner_id
   owner_id != null
