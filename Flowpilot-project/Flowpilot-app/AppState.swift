@@ -308,15 +308,15 @@ final class AppState: ObservableObject {
             let personaToSend = selectedPersona ?? (personas.count == 1 ? personas.first : nil)
             print("DEBUG: Sending persona to workflow API: \(personaToSend ?? "nil") (selectedPersona: \(selectedPersona ?? "nil"), personas: \(personas))")
             let newWorkflowId = try await workflowClient.loadTemplate(templateId: templateId, principalSub: sub, startDate: startDateString, persona: personaToSend)
-            workflowId = newWorkflowId
-            selectedWorkflowId = newWorkflowId
-            workflowStartDateString = startDateString
+            // Don't automatically select the workflow - user must explicitly select it
+            workflowId = nil
+            selectedWorkflowId = nil
+            workflowItems = []
             
-            // Fetch workflow items immediately after creation
-            let items = try await workflowClient.fetchWorkflowItems(workflowId: newWorkflowId)
-            workflowItems = items
+            // Reload workflows list to include the new one
+            await loadWorkflows()
             
-            statusMessage = "Created workflow: \(newWorkflowId) (start: \(startDateString)) with \(items.count) items"
+            statusMessage = "Created workflow: \(newWorkflowId) (start: \(startDateString)). Please select it from the list to view details."
         } catch {
             setError("Create workflow failed: \(error)")
             statusMessage = ""

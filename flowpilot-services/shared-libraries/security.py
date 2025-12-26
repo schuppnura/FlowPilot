@@ -1,4 +1,4 @@
-# services/shared-libraries/security.py
+# flowpilot-services/shared-libraries/security.py
 from __future__ import annotations
 
 import hashlib

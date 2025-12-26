@@ -57,6 +57,10 @@ echo "Step 7: Verifying agent client..."
 python3 scripts/verify_agent_client.py || echo "  (agent client may need manual configuration)"
 
 echo ""
+echo "Step 7b: Granting admin roles to agent service account..."
+python3 scripts/grant_agent_admin_role.py || echo "  (admin roles may already be assigned)"
+
+echo ""
 echo "Step 8: Ensuring sub claim in access tokens..."
 python3 scripts/ensure_sub_in_access_token.py || echo "  (sub mapper may need manual configuration)"
 

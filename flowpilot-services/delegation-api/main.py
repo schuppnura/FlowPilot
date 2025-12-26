@@ -33,8 +33,6 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "request_timeout_seconds": 10,
     "keycloak_base_url": "https://keycloak:8443",
     "keycloak_realm": "flowpilot",
-    "keycloak_admin_username": "admin",
-    "keycloak_admin_password": "",  # Must be set via environment variable
 }
 
 
@@ -93,12 +91,9 @@ def build_config(config_path: Optional[str]) -> Dict[str, Any]:
         "REQUEST_TIMEOUT_SECONDS",
     )
     
-    # Keycloak configuration
+    # Keycloak configuration (for profile.py)
     config["keycloak_base_url"] = os.environ.get("KEYCLOAK_BASE_URL", str(config["keycloak_base_url"]))
     config["keycloak_realm"] = os.environ.get("KEYCLOAK_REALM", str(config["keycloak_realm"]))
-    config["keycloak_admin_username"] = os.environ.get("KEYCLOAK_ADMIN_USERNAME", str(config["keycloak_admin_username"]))
-    config["keycloak_admin_password"] = os.environ.get("KEYCLOAK_ADMIN_PASSWORD", str(config["keycloak_admin_password"]))
-    config["verify_tls"] = os.environ.get("VERIFY_TLS", "false").lower() == "true"
     
     validate_non_empty_string(str(config.get("db_path", "")), "db_path")
     
@@ -122,13 +117,7 @@ def handle_post_delegations(
     service: DelegationService = request.app.state.service
     
     try:
-        api_logging.log_api_request(
-            method="POST",
-            path="/v1/delegations",
-            request_body=body.dict(),
-            token_claims=token_claims,
-            request=request,
-        )
+        api_logging.log_api_request("POST", "/v1/delegations", request_body=body.dict(), token_claims=token_claims, request=request)
         
         delegation = service.create_delegation(
             principal_id=body.principal_id,
@@ -137,31 +126,16 @@ def handle_post_delegations(
             expires_in_days=body.expires_in_days,
         )
         
-        api_logging.log_api_response(
-            method="POST",
-            path="/v1/delegations",
-            status_code=200,
-            response_body=delegation,
-        )
+        api_logging.log_api_response("POST", "/v1/delegations", 200, response_body=delegation)
         
         return delegation
     except ValueError as exception:
         error_detail = security.sanitize_error_message(str(exception), INCLUDE_ERROR_DETAILS)
-        api_logging.log_api_response(
-            method="POST",
-            path="/v1/delegations",
-            status_code=400,
-            error=error_detail,
-        )
+        api_logging.log_api_response("POST", "/v1/delegations", 400, error=error_detail)
         raise HTTPException(status_code=400, detail=error_detail) from exception
     except Exception as exception:
         error_detail = security.sanitize_error_message(str(exception), INCLUDE_ERROR_DETAILS)
-        api_logging.log_api_response(
-            method="POST",
-            path="/v1/delegations",
-            status_code=500,
-            error=error_detail,
-        )
+        api_logging.log_api_response("POST", "/v1/delegations", 500, error=error_detail)
         raise HTTPException(status_code=500, detail=error_detail) from exception
 
 
@@ -174,13 +148,7 @@ def handle_delete_delegations(
     service: DelegationService = request.app.state.service
     
     try:
-        api_logging.log_api_request(
-            method="DELETE",
-            path="/v1/delegations",
-            request_body=body.dict(),
-            token_claims=token_claims,
-            request=request,
-        )
+        api_logging.log_api_request("DELETE", "/v1/delegations", request_body=body.dict(), token_claims=token_claims, request=request)
         
         result = service.revoke_delegation(
             principal_id=body.principal_id,
@@ -188,31 +156,16 @@ def handle_delete_delegations(
             workflow_id=body.workflow_id,
         )
         
-        api_logging.log_api_response(
-            method="DELETE",
-            path="/v1/delegations",
-            status_code=200,
-            response_body=result,
-        )
+        api_logging.log_api_response("DELETE", "/v1/delegations", 200, response_body=result)
         
         return result
     except ValueError as exception:
         error_detail = security.sanitize_error_message(str(exception), INCLUDE_ERROR_DETAILS)
-        api_logging.log_api_response(
-            method="DELETE",
-            path="/v1/delegations",
-            status_code=400,
-            error=error_detail,
-        )
+        api_logging.log_api_response("DELETE", "/v1/delegations", 400, error=error_detail)
         raise HTTPException(status_code=400, detail=error_detail) from exception
     except Exception as exception:
         error_detail = security.sanitize_error_message(str(exception), INCLUDE_ERROR_DETAILS)
-        api_logging.log_api_response(
-            method="DELETE",
-            path="/v1/delegations",
-            status_code=500,
-            error=error_detail,
-        )
+        api_logging.log_api_response("DELETE", "/v1/delegations", 500, error=error_detail)
         raise HTTPException(status_code=500, detail=error_detail) from exception
 
 
@@ -227,13 +180,7 @@ def handle_get_delegations_validate(
     service: DelegationService = request.app.state.service
     
     try:
-        api_logging.log_api_request(
-            method="GET",
-            path="/v1/delegations/validate",
-            token_claims=token_claims,
-            request=request,
-            path_params={"principal_id": principal_id, "delegate_id": delegate_id, "workflow_id": workflow_id},
-        )
+        api_logging.log_api_request("GET", "/v1/delegations/validate", token_claims=token_claims, request=request, path_params={"principal_id": principal_id, "delegate_id": delegate_id, "workflow_id": workflow_id})
         
         result = service.validate_delegation(
             principal_id=principal_id,
@@ -241,31 +188,16 @@ def handle_get_delegations_validate(
             workflow_id=workflow_id,
         )
         
-        api_logging.log_api_response(
-            method="GET",
-            path="/v1/delegations/validate",
-            status_code=200,
-            response_body=result,
-        )
+        api_logging.log_api_response("GET", "/v1/delegations/validate", 200, response_body=result)
         
         return result
     except ValueError as exception:
         error_detail = security.sanitize_error_message(str(exception), INCLUDE_ERROR_DETAILS)
-        api_logging.log_api_response(
-            method="GET",
-            path="/v1/delegations/validate",
-            status_code=400,
-            error=error_detail,
-        )
+        api_logging.log_api_response("GET", "/v1/delegations/validate", 400, error=error_detail)
         raise HTTPException(status_code=400, detail=error_detail) from exception
     except Exception as exception:
         error_detail = security.sanitize_error_message(str(exception), INCLUDE_ERROR_DETAILS)
-        api_logging.log_api_response(
-            method="GET",
-            path="/v1/delegations/validate",
-            status_code=500,
-            error=error_detail,
-        )
+        api_logging.log_api_response("GET", "/v1/delegations/validate", 500, error=error_detail)
         raise HTTPException(status_code=500, detail=error_detail) from exception
 
 
@@ -281,12 +213,7 @@ def handle_get_delegations(
     service: DelegationService = request.app.state.service
     
     try:
-        api_logging.log_api_request(
-            method="GET",
-            path="/v1/delegations",
-            token_claims=token_claims,
-            request=request,
-        )
+        api_logging.log_api_request("GET", "/v1/delegations", token_claims=token_claims, request=request)
         
         delegations = service.list_delegations(
             principal_id=principal_id,
@@ -296,31 +223,16 @@ def handle_get_delegations(
         )
         
         result = {"delegations": delegations}
-        api_logging.log_api_response(
-            method="GET",
-            path="/v1/delegations",
-            status_code=200,
-            response_body=result,
-        )
+        api_logging.log_api_response("GET", "/v1/delegations", 200, response_body=result)
         
         return result
     except ValueError as exception:
         error_detail = security.sanitize_error_message(str(exception), INCLUDE_ERROR_DETAILS)
-        api_logging.log_api_response(
-            method="GET",
-            path="/v1/delegations",
-            status_code=400,
-            error=error_detail,
-        )
+        api_logging.log_api_response("GET", "/v1/delegations", 400, error=error_detail)
         raise HTTPException(status_code=400, detail=error_detail) from exception
     except Exception as exception:
         error_detail = security.sanitize_error_message(str(exception), INCLUDE_ERROR_DETAILS)
-        api_logging.log_api_response(
-            method="GET",
-            path="/v1/delegations",
-            status_code=500,
-            error=error_detail,
-        )
+        api_logging.log_api_response("GET", "/v1/delegations", 500, error=error_detail)
         raise HTTPException(status_code=500, detail=error_detail) from exception
 
 
@@ -333,58 +245,21 @@ def handle_get_users_by_persona(
     config: Dict[str, Any] = request.app.state.config
     
     try:
-        api_logging.log_api_request(
-            method="GET",
-            path="/v1/users",
-            token_claims=token_claims,
-            request=request,
-            path_params={"persona": persona},
-        )
+        api_logging.log_api_request("GET", "/v1/users", token_claims=token_claims, request=request, path_params={"persona": persona})
         
-        keycloak_base_url = str(config.get("keycloak_base_url", ""))
-        keycloak_realm = str(config.get("keycloak_realm", ""))
-        keycloak_admin_username = str(config.get("keycloak_admin_username", ""))
-        keycloak_admin_password = str(config.get("keycloak_admin_password", ""))
-        verify_tls = bool(config.get("verify_tls", False))
-        
-        if not keycloak_base_url or not keycloak_realm or not keycloak_admin_username or not keycloak_admin_password:
-            raise ValueError("Keycloak configuration is incomplete")
-        
-        users = core.DelegationService.list_users_by_persona(
-            keycloak_base_url=keycloak_base_url,
-            keycloak_realm=keycloak_realm,
-            keycloak_admin_username=keycloak_admin_username,
-            keycloak_admin_password=keycloak_admin_password,
-            persona=persona,
-            verify_tls=verify_tls,
-        )
+        users = core.DelegationService.list_users_by_persona(persona=persona)
         
         result = {"users": users}
-        api_logging.log_api_response(
-            method="GET",
-            path="/v1/users",
-            status_code=200,
-            response_body=result,
-        )
+        api_logging.log_api_response("GET", "/v1/users", 200, response_body=result)
         
         return result
     except ValueError as exception:
         error_detail = security.sanitize_error_message(str(exception), INCLUDE_ERROR_DETAILS)
-        api_logging.log_api_response(
-            method="GET",
-            path="/v1/users",
-            status_code=400,
-            error=error_detail,
-        )
+        api_logging.log_api_response("GET", "/v1/users", 400, error=error_detail)
         raise HTTPException(status_code=400, detail=error_detail) from exception
     except Exception as exception:
         error_detail = security.sanitize_error_message(str(exception), INCLUDE_ERROR_DETAILS)
-        api_logging.log_api_response(
-            method="GET",
-            path="/v1/users",
-            status_code=500,
-            error=error_detail,
-        )
+        api_logging.log_api_response("GET", "/v1/users", 500, error=error_detail)
         raise HTTPException(status_code=500, detail=error_detail) from exception
 
 

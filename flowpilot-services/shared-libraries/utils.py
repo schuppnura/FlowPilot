@@ -64,6 +64,71 @@ def to_int(value: Any, default: int) -> int:
         return default
 
 
+def coerce_int(value: Any, default: int) -> int:
+    """Coerce a value to an integer, returning default if conversion fails or value is None."""
+    return to_int(value, default)
+
+
+def coerce_yes_no_to_bool(value: Any, default: bool = False) -> bool:
+    """
+    Coerce common string/primitive representations to boolean.
+    True: "yes", "y", "true", "1", "on" (case-insensitive, trimmed)
+    False: any other present value
+    Default applied only when value is None/empty.
+    """
+    if value is None:
+        return default
+
+    if isinstance(value, bool):
+        return value
+
+    if isinstance(value, (int, float)):
+        return bool(value)
+
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if not normalized:
+            return default
+        return normalized in {"yes", "y", "true", "t", "1", "on"}
+
+    return bool(value)
+
+
+def coerce_date_to_rfc3339(date_str: Any) -> str:
+    """
+    Coerce a date string to RFC3339 format.
+    - If already RFC3339 format (contains "T"), return as-is
+    - If date-only format (YYYY-MM-DD), convert to RFC3339 at midnight UTC
+    - Returns empty string if input is invalid
+    """
+    if date_str is None:
+        return ""
+    
+    if not isinstance(date_str, str):
+        date_str = str(date_str)
+    
+    date_str = date_str.strip()
+    if not date_str:
+        return ""
+    
+    # If it's already RFC3339 format (contains "T"), use as-is
+    if "T" in date_str:
+        return date_str
+    
+    # If it's date-only format (YYYY-MM-DD), convert to RFC3339 at midnight UTC
+    try:
+        date_parts = date_str.split("-")
+        if len(date_parts) == 3:
+            year = int(date_parts[0])
+            month = int(date_parts[1])
+            day = int(date_parts[2])
+            return f"{year:04d}-{month:02d}-{day:02d}T00:00:00Z"
+    except (ValueError, IndexError):
+        pass
+    
+    return ""
+
+
 def parse_positive_int(value: str, variable_name: str) -> int:
     # Parse and validate a positive integer from env/CLI to prevent silent misconfiguration.
     try:

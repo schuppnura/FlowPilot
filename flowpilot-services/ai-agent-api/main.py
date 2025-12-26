@@ -25,7 +25,7 @@ from pydantic import BaseModel, Field, validator
 
 import security
 import api_logging
-from core import execute_workflow_run, normalize_workflow_id, check_workflow_execution_authorization
+from core import execute_workflow_run, coerce_workflow_id, check_workflow_execution_authorization
 from utils import load_json_object, merge_config, parse_positive_int, validate_non_empty_string
 
 # Environment flag for detailed error messages (disable in production)
@@ -122,7 +122,7 @@ def handle_post_workflow_runs(request: Request, body: WorkflowRunRequest, token_
         "principal_sub": body.principal_sub,
         "dry_run": body.dry_run,
     }
-    api_logging.log_api_request(method="POST", path="/v1/workflow-runs", request_body=request_body, token_claims=token_claims, request=request)
+    api_logging.log_api_request("POST", "/v1/workflow-runs", request_body=request_body, token_claims=token_claims, request=request)
 
     try:
         # Extract user token from Authorization header (the client's token)
@@ -178,7 +178,7 @@ def handle_post_workflow_runs(request: Request, body: WorkflowRunRequest, token_
                 "claims": {}
             }
         
-        workflow_id = normalize_workflow_id(workflow_id=body.workflow_id)
+        workflow_id = coerce_workflow_id(workflow_id=body.workflow_id)
         
         # AuthZEN: Check authorization before starting workflow execution (anti-spoofing)
         authz_result = check_workflow_execution_authorization(
@@ -203,32 +203,31 @@ def handle_post_workflow_runs(request: Request, body: WorkflowRunRequest, token_
         )
         
         # Log successful response
-        api_logging.log_api_response(method="POST", path="/v1/workflow-runs", status_code=200, response_body={"run_id": result.get("run_id"), "results_count": len(result.get("results", []))})
+        api_logging.log_api_response("POST", "/v1/workflow-runs", 200, response_body={"run_id": result.get("run_id"), "results_count": len(result.get("results", []))})
         
         return result
     except HTTPException as exc:
-        api_logging.log_api_response(method="POST", path="/v1/workflow-runs", status_code=exc.status_code, error=str(exc.detail) if hasattr(exc, 'detail') else str(exc))
+        api_logging.log_api_response("POST", "/v1/workflow-runs", exc.status_code, error=str(exc.detail) if hasattr(exc, 'detail') else str(exc))
         raise
     except Exception as exc:
-        api_logging.log_api_response(method="POST", path="/v1/workflow-runs", status_code=500, error=str(exc))
+        api_logging.log_api_response("POST", "/v1/workflow-runs", 500, error=str(exc))
         raise
     except security.InputValidationError as exception:
         error_detail = security.sanitize_error_message(str(exception), INCLUDE_ERROR_DETAILS)
-        api_logging.log_api_response(method="POST", path="/v1/workflow-runs", status_code=400, error=error_detail)
+        api_logging.log_api_response("POST", "/v1/workflow-runs", 400, error=error_detail)
         raise HTTPException(
             status_code=400,
             detail=error_detail
         ) from exception
     except ValueError as exception:
         error_detail = security.sanitize_error_message(str(exception), INCLUDE_ERROR_DETAILS)
-        api_logging.log_api_response(method="POST", path="/v1/workflow-runs", status_code=400, error=error_detail)
+        api_logging.log_api_response("POST", "/v1/workflow-runs", 400, error=error_detail)
         raise HTTPException(
             status_code=400,
             detail=error_detail
         ) from exception
     except Exception as exc:
-        # Log unexpected errors
-        api_logging.log_api_response(method="POST", path="/v1/workflow-runs", status_code=500, error=str(exc))
+        api_logging.log_api_response("POST", "/v1/workflow-runs", 500, error=str(exc))
         raise HTTPException(
             status_code=500,
             detail=security.sanitize_error_message(str(exc), INCLUDE_ERROR_DETAILS)
@@ -264,8 +263,8 @@ def create_app(config: Dict[str, Any]) -> FastAPI:
     @api.exception_handler(RequestValidationError)
     async def validation_exception_handler(request: Request, exc: RequestValidationError):
         # Log the validation error
-        api_logging.log_api_request(method=request.method, path=request.url.path, request_body=None, request=request)
-        api_logging.log_api_response(method=request.method, path=request.url.path, status_code=422, error=f"Validation error: {exc.errors()}")
+        api_logging.log_api_request(request.method, request.url.path, request_body=None, request=request)
+        api_logging.log_api_response(request.method, request.url.path, 422, error=f"Validation error: {exc.errors()}")
         return JSONResponse(
             status_code=422,
             content={"detail": exc.errors(), "body": exc.body},
@@ -275,7 +274,7 @@ def create_app(config: Dict[str, Any]) -> FastAPI:
     @api.exception_handler(HTTPException)
     async def http_exception_handler(request: Request, exc: HTTPException):
         # Log HTTP exceptions
-        api_logging.log_api_response(method=request.method, path=request.url.path, status_code=exc.status_code, error=str(exc.detail) if hasattr(exc, 'detail') else str(exc))
+        api_logging.log_api_response(request.method, request.url.path, exc.status_code, error=str(exc.detail) if hasattr(exc, 'detail') else str(exc))
         return JSONResponse(
             status_code=exc.status_code,
             content={"detail": exc.detail} if hasattr(exc, 'detail') else {"detail": str(exc)},

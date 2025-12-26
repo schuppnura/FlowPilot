@@ -242,23 +242,8 @@ def log_api_call(
     Convenience function to log both request and response in one call.
     Useful when you have all the information at once.
     """
-    log_api_request(
-        method=method,
-        path=path,
-        request_body=request_body,
-        token_claims=token_claims,
-        raw_token=raw_token,
-        request=request,
-        path_params=path_params,
-        query_params=query_params,
-    )
+    log_api_request(method, path, request_body=request_body, token_claims=token_claims, raw_token=raw_token, request=request, path_params=path_params, query_params=query_params)
     
     if status_code is not None:
-        log_api_response(
-            method=method,
-            path=path,
-            status_code=status_code,
-            response_body=response_body,
-            error=error,
-        )
+        log_api_response(method, path, status_code, response_body=response_body, error=error)
 

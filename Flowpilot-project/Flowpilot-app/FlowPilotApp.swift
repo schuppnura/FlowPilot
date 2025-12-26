@@ -1,8 +1,8 @@
 //
 //  FlowPilotApp.swift
-//  Policy-driven Authorization
+//  FlowPilot
 //
-//  Policy-driven Authorization - Policy-driven authorization with AI-powered workflows
+//  FlowPilot - App to demonstrate policy-driven authorization for AI-powered workflows
 //
 
 import SwiftUI
@@ -16,6 +16,12 @@ struct FlowPilotApp: App {
             ContentView()
                 .environmentObject(state)
                 .frame(minWidth: 900, minHeight: 1100)
+                .onAppear {
+                    // Ensure users are logged out on startup
+                    if state.principalSub != nil || state.idToken != nil {
+                        state.signOut()
+                    }
+                }
         }
         .defaultSize(width: 1000, height: 1300)
         .windowStyle(.automatic)

@@ -1,4 +1,4 @@
-// Policy-driven Authorization - Main Content View
+// FlowPilot - Main Content View
 // Policy-driven authorization UI with modern design
 import SwiftUI
 import AppKit
@@ -33,10 +33,10 @@ struct ContentView: View {
                 .frame(width: 60, height: 60)
             
             VStack(alignment: .leading, spacing: 4) {
-                Text("Policy-driven Authorization")
+                Text("FlowPilot")
                     .font(.system(size: 32, weight: .light, design: .default))
                     .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.25))
-                Text("Policy-driven authorization with AI-powered workflows")
+                Text("App to demonstrate policy-driven authorization for AI-powered workflows")
                     .font(.system(.subheadline, design: .default))
                     .foregroundStyle(Color(red: 0.5, green: 0.5, blue: 0.55))
             }
@@ -58,24 +58,23 @@ struct ContentView: View {
             
             HStack(spacing: 12) {
                 Button(action: {
-                    Task { await state.signIn(isRegistrationPreferred: false) }
+                    if state.principalSub == nil {
+                        Task { await state.signIn(isRegistrationPreferred: false) }
+                    } else {
+                        state.signOut()
+                    }
                 }) {
-                    Label("Sign In", systemImage: "person.badge.key.fill")
-                        .frame(maxWidth: .infinity)
+                    if state.principalSub == nil {
+                        Label("Sign In", systemImage: "person.badge.key.fill")
+                            .frame(maxWidth: .infinity)
+                    } else {
+                        Label("Sign Out", systemImage: "person.crop.circle.badge.xmark")
+                            .frame(maxWidth: .infinity)
+                    }
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
                 .tint(Color(red: 0.95, green: 0.55, blue: 0.25))
-                
-                Button(action: {
-                    state.signOut()
-                }) {
-                    Label("Sign Out", systemImage: "person.crop.circle.badge.xmark")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
-                .disabled(state.principalSub == nil)
                 
                 // Persona display/selector - replaces "My Account" button position
                 if let _ = state.principalSub {

@@ -33,8 +33,8 @@ class WorkflowItem:
     raw: Dict[str, Any]
 
 
-def normalize_workflow_id(workflow_id: str) -> str:
-    # Normalize workflow_id
+def coerce_workflow_id(workflow_id: str) -> str:
+    # Coerce workflow_id by trimming whitespace
     # why: keep validation centralized
     if workflow_id and isinstance(workflow_id, str) and workflow_id.strip():
         return workflow_id.strip()

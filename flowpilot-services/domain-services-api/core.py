@@ -156,6 +156,7 @@ class FlowPilotService:
             "workflow_id": workflow_id,
             "template_id": template_id,
             "owner_sub": owner_sub,
+            "owner_persona": persona,  # Store the persona that was selected when workflow was created
             "created_at": created_at,
             "departure_date": start_date,  # Use the start_date parameter provided by the user
             "items": items,
@@ -375,10 +376,14 @@ class FlowPilotService:
             "id": service_id
         }
         
-        # Add owner to resource properties
+        # Add owner to resource properties (including persona selected when workflow was created)
         owner_sub = str(workflow.get("owner_sub", ""))
+        owner_persona = workflow.get("owner_persona")  # Persona that was selected when workflow was created
         if owner_sub:
-            resource_properties["owner"] = {"id": owner_sub}
+            resource_properties["owner"] = {
+                "id": owner_sub,
+                "persona": owner_persona,  # Pass persona to authz-api
+            }
         
         body: Dict[str, Any] = {
             "subject": subject,

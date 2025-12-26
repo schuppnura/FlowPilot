@@ -62,10 +62,10 @@ services:
       - "8181:8181"
     restart: unless-stopped
 
-  flowpilot-authz-api:
+  authz-api:
     build:
       context: .
-      dockerfile: services/flowpilot-authz-api/Dockerfile
+      dockerfile: flowpilot-services/authz-api/Dockerfile
     platform: linux/amd64
     environment:
       - OPA_URL=http://opa:8181
@@ -80,16 +80,14 @@ services:
       - MAX_REQUEST_SIZE_MB=1
       - MAX_STRING_LENGTH=10000
       # Delegation API integration
-      - DELEGATION_API_BASE_URL=http://flowpilot-delegation-api:8000
-      # Service-to-service authentication for delegation-api calls
+      - DELEGATION_API_BASE_URL=http://delegation-api:8000
+      # Service-to-service authentication for delegation-api calls and profile access
       - KEYCLOAK_TOKEN_URL=https://keycloak:8443/realms/flowpilot/protocol/openid-connect/token
       - AGENT_CLIENT_ID=flowpilot-agent
       - AGENT_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
-      # Keycloak admin API (for fetching owner attributes when travel-agent persona)
+      # Keycloak configuration for profile.py
       - KEYCLOAK_BASE_URL=https://keycloak:8443
       - KEYCLOAK_REALM=flowpilot
-      - KEYCLOAK_ADMIN_USERNAME=admin
-      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
       - VERIFY_TLS=false
       # Error message detail (set to 0 in production)
       - INCLUDE_ERROR_DETAILS=1
@@ -101,20 +99,20 @@ services:
     depends_on:
       - opa
       - keycloak
-      - flowpilot-delegation-api
+      - delegation-api
 
-  flowpilot-ai-agent-api:
+  ai-agent-api:
     build:
       context: .
-      dockerfile: services/flowpilot-ai-agent-api/Dockerfile
+      dockerfile: flowpilot-services/ai-agent-api/Dockerfile
     environment:
       LOG_LEVEL: info
 
       # Domain/workflow API base URL.
-      WORKFLOW_BASE_URL: http://flowpilot-domain-services-api:8000
+      WORKFLOW_BASE_URL: http://domain-services-api:8000
 
       # AuthZ API base URL for authorization checks
-      AUTHZ_BASE_URL: http://flowpilot-authz-api:8000
+      AUTHZ_BASE_URL: http://authz-api:8000
       AGENT_SUB: agent-runner
 
       # Client credentials for service-to-service calls
@@ -138,14 +136,14 @@ services:
       - "8004:8000"
     depends_on:
       - keycloak
-      - flowpilot-domain-services-api
+      - domain-services-api
 
-  flowpilot-domain-services-api:
+  domain-services-api:
     build:
       context: .
-      dockerfile: services/flowpilot-domain-services-api/Dockerfile
+      dockerfile: flowpilot-services/domain-services-api/Dockerfile
     environment:
-      AUTHZ_BASE_URL: "http://flowpilot-authz-api:8000"
+      AUTHZ_BASE_URL: "http://authz-api:8000"
       AGENT_SUB: "agent-runner"
       DOMAIN: "flowpilot"
 
@@ -171,31 +169,29 @@ services:
     ports:
       - "8003:8000"
     depends_on:
-      - flowpilot-authz-api
+      - authz-api
     volumes:
       - ./data:/data:ro
 
-  flowpilot-delegation-api:
+  delegation-api:
     build:
       context: .
-      dockerfile: services/flowpilot-delegation-api/Dockerfile
+      dockerfile: flowpilot-services/delegation-api/Dockerfile
     platform: linux/amd64
     environment:
       # JWT validation using JWKS
       - KEYCLOAK_JWKS_URI=https://keycloak:8443/realms/flowpilot/protocol/openid-connect/certs
       - KEYCLOAK_ISSUER=https://localhost:8443/realms/flowpilot
       - KEYCLOAK_AUDIENCE=flowpilot-desktop
-      # Service-to-service authentication
+      # Service-to-service authentication for profile access
       - KEYCLOAK_TOKEN_URL=https://keycloak:8443/realms/flowpilot/protocol/openid-connect/token
       - AGENT_CLIENT_ID=flowpilot-agent
       - AGENT_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
       # Database
-      - DB_PATH=/app/delegations.db
-      # Keycloak admin API (for user queries)
+      - DB_PATH=/app/data/delegations.db
+      # Keycloak configuration for profile.py
       - KEYCLOAK_BASE_URL=https://keycloak:8443
       - KEYCLOAK_REALM=flowpilot
-      - KEYCLOAK_ADMIN_USERNAME=admin
-      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
       - VERIFY_TLS=false
       # Optional: Enable payload signature scanning
       - ENABLE_PAYLOAD_SIGNATURE_SCAN=0
@@ -209,7 +205,7 @@ services:
     depends_on:
       - keycloak
     volumes:
-      - delegation_db:/app
+      - delegation_db:/app/data
 
 volumes:
   keycloak_data:
