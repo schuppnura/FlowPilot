@@ -32,7 +32,7 @@ import json
 import os
 import sys
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional
 
 import security
 
@@ -70,7 +70,7 @@ def _sanitize_token_for_logging(token: Optional[str]) -> Optional[Dict[str, Any]
     # This provides the decoded token information without exposing the raw token
     if not token:
         return None
-    
+
     try:
         # Use security utility to decode token (without full validation for logging)
         # We just want the claims, not full validation
@@ -84,20 +84,20 @@ def _sanitize_token_for_logging(token: Optional[str]) -> Optional[Dict[str, Any]
 def _extract_raw_token_from_request(request: Any) -> Optional[str]:
     """
     Extract raw JWT token from FastAPI Request object.
-    
+
     Args:
         request: FastAPI Request object with headers attribute
-    
+
     Returns:
         Raw token string (without "Bearer " prefix) or None
     """
-    if not request or not hasattr(request, 'headers'):
+    if not request or not hasattr(request, "headers"):
         return None
-    
+
     auth_header = request.headers.get("authorization", "")
     if auth_header.lower().startswith("bearer "):
         return auth_header[7:]  # Remove "Bearer " prefix
-    
+
     return None
 
 
@@ -113,7 +113,7 @@ def log_api_request(
 ) -> None:
     """
     Log an API request with full context.
-    
+
     Args:
         method: HTTP method (GET, POST, etc.)
         path: Request path
@@ -123,10 +123,10 @@ def log_api_request(
         request: FastAPI Request object (optional, will extract raw_token from headers if provided)
         path_params: Path parameters (from FastAPI path params)
         query_params: Query parameters (from FastAPI query params)
-    
+
     Note: If both `raw_token` and `request` are provided, `raw_token` takes precedence.
           If only `request` is provided, the token will be extracted from the Authorization header.
-    
+
     Outputs JSON to stdout with structure:
     {
         "type": "api_request",
@@ -141,24 +141,24 @@ def log_api_request(
     """
     if not _should_log():
         return
-    
+
     # Print separator line to visually group this API call
     _print_separator()
-    
+
     # Extract raw token from request if not explicitly provided
     if raw_token is None and request is not None:
         raw_token = _extract_raw_token_from_request(request)
-    
+
     log_entry: Dict[str, Any] = {
         "type": "api_request",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "method": method,
         "path": path,
     }
-    
+
     if request_body is not None:
         log_entry["request_body"] = _safe_serialize(request_body)
-    
+
     # Prefer already-decoded claims, but decode raw token if provided
     if token_claims:
         log_entry["token_claims"] = _safe_serialize(token_claims)
@@ -166,13 +166,13 @@ def log_api_request(
         decoded = _sanitize_token_for_logging(raw_token)
         if decoded:
             log_entry["token_claims"] = decoded
-    
+
     if path_params:
         log_entry["path_params"] = _safe_serialize(path_params)
-    
+
     if query_params:
         log_entry["query_params"] = _safe_serialize(query_params)
-    
+
     # Write to stdout as single-line JSON
     print(json.dumps(log_entry, ensure_ascii=False), file=sys.stdout, flush=True)
 
@@ -186,14 +186,14 @@ def log_api_response(
 ) -> None:
     """
     Log an API response.
-    
+
     Args:
         method: HTTP method (GET, POST, etc.)
         path: Request path
         status_code: HTTP status code
         response_body: Response body (if successful)
         error: Error message (if failed)
-    
+
     Outputs JSON to stdout with structure:
     {
         "type": "api_response",
@@ -206,7 +206,7 @@ def log_api_response(
     """
     if not _should_log():
         return
-    
+
     log_entry: Dict[str, Any] = {
         "type": "api_response",
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -214,13 +214,13 @@ def log_api_response(
         "path": path,
         "status_code": status_code,
     }
-    
+
     if response_body is not None:
         log_entry["response_body"] = _safe_serialize(response_body)
-    
+
     if error:
         log_entry["error"] = error
-    
+
     # Write to stdout as single-line JSON
     print(json.dumps(log_entry, ensure_ascii=False), file=sys.stdout, flush=True)
 
@@ -242,8 +242,22 @@ def log_api_call(
     Convenience function to log both request and response in one call.
     Useful when you have all the information at once.
     """
-    log_api_request(method, path, request_body=request_body, token_claims=token_claims, raw_token=raw_token, request=request, path_params=path_params, query_params=query_params)
-    
-    if status_code is not None:
-        log_api_response(method, path, status_code, response_body=response_body, error=error)
+    log_api_request(
+        method=method,
+        path=path,
+        request_body=request_body,
+        token_claims=token_claims,
+        raw_token=raw_token,
+        request=request,
+        path_params=path_params,
+        query_params=query_params,
+    )
 
+    if status_code is not None:
+        log_api_response(
+            method=method,
+            path=path,
+            status_code=status_code,
+            response_body=response_body,
+            error=error,
+        )

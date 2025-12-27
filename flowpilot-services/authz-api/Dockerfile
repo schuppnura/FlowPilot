@@ -4,11 +4,27 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates tini curl \
     && rm -rf /var/lib/apt/lists/*
 
+# Copy and install Keycloak CA certificate to system trust store
+# Use mkcert root CA (which signed the Keycloak cert) for proper SSL verification
+COPY infra/certs/mkcert-rootCA.pem /usr/local/share/ca-certificates/mkcert-rootCA.crt
+RUN update-ca-certificates
+
 WORKDIR /app
 
 # Install deps
 COPY flowpilot-services/authz-api/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
+
+# Also create a combined certificate bundle for Python requests (certifi + mkcert CA)
+# This ensures requests library can verify Keycloak's certificate
+RUN python3 <<EOF
+import certifi
+certifi_path = certifi.where()
+with open(certifi_path, 'rb') as f1, open('/usr/local/share/ca-certificates/mkcert-rootCA.crt', 'rb') as f2:
+    combined = f1.read() + b'\n' + f2.read()
+with open('/app/ca-bundle.crt', 'wb') as f:
+    f.write(combined)
+EOF
 
 # Shared libs (as top-level modules)
 COPY flowpilot-services/shared-libraries/utils.py /app/utils.py

@@ -174,8 +174,7 @@ def main():
     print("Assigning realm default client scopes...")
     
     # Standard scopes that should be realm defaults (openid is built-in, not a client scope)
-    # No realm default scopes needed - persona scope is assigned per-client
-    required_scopes = []
+    required_scopes = ["profile"]
     
     try:
         token = get_admin_token()

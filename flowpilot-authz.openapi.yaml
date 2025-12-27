@@ -3,25 +3,14 @@ info:
   title: FlowPilot AuthZ API
   version: "1.0.0"
   description: >
-    Authorization integration service that acts as a Policy Decision Point (PDP) façade
-    for OPA policy evaluation. This service integrates Policy Information Points (PIPs)
-    to enrich authorization requests with delegation data and user attributes.
+    Authorization integration service with PDP façade, PIP enrichment, and authorization graph writer.
     
-    **Core Functionality**:
-    - Evaluates authorization requests using OPA Rego policies (see `auto_book.rego` policy)
-    - Fetches delegation data from delegation-api (PIP)
-    - Fetches user attributes from Keycloak via profile.py (PIP)
-    - Normalizes and coerces input data before policy evaluation
-    - Returns allow/deny decisions with reason codes and advice
+    **Responsibilities**:
+    - Policy evaluation using OPA rego policy (PDP)
+    - Progressive profiling enrichment (PIP)
+    - Authorization graph maintenance
     
-    **Policy**: The service uses the `auto_book` OPA policy package, which implements
-    Attribute-Based Access Control (ABAC) with multi-gate authorization checks including
-    anti-spoofing, delegation validation, consent checks, cost limits, advance notice,
-    and risk thresholds. See README.md for detailed policy documentation.
-    
-    Implements AuthZEN-like request structure. The principal (actual user) is identified
-    via `context.principal.id`, while `subject.id` represents the agent/service making
-    the call.
+    Implements AuthZEN-like request structure with progressive profiling support.
     
     **Security**: All endpoints (except /health) require bearer token authentication.
     
@@ -59,48 +48,6 @@ paths:
       description: >
         Evaluates whether a subject (agent or user) may perform an action on a resource.
         Uses AuthZEN-like structure with subject/action/resource/context/options.
-        
-        **Policy Evaluation**:
-        
-        This endpoint evaluates requests using the OPA `auto_book` policy, which implements
-        Attribute-Based Access Control (ABAC) with multi-gate authorization checks.
-        
-        **Authorization Gates** (all must pass):
-        1. **Anti-Spoofing & Delegation**: Principal must be the owner (with matching persona) OR have valid delegation (with "travel-agent" persona)
-        2. **Consent**: User must have consented to auto-booking
-        3. **Cost Limit**: Trip cost must not exceed user's maximum price limit
-        4. **Advance Notice**: Departure must be at least `autobook_leadtime` days in the future
-        5. **Risk Threshold**: Airline risk score must not exceed user's risk threshold
-        
-        **Principal Identification**:
-        - The principal (actual user) is extracted from `context.principal.id` (not `subject.id` which is the agent/service)
-        - Owner information is extracted from `resource.properties.owner` (set by domain-services-api when workflow was created)
-        - Delegation data is fetched from delegation-api (PIP - Policy Information Point)
-        
-        **Input Normalization**:
-        All input data is normalized before policy evaluation:
-        - Dates are converted to RFC3339 format (e.g., `2026-01-16T00:00:00Z`)
-        - Boolean values are coerced from "Yes"/"No" strings
-        - Numeric values are coerced from strings
-        
-        **Decision Response**:
-        - `decision`: "allow" or "deny"
-        - `reason_codes`: Array of machine-readable reason codes (see below) when denied
-        - `advice`: Array of human-readable advice messages
-        
-        **Reason Codes** (returned when `decision` is "deny"):
-        
-        | Code | Description |
-        |------|-------------|
-        | `auto_book.not_delegated` | Travel agent tried to access a trip without delegation |
-        | `auto_book.principal_spoofing` | Non-travel-agent principal tried to access without being owner or having delegation |
-        | `auto_book.principal_missing` | Principal persona is not set/undefined (backward compatibility) |
-        | `auto_book.persona_mismatch` | Owner's selected persona doesn't match the persona used when creating the workflow |
-        | `auto_book.delegation_requires_travel_agent_persona` | Delegated execution requires "travel-agent" persona but different persona was selected |
-        | `auto_book.no_consent` | User has not consented to auto-booking |
-        | `auto_book.cost_limit_exceeded` | Trip cost exceeds user's maximum price limit |
-        | `auto_book.insufficient_advance_notice` | Departure date is too soon (less than required lead time) |
-        | `auto_book.airline_risk_too_high` | Airline risk score exceeds user's risk threshold |
       requestBody:
         required: true
         content:
@@ -140,10 +87,10 @@ paths:
                 deny:
                   value:
                     decision: deny
-                    reason_codes: [auto_book.not_delegated]
+                    reason_codes: [rego.deny]
                     advice:
                       - type: deny
-                        message: "Travel agent not delegated to access this trip"
+                        message: "Denied by rego policy."
                 allow:
                   value:
                     decision: allow
@@ -487,22 +434,8 @@ components:
           example: i_f032d0a2
         properties:
           type: object
-          description: >
-            Resource-specific properties. For workflow items, must include:
-            - `workflow_id`: Parent workflow identifier (for delegation scope matching)
-            - `owner`: Object with `id` (owner subject UUID) and `persona` (owner's persona when workflow was created)
-            - `planned_price`: Trip cost (numeric)
-            - `departure_date`: Departure date (will be normalized to RFC3339 format)
-            - `airline_risk_score`: Airline risk score (numeric, optional)
+          description: Resource-specific properties (workflow_id, domain, etc.)
           additionalProperties: true
-          example:
-            workflow_id: w_123
-            owner:
-              id: 1460e175-74f9-43af-aac3-7b4fc0547f05
-              persona: traveler
-            planned_price: 250
-            departure_date: "2026-01-16"
-            airline_risk_score: 1
       required: [type, id]
       additionalProperties: true
 
@@ -512,25 +445,12 @@ components:
       properties:
         principal:
           type: object
-          description: >
-            Principal on whose behalf action is performed.
-            
-            **Important**: The `id` field is used as the principal subject ID for authorization checks.
-            This is the actual user ID, not the agent/service ID (which is in `subject.id`).
-            
-            The `persona` field (if present) is the principal's selected persona and is used for
-            persona matching checks in the policy.
+          description: Principal on whose behalf action is performed
           properties:
             id:
               type: string
-              description: Principal subject UUID (used for anti-spoofing and delegation checks)
+              description: Principal subject UUID
               example: 1460e175-74f9-43af-aac3-7b4fc0547f05
-            persona:
-              type: string
-              description: Principal's selected persona (e.g., "traveler", "travel-agent")
-              example: travel-agent
-          required:
-            - id
           additionalProperties: true
         attributes:
           type: object
@@ -582,19 +502,7 @@ components:
           type: array
           items:
             type: string
-            enum:
-              - auto_book.not_delegated
-              - auto_book.principal_spoofing
-              - auto_book.principal_missing
-              - auto_book.persona_mismatch
-              - auto_book.delegation_requires_travel_agent_persona
-              - auto_book.no_consent
-              - auto_book.cost_limit_exceeded
-              - auto_book.insufficient_advance_notice
-              - auto_book.airline_risk_too_high
-          description: >
-            Machine-readable reason codes indicating why authorization was denied.
-            Empty array when decision is "allow". See endpoint description for code meanings.
+          description: Machine-readable reason codes
         advice:
           type: array
           items:

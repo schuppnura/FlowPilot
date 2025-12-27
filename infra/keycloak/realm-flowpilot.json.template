@@ -10,8 +10,8 @@
   },
   "clientScopes": [
     {
-      "name": "persona",
-      "description": "Persona attribute scope - includes only persona attributes (all personas for the user)",
+      "name": "autobook",
+      "description": "Autobook consent scope",
       "protocol": "openid-connect",
       "attributes": {
         "include.in.token.scope": "true",
@@ -19,7 +19,63 @@
       },
       "protocolMappers": [
         {
-          "name": "persona-mapper",
+          "name": "autobook_consent",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "autobook_consent",
+            "claim.name": "autobook_consent",
+            "jsonType.label": "String",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "false"
+          }
+        },
+        {
+          "name": "autobook_price",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "autobook_price",
+            "claim.name": "autobook_price",
+            "jsonType.label": "String",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "false"
+          }
+        },
+        {
+          "name": "autobook_leadtime",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "autobook_leadtime",
+            "claim.name": "autobook_leadtime",
+            "jsonType.label": "String",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "false"
+          }
+        },
+        {
+          "name": "autobook_risklevel",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "autobook_risklevel",
+            "claim.name": "autobook_risklevel",
+            "jsonType.label": "String",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "false"
+          }
+        },
+        {
+          "name": "persona",
           "protocol": "openid-connect",
           "protocolMapper": "oidc-usermodel-attribute-mapper",
           "consentRequired": false,
@@ -32,21 +88,6 @@
             "userinfo.token.claim": "false",
             "multivalued": "true",
             "aggregate.attrs": "false"
-          }
-        },
-        {
-          "name": "username-mapper",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-usermodel-property-mapper",
-          "consentRequired": false,
-          "config": {
-            "user.attribute": "username",
-            "claim.name": "username",
-            "jsonType.label": "String",
-            "id.token.claim": "false",
-            "access.token.claim": "true",
-            "userinfo.token.claim": "false",
-            "access.tokenResponse.claim": "false"
           }
         }
       ]
@@ -99,9 +140,11 @@
         }
       ],
       "defaultClientScopes": [
-        "persona",
+        "autobook",
         "web-origins",
-        "acr"
+        "acr",
+        "roles",
+        "profile"
       ]
     },
     {
@@ -149,9 +192,10 @@
         }
       ],
       "defaultClientScopes": [
-        "persona",
+        "autobook",
         "web-origins",
-        "acr"
+        "acr",
+        "roles"
       ]
     }
   ]

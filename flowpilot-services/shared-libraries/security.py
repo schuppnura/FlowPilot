@@ -1,15 +1,11 @@
-# flowpilot-services/shared-libraries/security.py
+# services/shared-libraries/security.py
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import re
 import ssl
-import sys
 import time
-import traceback
-from dataclasses import dataclass
 from typing import Any, Callable, Optional
 
 import jwt
@@ -31,12 +27,12 @@ from starlette.responses import Response
 DEFAULT_MAX_REQUEST_SIZE_BYTES = 1_048_576  # 1 MB
 DEFAULT_MAX_STRING_LENGTH = 10_000
 
-DEFAULT_JWKS_CACHE_TTL_SECONDS = int(
-    os.environ.get("JWKS_CACHE_TTL_SECONDS", "3600")
-)
+DEFAULT_JWKS_CACHE_TTL_SECONDS = int(os.environ.get("JWKS_CACHE_TTL_SECONDS", "3600"))
 
 # Optional: enable signature/payload scanning (off by default to avoid false positives).
-ENABLE_PAYLOAD_SIGNATURE_SCAN = os.environ.get("ENABLE_PAYLOAD_SIGNATURE_SCAN", "0") == "1"
+ENABLE_PAYLOAD_SIGNATURE_SCAN = (
+    os.environ.get("ENABLE_PAYLOAD_SIGNATURE_SCAN", "0") == "1"
+)
 
 
 #
@@ -44,6 +40,7 @@ ENABLE_PAYLOAD_SIGNATURE_SCAN = os.environ.get("ENABLE_PAYLOAD_SIGNATURE_SCAN", 
 # Exceptions
 # ---------------------------------------------------------------------------
 #
+
 
 class InputValidationError(ValueError):
     # Raised when request input fails validation/sanitization.
@@ -55,6 +52,7 @@ class InputValidationError(ValueError):
 # Request-size protection middleware
 # ---------------------------------------------------------------------------
 #
+
 
 class RequestSizeLimiterMiddleware(BaseHTTPMiddleware):
     # Middleware to limit request body size.
@@ -105,6 +103,7 @@ def get_max_string_length() -> int:
 # ---------------------------------------------------------------------------
 #
 
+
 class JWTValidator:
     # Validates JWT Bearer tokens using JWKS for signature verification.
     #
@@ -122,13 +121,13 @@ class JWTValidator:
     ) -> None:
         self.issuer = issuer
         self.audience = audience
-        
+
         # For local development with self-signed certificates, disable SSL verification
         # WARNING: This should NEVER be used in production!
         ssl_context = ssl.create_default_context()
         ssl_context.check_hostname = False
         ssl_context.verify_mode = ssl.CERT_NONE
-        
+
         # PyJWKClient caches JWKS and only refetches when needed
         self.jwks_client = PyJWKClient(
             jwks_uri,
@@ -142,7 +141,7 @@ class JWTValidator:
         try:
             # Get signing key from JWKS (cached)
             signing_key = self.jwks_client.get_signing_key_from_jwt(token)
-            
+
             # Decode and validate JWT locally (no network call)
             # Best practice: verify all standard claims
             decode_options = {
@@ -154,7 +153,7 @@ class JWTValidator:
                 "require_exp": True,
                 "require_iat": True,
             }
-            
+
             claims = jwt.decode(
                 token,
                 signing_key.key,
@@ -164,14 +163,14 @@ class JWTValidator:
                 options=decode_options,
                 leeway=10,  # 10 seconds clock skew tolerance
             )
-            
+
             # Additional best-practice validations
             self._validate_token_type(claims)
             self._validate_subject(claims)
             self._validate_issued_at(claims)
-            
+
             return claims
-            
+
         except jwt.ExpiredSignatureError:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -182,7 +181,7 @@ class JWTValidator:
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=f"Invalid token issuer: expected {self.issuer}, got {str(e)}",
             )
-        except jwt.InvalidAudienceError as e:
+        except jwt.InvalidAudienceError:
             token_aud = None
             azp = None
             try:
@@ -192,10 +191,12 @@ class JWTValidator:
                 azp = unverified.get("azp")
             except Exception:
                 pass
-            
+
             # Service account tokens (client credentials flow) may have different audience
             # If this is a service account token (azp=flowpilot-agent), allow aud=flowpilot-agent
-            is_service_account = azp and isinstance(azp, str) and azp.strip() == "flowpilot-agent"
+            is_service_account = (
+                azp and isinstance(azp, str) and azp.strip() == "flowpilot-agent"
+            )
             if is_service_account:
                 # Check if token has flowpilot-agent audience (which is correct for service tokens)
                 if isinstance(token_aud, str) and token_aud == "flowpilot-agent":
@@ -203,12 +204,19 @@ class JWTValidator:
                     try:
                         # Get signing key from JWKS (cached)
                         signing_key = self.jwks_client.get_signing_key_from_jwt(token)
-                        
+
                         # Re-validate with audience for service tokens: flowpilot-agent
                         decoded = jwt.decode(
                             token,
                             signing_key.key,
-                            algorithms=["RS256", "RS384", "RS512", "ES256", "ES384", "ES512"],
+                            algorithms=[
+                                "RS256",
+                                "RS384",
+                                "RS512",
+                                "ES256",
+                                "ES384",
+                                "ES512",
+                            ],
                             options={
                                 "verify_signature": True,
                                 "verify_exp": True,
@@ -262,7 +270,7 @@ class JWTValidator:
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=error_detail,
             )
-    
+
     def _validate_token_type(self, claims: dict[str, Any]) -> None:
         # Best practice: verify token type is Bearer/Access token
         typ = claims.get("typ")
@@ -271,14 +279,14 @@ class JWTValidator:
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=f"Invalid token type: {typ}",
             )
-    
+
     def _validate_subject(self, claims: dict[str, Any]) -> None:
         # Best practice: require subject claim for user tokens
         # Service account tokens (client credentials flow) may not have 'sub' claim
         # For service accounts, we can use 'azp' (authorized party) as the identifier
         sub = claims.get("sub")
         azp = claims.get("azp")  # Authorized party - identifies the client
-        
+
         # Allow service account tokens to skip 'sub' if they have 'azp'
         # Service accounts are identified by having 'azp' but no 'sub', or 'sub' matching service account pattern
         if not sub or not isinstance(sub, str) or not sub.strip():
@@ -292,7 +300,7 @@ class JWTValidator:
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token missing valid subject claim",
             )
-    
+
     def _validate_issued_at(self, claims: dict[str, Any]) -> None:
         # Best practice: reject tokens issued too far in the future
         # (protects against time manipulation attacks)
@@ -316,24 +324,24 @@ _jwt_validator: Optional[JWTValidator] = None
 
 def _get_jwt_validator() -> JWTValidator:
     global _jwt_validator
-    
+
     if _jwt_validator is None:
         jwks_uri = os.environ.get("KEYCLOAK_JWKS_URI", "").strip()
         issuer = os.environ.get("KEYCLOAK_ISSUER", "").strip()
         audience = os.environ.get("KEYCLOAK_AUDIENCE", "").strip() or None
-        
+
         if not jwks_uri or not issuer:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Auth is not configured (missing KEYCLOAK_JWKS_URI or KEYCLOAK_ISSUER env vars)",
             )
-        
+
         _jwt_validator = JWTValidator(
             jwks_uri=jwks_uri,
             issuer=issuer,
             audience=audience,
         )
-    
+
     return _jwt_validator
 
 
@@ -377,7 +385,7 @@ _service_token_cache: Optional[dict[str, Any]] = None
 
 
 def clear_service_token_cache() -> None:
-    """Clear the service token cache - useful for testing or after Keycloak config changes"""
+    # Clear the service token cache - useful for testing or after Keycloak config changes
     global _service_token_cache
     _service_token_cache = None
 
@@ -392,28 +400,28 @@ def get_service_token() -> Optional[str]:
     # Caches token and refreshes when expired.
     # Returns None if service auth is not configured.
     global _service_token_cache
-    
+
     token_url = os.environ.get("KEYCLOAK_TOKEN_URL", "").strip()
     client_id = os.environ.get("AGENT_CLIENT_ID", "").strip()
     client_secret = os.environ.get("AGENT_CLIENT_SECRET", "").strip()
-    
+
     # Service auth is optional - return None if not configured
     if not token_url or not client_id or not client_secret:
         return None
-    
+
     # Check if we have a cached token that's still valid
     if _service_token_cache:
         expires_at = _service_token_cache.get("expires_at", 0)
         if time.time() < expires_at - 60:  # Refresh 60 seconds before expiry
             return _service_token_cache.get("access_token")
-    
+
     # Request new token using client credentials flow
     try:
         # For service-to-service tokens, use the client_id as the audience
         # This ensures service tokens have aud=flowpilot-agent (not flowpilot-desktop)
         # The KEYCLOAK_AUDIENCE env var is for user tokens, not service tokens
         service_audience = client_id  # Service tokens should have aud=flowpilot-agent
-        
+
         # Disable SSL verification for local development with self-signed certs
         token_data = {
             "grant_type": "client_credentials",
@@ -423,21 +431,21 @@ def get_service_token() -> Optional[str]:
         # Use client_id as audience for service tokens (Keycloak will include it in the token)
         if service_audience:
             token_data["audience"] = service_audience
-            
+
         response = requests.post(
             token_url,
             data=token_data,
             timeout=10,
             verify=False,  # Disable SSL verification for local dev
         )
-        
+
         if response.status_code != 200:
             return None
-        
+
         token_response = response.json()
         access_token = token_response.get("access_token")
         expires_in = token_response.get("expires_in", 300)  # Default 5 minutes
-        
+
         if access_token:
             _service_token_cache = {
                 "access_token": access_token,
@@ -446,10 +454,10 @@ def get_service_token() -> Optional[str]:
             return access_token
         else:
             return None
-    except Exception as e:
+    except Exception:
         # Silently fail - service may work without s2s auth in some configurations
         pass
-    
+
     return None
 
 
@@ -486,10 +494,22 @@ PATH_TRAVERSAL_PATTERNS = [
     r"\.\.\\",
 ]
 
-_SQL_RE = re.compile("|".join(SQL_INJECTION_PATTERNS), re.IGNORECASE) if SQL_INJECTION_PATTERNS else None
+_SQL_RE = (
+    re.compile("|".join(SQL_INJECTION_PATTERNS), re.IGNORECASE)
+    if SQL_INJECTION_PATTERNS
+    else None
+)
 _XSS_RE = re.compile("|".join(XSS_PATTERNS), re.IGNORECASE) if XSS_PATTERNS else None
-_CMD_RE = re.compile("|".join(COMMAND_INJECTION_PATTERNS), re.IGNORECASE) if COMMAND_INJECTION_PATTERNS else None
-_TRAV_RE = re.compile("|".join(PATH_TRAVERSAL_PATTERNS), re.IGNORECASE) if PATH_TRAVERSAL_PATTERNS else None
+_CMD_RE = (
+    re.compile("|".join(COMMAND_INJECTION_PATTERNS), re.IGNORECASE)
+    if COMMAND_INJECTION_PATTERNS
+    else None
+)
+_TRAV_RE = (
+    re.compile("|".join(PATH_TRAVERSAL_PATTERNS), re.IGNORECASE)
+    if PATH_TRAVERSAL_PATTERNS
+    else None
+)
 
 
 def _detect_payload_signatures(value: str) -> Optional[str]:
@@ -520,19 +540,25 @@ def sanitize_string(value: str, max_length: int = DEFAULT_MAX_STRING_LENGTH) -> 
         return value
 
     if len(value) > max_length:
-        raise InputValidationError(f"Input too long. Maximum length: {max_length} characters")
+        raise InputValidationError(
+            f"Input too long. Maximum length: {max_length} characters"
+        )
 
     if _CONTROL_CHARS.search(value):
         raise InputValidationError("Input contains invalid control characters")
 
     signature = _detect_payload_signatures(value)
     if signature:
-        raise InputValidationError(f"Input contains potentially dangerous content ({signature})")
+        raise InputValidationError(
+            f"Input contains potentially dangerous content ({signature})"
+        )
 
     return value
 
 
-def sanitize_dict(data: dict[str, Any], max_length: int = DEFAULT_MAX_STRING_LENGTH) -> dict[str, Any]:
+def sanitize_dict(
+    data: dict[str, Any], max_length: int = DEFAULT_MAX_STRING_LENGTH
+) -> dict[str, Any]:
     # Recursively sanitize all string values in a dictionary.
     #
     # Note: This does not “secure” downstream usage by itself. You must still:
@@ -599,35 +625,40 @@ def safe_parse_json_bytes(body_bytes: bytes) -> Any:
 # ---------------------------------------------------------------------------
 #
 
+
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     # Add security headers to all responses.
     #
     # Best practice headers to prevent common web vulnerabilities.
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         response = await call_next(request)
-        
+
         # Prevent MIME type sniffing
         response.headers["X-Content-Type-Options"] = "nosniff"
-        
+
         # Prevent clickjacking
         response.headers["X-Frame-Options"] = "DENY"
-        
+
         # Prevent XSS in older browsers
         response.headers["X-XSS-Protection"] = "1; mode=block"
-        
+
         # Strict transport security (if using HTTPS)
         # Uncomment if deployed with HTTPS:
         # response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-        
+
         # Content Security Policy (restrictive default)
-        response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
-        
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'none'; frame-ancestors 'none'"
+        )
+
         # Prevent referrer leakage
         response.headers["Referrer-Policy"] = "no-referrer"
-        
+
         # Permissions policy (disable unnecessary features)
-        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
-        
+        response.headers["Permissions-Policy"] = (
+            "geolocation=(), microphone=(), camera=()"
+        )
+
         return response
 
 
@@ -638,30 +669,31 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 #
 
 # Common ID patterns (alphanumeric, hyphens, underscores)
-_ID_PATTERN = re.compile(r'^[a-zA-Z0-9_-]+$')
+_ID_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
 _UUID_PATTERN = re.compile(
-    r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
-    re.IGNORECASE
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.IGNORECASE
 )
 # ISO 8601 date pattern (YYYY-MM-DD)
-_DATE_PATTERN = re.compile(r'^\d{4}-\d{2}-\d{2}$')
+_DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
 def validate_id(value: str, field_name: str = "id", max_length: int = 255) -> str:
     # Validate an ID field (alphanumeric, hyphens, underscores only).
     if not isinstance(value, str) or not value.strip():
         raise InputValidationError(f"{field_name} must be a non-empty string")
-    
+
     value = value.strip()
-    
+
     if len(value) > max_length:
-        raise InputValidationError(f"{field_name} too long (max {max_length} characters)")
-    
+        raise InputValidationError(
+            f"{field_name} too long (max {max_length} characters)"
+        )
+
     if not _ID_PATTERN.match(value):
         raise InputValidationError(
             f"{field_name} contains invalid characters (only alphanumeric, hyphen, underscore allowed)"
         )
-    
+
     return value
 
 
@@ -669,12 +701,12 @@ def validate_uuid(value: str, field_name: str = "id") -> str:
     # Validate a UUID field.
     if not isinstance(value, str) or not value.strip():
         raise InputValidationError(f"{field_name} must be a non-empty string")
-    
+
     value = value.strip().lower()
-    
+
     if not _UUID_PATTERN.match(value):
         raise InputValidationError(f"{field_name} is not a valid UUID")
-    
+
     return value
 
 
@@ -682,15 +714,17 @@ def validate_iso_date(value: str, field_name: str = "date") -> str:
     # Validate an ISO 8601 date string (YYYY-MM-DD).
     if not isinstance(value, str) or not value.strip():
         raise InputValidationError(f"{field_name} must be a non-empty string")
-    
+
     value = value.strip()
-    
+
     if not _DATE_PATTERN.match(value):
-        raise InputValidationError(f"{field_name} must be in ISO 8601 format (YYYY-MM-DD)")
-    
+        raise InputValidationError(
+            f"{field_name} must be in ISO 8601 format (YYYY-MM-DD)"
+        )
+
     # Additional validation: check if it's a valid date
     try:
-        year, month, day = map(int, value.split('-'))
+        year, month, day = map(int, value.split("-"))
         if not (1900 <= year <= 2100):
             raise ValueError("Year out of range")
         if not (1 <= month <= 12):
@@ -699,7 +733,7 @@ def validate_iso_date(value: str, field_name: str = "date") -> str:
             raise ValueError("Day out of range")
     except (ValueError, AttributeError) as exc:
         raise InputValidationError(f"{field_name} is not a valid date") from exc
-    
+
     return value
 
 
@@ -717,9 +751,9 @@ def sanitize_error_message(message: str, include_details: bool = False) -> str:
             return "Network error occurred"
         if "environment" in message.lower() or "config" in message.lower():
             return "Configuration error occurred"
-    
+
     # Truncate very long messages
     if len(message) > 200:
         message = message[:200] + "..."
-    
+
     return message

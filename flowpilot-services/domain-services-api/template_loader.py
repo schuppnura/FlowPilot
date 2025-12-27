@@ -59,7 +59,9 @@ def validate_money(money: Any, context: str) -> None:
         raise ValueError(f"{context}: planned_price.currency must be a 3-letter string")
 
     if not isinstance(amount, (int, float)) or float(amount) < 0.0:
-        raise ValueError(f"{context}: planned_price.amount must be a non-negative number")
+        raise ValueError(
+            f"{context}: planned_price.amount must be a non-negative number"
+        )
 
 
 def validate_template_item(item: Any, index: int, file_path: str) -> None:
@@ -90,7 +92,9 @@ def validate_template(template: Dict[str, Any], domain: str, file_path: str) -> 
         raise ValueError(f"{file_path}: template_id must be a non-empty string")
 
     if template_domain != domain:
-        raise ValueError(f"{file_path}: domain mismatch: got '{template_domain}', expected '{domain}'")
+        raise ValueError(
+            f"{file_path}: domain mismatch: got '{template_domain}', expected '{domain}'"
+        )
 
     if not isinstance(name, str) or not name.strip():
         raise ValueError(f"{file_path}: name must be a non-empty string")
@@ -102,18 +106,24 @@ def validate_template(template: Dict[str, Any], domain: str, file_path: str) -> 
         validate_template_item(item=item, index=index, file_path=file_path)
 
 
-def load_workflow_templates_from_directory(template_directory: str, domain: str) -> Dict[str, Dict[str, Any]]:
+def load_workflow_templates_from_directory(
+    template_directory: str, domain: str
+) -> Dict[str, Dict[str, Any]]:
     # Load and validate templates from a directory into a dict keyed by template_id.
     # Assumptions: template_directory exists and contains at least one .json file.
     # Side effects: reads filesystem.
     if not os.path.isdir(template_directory):
-        raise ValueError(f"Template directory does not exist or is not a directory: {template_directory}")
+        raise ValueError(
+            f"Template directory does not exist or is not a directory: {template_directory}"
+        )
 
     templates: Dict[str, Dict[str, Any]] = {}
     template_files = list_template_files(template_directory)
 
     if len(template_files) == 0:
-        raise ValueError(f"No .json template files found in directory: {template_directory}")
+        raise ValueError(
+            f"No .json template files found in directory: {template_directory}"
+        )
 
     for file_path in template_files:
         template = load_json_file(file_path)
@@ -121,14 +131,18 @@ def load_workflow_templates_from_directory(template_directory: str, domain: str)
 
         template_id = str(template["template_id"])
         if template_id in templates:
-            raise ValueError(f"Duplicate template_id '{template_id}' found (file: {file_path})")
+            raise ValueError(
+                f"Duplicate template_id '{template_id}' found (file: {file_path})"
+            )
 
         templates[template_id] = template
 
     return templates
 
 
-def resolve_template_directory(default_directory: str, override_directory: str | None) -> str:
+def resolve_template_directory(
+    default_directory: str, override_directory: str | None
+) -> str:
     # Resolve the template directory where CLI override takes precedence over defaults.
     # Assumptions: override_directory may be None or empty.
     # Side effects: none.

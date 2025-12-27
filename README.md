@@ -127,152 +127,19 @@ All API responses include security headers:
 
 ### Authorization Architecture
 
-FlowPilot's authorization system is built around **Open Policy Agent (OPA)** with Rego policies, forming the **core authorization decision engine** for the platform. This ABAC (Attribute-Based Access Control) system evaluates authorization requests based on user attributes, resource properties, delegation relationships, and business rules.
-
 - **`flowpilot-authz-api`** - Authorization façade for policy decisions
   - Validates access tokens via JWKS (for service-to-service authentication)
   - Validates AuthZEN-compliant requests (requires context.principal with id and claims)
   - Extracts user claims from AuthZEN context.principal.claims
-  - Fetches owner information and delegation data from workflow properties and delegation-api (PIP)
-  - Normalizes and coerces input data before policy evaluation (using `coerce_*` functions)
+  - Sanitizes all input payloads before processing
   - Calls OPA to evaluate Rego policies
-  - Returns allow/deny decisions with optional reason codes and advice
+  - Returns allow/deny decisions with optional reasons/obligations
 
 - **`opa`** - Open Policy Agent in server mode
   - Evaluates attribute-based access control (ABAC) policies
-  - Policies mounted from repository (`infra/opa/policies/`)
+  - Policies mounted from repository
   - Supports relationship-based delegation via authorization graph
   - Local policy editing with hot reload
-
-#### OPA Policy: The Core Authorization Engine
-
-The `auto_book.rego` policy (`infra/opa/policies/auto_book.rego`) is the **core authorization logic** for FlowPilot. It implements a multi-gate authorization system that evaluates requests through a series of checks:
-
-**Policy Package**: `auto_book`
-
-**Main Decision Rule**: `allow` (boolean) - All gates must pass for authorization to succeed.
-
-**Authorization Gates** (evaluated in order):
-
-1. **Anti-Spoofing & Delegation Check** (`authorized_principal`)
-   - Ensures the principal (user making the request) is authorized to act on the resource
-   - **Owner-initiated execution**: Principal must be the owner AND selected persona must match owner's persona
-   - **Delegated execution**: Principal must have a valid delegation chain from the owner AND selected persona must be "travel-agent"
-   - Supports direct delegations and 2-hop delegation chains
-   - Delegations can be workflow-scoped or general (applies to all workflows)
-
-2. **Consent Gate** (`has_consent`)
-   - User must have explicitly consented to auto-booking
-   - Uses `user.autobook_consent` attribute (coerced to boolean)
-
-3. **Cost Limit Gate** (`within_cost_limit`)
-   - Total trip cost (`resource.planned_price`) must not exceed user's maximum (`user.autobook_price`)
-   - Prevents unauthorized spending
-
-4. **Advance Notice Gate** (`sufficient_advance`)
-   - Departure date (`resource.departure_date`) must be at least `user.autobook_leadtime` days in the future
-   - Ensures adequate planning time
-   - Input must be in RFC3339 format (normalized before policy evaluation)
-
-5. **Risk Gate** (`acceptable_risk`)
-   - Airline risk score (`resource.airline_risk_score`) must not exceed user's threshold (`user.autobook_risklevel`)
-   - If no risk score is provided, this gate passes (optional check)
-
-**Persona-Based Authorization**:
-
-The policy enforces persona matching to prevent unauthorized persona usage:
-
-- **Owner execution**: Selected persona must match the persona that was active when the workflow was created
-- **Delegated execution**: Selected persona must be "travel-agent" (delegation only works for travel agents)
-- Prevents users from accessing resources using personas they don't own or aren't authorized to use
-
-**Delegation System**:
-
-- Delegations are managed via the `delegation-api` and passed to OPA as PIP (Policy Information Point) data
-- Supports workflow-scoped delegations (applies only to a specific workflow) and general delegations (applies to all workflows)
-- Delegations have expiration times and can be revoked
-- Supports up to 2-hop delegation chains (owner → intermediate → delegate)
-- Delegations are evaluated declaratively by the policy
-
-**Reason Codes** (returned when authorization is denied):
-
-The policy returns specific reason codes to help understand why authorization failed:
-
-- `auto_book.not_delegated` - Travel agent tried to access a trip without delegation
-- `auto_book.principal_spoofing` - Non-travel-agent principal tried to access without being owner or having delegation
-- `auto_book.principal_missing` - Principal persona is not set/undefined (backward compatibility)
-- `auto_book.persona_mismatch` - Owner's selected persona doesn't match the persona used when creating the workflow
-- `auto_book.delegation_requires_travel_agent_persona` - Delegated execution requires "travel-agent" persona but different persona was selected
-- `auto_book.no_consent` - User has not consented to auto-booking
-- `auto_book.cost_limit_exceeded` - Trip cost exceeds user's maximum price limit
-- `auto_book.insufficient_advance_notice` - Departure date is too soon (less than required lead time)
-- `auto_book.airline_risk_too_high` - Airline risk score exceeds user's risk threshold
-
-**Input Normalization**:
-
-All input data is normalized **before** being passed to the OPA policy. The policy assumes all input is already in the correct format:
-
-- **Dates**: Must be in RFC3339 format (e.g., `2026-01-16T00:00:00Z`). Date-only strings (e.g., `2026-01-16`) are converted to RFC3339 at midnight UTC by `coerce_date_to_rfc3339()`.
-- **Booleans**: Must be boolean values. "Yes"/"No" strings are coerced to booleans by `coerce_yes_no_to_bool()`.
-- **Numbers**: Must be numeric values. Strings are coerced to integers/floats by `coerce_int()`.
-
-Normalization functions are defined in `shared-libraries/utils.py` and prefixed with `coerce_*`.
-
-**Policy Input Structure**:
-
-```rego
-input = {
-  "user": {
-    "sub": "principal-subject-id",           # Principal making the request (from context.principal.id)
-    "persona": "travel-agent",               # Principal's selected persona (from context.principal.persona)
-    "autobook_consent": true,                # User's consent (from owner's Keycloak attributes)
-    "autobook_price": 1500,                  # Maximum price limit (from owner's Keycloak attributes)
-    "autobook_leadtime": 7,                  # Minimum days in advance (from owner's Keycloak attributes)
-    "autobook_risklevel": 2                  # Maximum risk level (from owner's Keycloak attributes)
-  },
-  "action": {
-    "name": "book",
-    "properties": {}
-  },
-  "resource": {
-    "workflow_id": "w_123",                  # Workflow ID (for delegation scope matching)
-    "planned_price": 250,                    # Trip cost
-    "departure_date": "2026-01-16T00:00:00Z", # Departure date (RFC3339 format)
-    "airline_risk_score": 1,                 # Airline risk score
-    "owner_id": "owner-subject-id",          # Workflow owner ID (from workflow properties)
-    "owner_persona": "traveler"              # Owner's persona when workflow was created
-  },
-  "delegations": [                           # PIP data from delegation-api
-    {
-      "principal_id": "owner-id",
-      "delegate_id": "delegate-id",
-      "workflow_id": "w_123",                # null for general delegations
-      "expires_at": "2026-01-02T00:00:00Z",
-      "revoked_at": null
-    }
-  ]
-}
-```
-
-**Policy Evaluation Flow**:
-
-1. PEP (domain-services-api or ai-agent-api) calls `authz-api` with an AuthZEN-compliant request
-2. `authz-api` extracts principal information from `context.principal` (not `subject.id` which is the agent/service)
-3. `authz-api` fetches owner information from workflow properties (set by domain-services-api when workflow was created)
-4. `authz-api` fetches delegation data from `delegation-api` (PIP)
-5. `authz-api` normalizes all input using `coerce_*` functions
-6. `authz-api` builds OPA input document with normalized data
-7. OPA evaluates the `auto_book.allow` rule and `auto_book.reasons` rule
-8. `authz-api` maps OPA response to AuthZEN-compliant response with decision and reason codes
-
-**Design Considerations**:
-
-- **Policy-first approach**: Authorization logic lives in Rego, not in application code, enabling policy-as-code practices
-- **Declarative delegation**: Delegation relationships are evaluated declaratively by the policy, not imperatively
-- **Attribute-based**: Decisions are based on user attributes (consent, price limits, lead time, risk tolerance) rather than roles
-- **Persona-aware**: Supports multiple personas per user with persona matching to prevent unauthorized persona usage
-- **Normalized input**: All normalization happens before policy evaluation, keeping the policy focused on business logic
-- **Auditable**: All authorization decisions include reason codes for audit trails and debugging
 
 ### Error Handling
 
@@ -307,6 +174,27 @@ export ENABLE_PAYLOAD_SIGNATURE_SCAN=1      # Enable attack signature detection
 export MAX_REQUEST_SIZE_MB=1                # Limit request body size
 export MAX_STRING_LENGTH=10000              # Limit string field lengths
 ```
+
+## Environment Configuration
+
+FlowPilot uses a `.env` file for environment-specific configuration. Create a `.env` file in the repository root with the following variables:
+
+```bash
+# Keycloak Admin Credentials
+# Default values for development - change in production!
+KEYCLOAK_ADMIN_USERNAME=admin
+KEYCLOAK_ADMIN_PASSWORD=<your-admin-password>
+
+# Keycloak Client Secret for flowpilot-agent service account
+# This secret is used by the agent and domain-services APIs for service-to-service authentication
+KEYCLOAK_CLIENT_SECRET=<your-client-secret>
+
+# Agent Client Secret (alias for KEYCLOAK_CLIENT_SECRET)
+# Used by services for client credentials flow authentication
+AGENT_CLIENT_SECRET=<your-client-secret>
+```
+
+**Note:** The `.env` file is gitignored and should not be committed. Use it for local development. In production, set these values through your deployment platform's environment variable configuration.
 
 ## Quick start (Docker Compose)
 

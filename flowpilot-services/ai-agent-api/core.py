@@ -15,15 +15,14 @@
 from __future__ import annotations
 
 import json
-import os
 import uuid
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import requests
 
 import security
-from utils import build_url, http_get_json, validate_non_empty_string, build_timeouts
+from utils import build_url, http_get_json, require_non_empty_string, build_timeouts
 
 
 @dataclass(frozen=True)
@@ -33,8 +32,8 @@ class WorkflowItem:
     raw: Dict[str, Any]
 
 
-def coerce_workflow_id(workflow_id: str) -> str:
-    # Coerce workflow_id by trimming whitespace
+def normalize_workflow_id(workflow_id: str) -> str:
+    # Normalize workflow_id
     # why: keep validation centralized
     if workflow_id and isinstance(workflow_id, str) and workflow_id.strip():
         return workflow_id.strip()
@@ -44,10 +43,15 @@ def coerce_workflow_id(workflow_id: str) -> str:
 def list_workflow_items(config: Dict[str, Any], workflow_id: str) -> List[WorkflowItem]:
     # List workflow items from the workflow service
     # assumption: response contains an 'items' list of dicts.
-    validate_non_empty_string(workflow_id, "workflow_id")
+    require_non_empty_string(workflow_id, "workflow_id")
 
-    base_url = validate_non_empty_string(str(config.get("workflow_base_url", "")), "workflow_base_url")
-    template = validate_non_empty_string(str(config.get("workflow_items_path_template", "")), "workflow_items_path_template")
+    base_url = require_non_empty_string(
+        str(config.get("workflow_base_url", "")), "workflow_base_url"
+    )
+    template = require_non_empty_string(
+        str(config.get("workflow_items_path_template", "")),
+        "workflow_items_path_template",
+    )
     timeout_seconds = int(config.get("request_timeout_seconds", 10))
 
     url = build_url(base_url, template.format(workflow_id=workflow_id))
@@ -57,7 +61,9 @@ def list_workflow_items(config: Dict[str, Any], workflow_id: str) -> List[Workfl
     if token:
         headers["Authorization"] = f"Bearer {token}"
 
-    payload = http_get_json(url=url, timeout_seconds=timeout_seconds, headers=headers if headers else None)
+    payload = http_get_json(
+        url=url, timeout_seconds=timeout_seconds, headers=headers if headers else None
+    )
 
     items_raw = payload.get("items", [])
     if not isinstance(items_raw, list):
@@ -67,10 +73,16 @@ def list_workflow_items(config: Dict[str, Any], workflow_id: str) -> List[Workfl
     for item in items_raw:
         if not isinstance(item, dict):
             continue
-        item_id = item.get("item_id") or item.get("workflow_item_id") or item.get("itinerary_item_id")
+        item_id = (
+            item.get("item_id")
+            or item.get("workflow_item_id")
+            or item.get("itinerary_item_id")
+        )
         kind = item.get("kind") or "unknown"
         if isinstance(item_id, str) and item_id.strip():
-            items.append(WorkflowItem(workflow_item_id=item_id.strip(), kind=str(kind), raw=item))
+            items.append(
+                WorkflowItem(workflow_item_id=item_id.strip(), kind=str(kind), raw=item)
+            )
 
     return items
 
@@ -100,7 +112,11 @@ def parse_policy_deny_from_body(response_text: str) -> tuple[list[str], str]:
             right = fragment.find("]")
             if left >= 0 and right > left:
                 content = fragment[left + 1 : right]
-                reason_codes = [part.strip().strip("'\"") for part in content.split(",") if part.strip() != ""]
+                reason_codes = [
+                    part.strip().strip("'\"")
+                    for part in content.split(",")
+                    if part.strip() != ""
+                ]
 
     if not reason_codes:
         if "***REMOVED***.deny" in message:
@@ -119,30 +135,26 @@ def check_workflow_execution_authorization(
     # why: prevent trivial principal spoofing before starting workflow execution
     # note: Full authorization happens at workflow item level via domain-services-api
     # side effects: minimal validation, no network I/O required
-    validate_non_empty_string(workflow_id, "workflow_id")
+    require_non_empty_string(workflow_id, "workflow_id")
     if not isinstance(principal_user, dict) or not principal_user.get("id"):
         return {
             "decision": "deny",
             "reason_codes": ["invalid_principal"],
-            "advice": [{"type": "error", "message": "Invalid principal_user object"}]
+            "advice": [{"type": "error", "message": "Invalid principal_user object"}],
         }
-    
+
     # Basic validation: principal must have an ID
     principal_id = principal_user.get("id", "").strip()
     if not principal_id:
         return {
             "decision": "deny",
             "reason_codes": ["missing_principal_id"],
-            "advice": [{"type": "error", "message": "Principal ID is required"}]
+            "advice": [{"type": "error", "message": "Principal ID is required"}],
         }
-    
+
     # For now, allow if principal is valid (full authorization happens at item level)
     # In the future, this could check delegation relationships via authz-api
-    return {
-        "decision": "allow",
-        "reason_codes": [],
-        "advice": []
-    }
+    return {"decision": "allow", "reason_codes": [], "advice": []}
 
 
 def post_execute_workflow_item(
@@ -159,7 +171,9 @@ def post_execute_workflow_item(
     if token:
         headers["Authorization"] = f"Bearer {token}"
 
-    response = requests.post(url, json=payload, timeout=timeouts, headers=headers if headers else None)
+    response = requests.post(
+        url, json=payload, timeout=timeouts, headers=headers if headers else None
+    )
     response_text = response.text or ""
 
     parsed_json: dict[str, Any] | None = None
@@ -185,13 +199,15 @@ def execute_workflow_item(
     # assumptions: domain service returns 2xx on allow, 403 on deny, and other 4xx/5xx on true failures
     # side effects: network I/O.
     # AuthZEN: Pass principal-user object instead of just principal_sub
-    validate_non_empty_string(workflow_id, "workflow_id")
-    validate_non_empty_string(workflow_item_id, "workflow_item_id")
+    require_non_empty_string(workflow_id, "workflow_id")
+    require_non_empty_string(workflow_item_id, "workflow_item_id")
     if not isinstance(principal_user, dict) or not principal_user.get("id"):
         raise ValueError("Invalid principal_user object")
 
-    base_url = validate_non_empty_string(str(config.get("workflow_base_url", "")), "workflow_base_url")
-    template = validate_non_empty_string(
+    base_url = require_non_empty_string(
+        str(config.get("workflow_base_url", "")), "workflow_base_url"
+    )
+    template = require_non_empty_string(
         str(config.get("workflow_item_execute_path_template", "")),
         "workflow_item_execute_path_template",
     )
@@ -199,11 +215,19 @@ def execute_workflow_item(
     timeout_seconds = int(config.get("request_timeout_seconds", 10))
     timeouts = build_timeouts(connect_seconds=timeout_seconds)
 
-    url = build_url(base_url, template.format(workflow_id=workflow_id, workflow_item_id=workflow_item_id))
+    url = build_url(
+        base_url,
+        template.format(workflow_id=workflow_id, workflow_item_id=workflow_item_id),
+    )
     # AuthZEN: Pass principal-user object instead of just principal_sub
-    payload: Dict[str, Any] = {"principal_user": principal_user, "dry_run": bool(dry_run)}
+    payload: Dict[str, Any] = {
+        "principal_user": principal_user,
+        "dry_run": bool(dry_run),
+    }
 
-    status_code, response_json, response_text = post_execute_workflow_item(url=url, payload=payload, timeouts=timeouts)
+    status_code, response_json, response_text = post_execute_workflow_item(
+        url=url, payload=payload, timeouts=timeouts
+    )
 
     if 200 <= status_code < 300:
         return {
@@ -227,7 +251,9 @@ def execute_workflow_item(
                 advice = list(detail.get("advice", []) or [])
             elif isinstance(detail, str):
                 # Fallback: parse from string format
-                parsed_reason_codes, message = parse_policy_deny_from_body(response_text)
+                parsed_reason_codes, message = parse_policy_deny_from_body(
+                    response_text
+                )
                 reason_codes = parsed_reason_codes
                 if message:
                     advice = [{"type": "deny", "message": message}]
@@ -237,13 +263,15 @@ def execute_workflow_item(
             reason_codes = parsed_reason_codes
             if message:
                 advice = [{"type": "deny", "message": message}]
-        
+
         return {
             "http_status": status_code,
             "status": "completed",
             "outcome": "deny",
             "reason_codes": reason_codes,
-            "advice": advice if advice else [{"type": "deny", "message": "Access denied"}],
+            "advice": advice
+            if advice
+            else [{"type": "deny", "message": "Access denied"}],
             "response": response_json,
         }
 
@@ -262,7 +290,12 @@ def execute_workflow_item(
     }
 
 
-def execute_workflow_run(config: Dict[str, Any], workflow_id: str, principal_user: Dict[str, Any], dry_run: bool) -> Dict[str, Any]:
+def execute_workflow_run(
+    config: Dict[str, Any],
+    workflow_id: str,
+    principal_user: Dict[str, Any],
+    dry_run: bool,
+) -> Dict[str, Any]:
     # Execute a workflow by iterating items and delegating execution to domain endpoints,
     # normalizing each item result into a stable schema
     # why: the UI expects consistent status/decision fields even for denies
@@ -270,7 +303,7 @@ def execute_workflow_run(config: Dict[str, Any], workflow_id: str, principal_use
     # and may raise ValueError for invalid inputs
     # side effects: network I/O.
     # AuthZEN: Accept principal-user object instead of just principal_sub
-    validate_non_empty_string(workflow_id, "workflow_id")
+    require_non_empty_string(workflow_id, "workflow_id")
     if not isinstance(principal_user, dict) or not principal_user.get("id"):
         raise ValueError("Invalid principal_user object")
 
@@ -318,7 +351,9 @@ def execute_workflow_run(config: Dict[str, Any], workflow_id: str, principal_use
     return {
         "run_id": run_id,
         "workflow_id": workflow_id,
-        "principal_sub": principal_user.get("id", ""),  # Keep for backward compatibility
+        "principal_sub": principal_user.get(
+            "id", ""
+        ),  # Keep for backward compatibility
         "principal_user": principal_user,  # AuthZEN: include full principal-user object
         "dry_run": bool(dry_run),
         "results": results,

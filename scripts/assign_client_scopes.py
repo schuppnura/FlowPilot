@@ -130,8 +130,7 @@ def main():
         print(f"✓ Found flowpilot-desktop client (id={client_uuid})")
         
         # Get all required scopes - these should match the realm template
-        # Minimal scopes: only persona (includes persona and username), web-origins, and acr
-        required_scope_names = ["persona", "web-origins", "acr"]
+        required_scope_names = ["autobook", "web-origins", "acr", "roles", "profile"]
         
         # Check current default scopes
         current_scopes = get_client_default_scopes(headers, client_uuid)
