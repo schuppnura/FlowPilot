@@ -49,20 +49,26 @@
 #
 # • All endpoints except /health require JWT bearer authentication
 # • Tokens are validated locally using JWKS (no per-request network calls)
-# • The principal identity is derived from the JWT `sub` claim
-# • Only subject identifiers (UUIDs, agent IDs) are processed; no PII is exposed
+# • For service-to-service calls, the token authenticates the service (e.g., AI agent)
+# • The user identity (UUID + persona) is passed in context.principal, NOT extracted from token
+# • Only subject identifiers (UUIDs) and personas are processed; no PII is exposed
 #
 # ---------------------------------------------------------------------------
 # Authorization Flow (high level)
 # ---------------------------------------------------------------------------
 #
-#   1. Validate and sanitize the incoming AuthZEN-like request
-#   2. Validate the bearer token and extract user claims
-#   3. If subject != principal:
-#        - Validate delegation via the delegation service (ReBAC)
-#   4. Build OPA input document (claims + resource + action)
-#   5. Evaluate Rego policy in OPA (ABAC)
-#   6. Return decision, reason codes, and optional advice
+#   1. Validate and sanitize the incoming AuthZEN request
+#   2. Validate the bearer token (authenticates the calling service)
+#   3. Extract principal (user) identity from context.principal (id + persona)
+#   4. Extract owner identity from resource.properties.owner
+#   5. Fetch delegation data from delegation-api (if owner != principal)
+#   6. Fetch owner attributes from Keycloak for policy evaluation
+#   7. Build OPA input document (subject, action, resource, delegations)
+#   8. Evaluate Rego policy in OPA (ABAC + ReBAC)
+#   9. Return decision, reason codes, and optional advice
+#
+# Note: context.principal does NOT contain claims - only id and persona.
+#       Owner attributes are fetched from Keycloak and added to resource.properties.owner.
 #
 # ---------------------------------------------------------------------------
 # Design Goals

@@ -506,7 +506,7 @@ def evaluate_authorization_request(
     #
     # Raises:
     #     ValueError: If request is not AuthZEN compliant
-    # Validate AuthZEN compliance
+    
     principal_id, context = validate_authzen_request(authzen_request)
     
     # Extract owner and workflow information

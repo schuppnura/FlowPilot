@@ -10,15 +10,19 @@ This repository previously experimented with ***REMOVED***, OCI policy bundles, 
 
 ## Architecture at a glance
 
-1. PDP: OPA server for ABAC. It evaluates relationship-based delegation and permissions via an authorization graph.
+1. **PDP**: OPA server for ABAC. It evaluates relationship-based delegation and permissions via an authorization graph.
 
-2. An AuthZ integration layer that acts as integration between PEP and PDP and maintaining the graph for workflow ownership relations. It validates AuthZEN-compliant requests and extracts user claims from the AuthZEN context.principal.claims.
+2. **AuthZ Integration Layer**: Acts as integration between PEP and PDP. It validates AuthZEN-compliant requests (subject/action/resource/context), fetches delegation data from delegation-api, retrieves owner attributes from Keycloak, and evaluates policies via OPA.
 
-3. PEP using PDP authorization as a domain backend that owns workflow state (system of record) in the context of a travel agent use case: autonomous booking is gated by attribute-based policy conditions (consent, cost, advance days, airline risk) after delegation is verified.
+3. **PEP Services**: Domain backend (domain-services-api) and AI agent (ai-agent-api) that enforce authorization by calling authz-api. In the travel agent use case, autonomous booking is gated by attribute-based policy conditions (consent, cost, advance days, airline risk) after delegation is verified.
 
-4. Keycloak as the IdP with OIDC Authorization Code + PKCE for the desktop client and Client Credntails for Agentic AI servers. It shows end-to-end authentication: bearer token validation across all services with service-to-service authentication.
+4. **Keycloak IdP**: OIDC provider with Authorization Code + PKCE for the desktop client and Client Credentials for service-to-service authentication. All services validate tokens locally using JWKS.
 
-5. An Agentic AI server that executes workflow items item-by-item to produce mixed allow/deny outcomes in a single run.
+5. **Agentic AI Server**: Executes workflow items item-by-item on behalf of users, passing user UUID and persona to domain services for proper authorization.
+
+6. **Delegation & Invitations**: Two types of access control:
+   - **Delegations** (execute): Travel agents can execute workflows on behalf of travelers
+   - **Invitations** (read): Users with matching personas can view workflows (read-only access)
 
 ## Security & Privacy
 
@@ -35,8 +39,9 @@ FlowPilot implements **defense-in-depth security** with multiple layers of prote
 
 ### Privacy by Design
 - **Zero PII exposure to LLM**: No personally identifiable information is shared with AI agents
-- **Minimal PII handling**: Backend services only process `sub` (UUID) from tokens
+- **Minimal PII handling**: Backend services only process `sub` (UUID) and `persona` from requests
 - **Authorization graph**: Delegation and permissions tracked by subject identifiers
+- **Service-to-service**: AI agent passes user UUID and persona as query parameters, not in token claims
 
 ### Authentication & Token Validation
 
@@ -129,17 +134,27 @@ All API responses include security headers:
 
 - **`flowpilot-authz-api`** - Authorization façade for policy decisions
   - Validates access tokens via JWKS (for service-to-service authentication)
-  - Validates AuthZEN-compliant requests (requires context.principal with id and claims)
-  - Extracts user claims from AuthZEN context.principal.claims
+  - Validates AuthZEN-compliant requests (subject/action/resource/context)
+  - **Does NOT require claims in context.principal** - only id and persona
+  - Fetches owner attributes from Keycloak when needed for policy evaluation
+  - Fetches delegation data from delegation-api (Policy Information Point)
   - Sanitizes all input payloads before processing
   - Calls OPA to evaluate Rego policies
-  - Returns allow/deny decisions with optional reasons/obligations
+  - Returns allow/deny decisions with reason codes and advice
   - Stateless service with no in-memory storage
+
+- **`flowpilot-delegation-api`** - Delegation graph management
+  - Maintains authorization graph (who delegates to whom)
+  - Supports workflow-scoped and general delegations
+  - Two delegation types: execute (for travel agents) and read (for invitations)
+  - Tracks expiration and revocation
+  - SQLite-backed persistence
 
 - **`opa`** - Open Policy Agent in server mode
   - Evaluates attribute-based access control (ABAC) policies
-  - Policies mounted from repository
-  - Supports relationship-based delegation via authorization graph
+  - Policies mounted from repository (`infra/opa/policies/`)
+  - Supports relationship-based delegation (ReBAC) via declarative rules
+  - Persona-based access control (user persona must match owner persona for read)
   - Local policy editing with hot reload
 
 ### Error Handling
