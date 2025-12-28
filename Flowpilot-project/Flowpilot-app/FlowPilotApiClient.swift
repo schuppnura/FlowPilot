@@ -83,9 +83,19 @@ final class FlowPilotApiClient {
         return try await loadTemplate(templateId: templateId, principalSub: principalSub, startDate: startDate, persona: persona)
     }
     
-    func fetchWorkflowItems(workflowId: String) async throws -> [WorkflowItem] {
+    func fetchWorkflowItems(workflowId: String, persona: String?) async throws -> [WorkflowItem] {
         // Fetch workflow items for a workflow; assumptions: GET /v1/workflows/{workflow_id}/items; side effect: network I/O.
-        let url = baseUrl.appendingPathComponent("v1/workflows/\(workflowId)/items")
+        var urlComponents = URLComponents(url: baseUrl.appendingPathComponent("v1/workflows/\(workflowId)/items"), resolvingAgainstBaseURL: false)!
+        
+        // Add persona query parameter if provided
+        if let persona = persona {
+            urlComponents.queryItems = [URLQueryItem(name: "persona", value: persona)]
+        }
+        
+        guard let url = urlComponents.url else {
+            throw ApiClientError.invalidResponse("Failed to construct URL with query parameters")
+        }
+        
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         

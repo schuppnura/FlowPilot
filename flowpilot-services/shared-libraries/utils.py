@@ -18,20 +18,6 @@ from urllib.parse import urljoin
 import requests
 
 
-def require_scope_list(value: Any, field_name: str) -> List[str]:
-    # Validate scope arrays as non-empty lists of non-empty strings to prevent unsafe or ambiguous permissions.
-    if not isinstance(value, list) or not value:
-        raise ValueError(f"{field_name} must be a non-empty list of strings")
-
-    normalized: List[str] = []
-    for item in value:
-        if not isinstance(item, str) or not item.strip():
-            raise ValueError(f"{field_name} items must be non-empty strings")
-        normalized.append(item.strip())
-
-    return normalized
-
-
 def coerce_int(value: Any, default: int) -> int:
     # Convert a value to an integer, returning default if conversion fails or value is None.
     if value is None:
@@ -149,6 +135,20 @@ def truncate_text(value: Optional[str], max_length: int) -> str:
     if len(stripped) <= max_length:
         return stripped
     return stripped[:max_length] + "…"
+
+
+def require_non_empty_list(value: Any, field_name: str) -> List[str]:
+    # Validate scope arrays as non-empty lists of non-empty strings to prevent unsafe or ambiguous permissions.
+    if not isinstance(value, list) or not value:
+        raise ValueError(f"{field_name} must be a non-empty list of strings")
+
+    normalized: List[str] = []
+    for item in value:
+        if not isinstance(item, str) or not item.strip():
+            raise ValueError(f"{field_name} items must be non-empty list of strings")
+        normalized.append(item.strip())
+
+    return normalized
 
 
 def require_non_empty_string(value: Any, field_name: str) -> str:

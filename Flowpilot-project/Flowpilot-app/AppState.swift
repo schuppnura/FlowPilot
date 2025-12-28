@@ -34,6 +34,12 @@ final class AppState: ObservableObject {
     @Published var delegationExpiresInDays: Int = 7
     private var isLoadingTravelAgents: Bool = false
     
+    // Invitations (read-only access)
+    @Published var invitees: [TravelAgentUser] = []
+    @Published var selectedInviteeId: String?
+    @Published var invitationExpiresInDays: Int = 30  // Default longer expiration for invites
+    private var isLoadingInvitees: Bool = false
+    
     @Published var lastAgentRun: AgentRunResponse?
     @Published var missingProfileFieldsFromAdvice: [String] = []
     
@@ -102,6 +108,9 @@ final class AppState: ObservableObject {
         travelAgents = []
         selectedDelegateId = nil
         delegationExpiresInDays = 7
+        invitees = []
+        selectedInviteeId = nil
+        invitationExpiresInDays = 30
         
         lastAgentRun = nil
         missingProfileFieldsFromAdvice = []
@@ -169,6 +178,20 @@ final class AppState: ObservableObject {
             accessToken = tokens.access_token
             refreshToken = tokens.refresh_token
             
+            // Debug: Decode and print access token sub claim
+            if let accessToken = accessToken {
+                do {
+                    let claims = try JwtUtils.decodeClaims(idToken: accessToken)
+                    let tokenSub = claims["sub"] as? String ?? "<no sub>"
+                    print("DEBUG: Access token sub=\(tokenSub), principalSub=\(sub)")
+                    if tokenSub != sub {
+                        print("WARNING: Access token sub (\(tokenSub)) does NOT match principalSub (\(sub))!")
+                    }
+                } catch {
+                    print("DEBUG: Failed to decode access token: \(error)")
+                }
+            }
+            
             // Extract persona and username from access token
             extractPersonaFromToken()
             extractUsernameFromToken()
@@ -179,6 +202,7 @@ final class AppState: ObservableObject {
             await loadWorkflowTemplates(forceReload: true)
             await loadWorkflows()
             await loadTravelAgents()
+            await loadInvitees()
         } catch {
             setError("Sign-in failed: \(error)")
             statusMessage = ""
@@ -344,15 +368,14 @@ final class AppState: ObservableObject {
             let personaToSend = selectedPersona ?? (personas.count == 1 ? personas.first : nil)
             print("DEBUG: Sending persona to workflow API: \(personaToSend ?? "nil") (selectedPersona: \(selectedPersona ?? "nil"), personas: \(personas))")
             let newWorkflowId = try await workflowClient.loadTemplate(templateId: templateId, principalSub: sub, startDate: startDateString, persona: personaToSend)
-            // Don't automatically select the workflow - user must explicitly select it
-            workflowId = nil
-            selectedWorkflowId = nil
-            workflowItems = []
             
             // Reload workflows list to include the new one
             await loadWorkflows()
             
-            statusMessage = "Created workflow: \(newWorkflowId) (start: \(startDateString)). Please select it from the list to view details."
+            // Automatically select the newly created workflow
+            await selectWorkflow(newWorkflowId)
+            
+            statusMessage = "Created and selected workflow: \(newWorkflowId) (start: \(startDateString))"
         } catch {
             setError("Create workflow failed: \(error)")
             statusMessage = ""
@@ -408,12 +431,21 @@ final class AppState: ObservableObject {
             return
         }
         
+        // If user has multiple personas but none is selected, require selection
+        if personas.count > 1 && selectedPersona == nil {
+            setError("Please select a persona first.")
+            return
+        }
+        
         selectedWorkflowId = workflowId
         self.workflowId = workflowId
         
+        // Use selected persona, or auto-select if only one persona exists
+        let personaToSend = selectedPersona ?? (personas.count == 1 ? personas.first : nil)
+        
         statusMessage = "Loading workflow items…"
         do {
-            let items = try await workflowClient.fetchWorkflowItems(workflowId: workflowId)
+            let items = try await workflowClient.fetchWorkflowItems(workflowId: workflowId, persona: personaToSend)
             workflowItems = items
             statusMessage = "Selected workflow: \(workflowId) with \(items.count) items"
         } catch {
@@ -474,6 +506,70 @@ final class AppState: ObservableObject {
             selectedDelegateId = nil
         } catch {
             setError("Create delegation failed: \(error)")
+            statusMessage = ""
+        }
+    }
+    
+    func loadInvitees() async {
+        // Load users with the same persona as the selected persona for invitations
+        // Prevent concurrent/duplicate calls
+        guard !isLoadingInvitees && invitees.isEmpty else {
+            return
+        }
+        
+        guard let persona = selectedPersona else {
+            // Can't load invitees without knowing which persona to filter by
+            invitees = []
+            return
+        }
+        
+        isLoadingInvitees = true
+        clearError()
+        
+        statusMessage = "Loading users with \(persona) persona…"
+        do {
+            let users = try await delegationClient.listUsersByPersona(persona: persona)
+            // Filter out self
+            invitees = users.filter { $0.id != principalSub }
+            statusMessage = "Loaded \(invitees.count) user(s) with \(persona) persona."
+        } catch {
+            setError("Load invitees failed: \(error)")
+            statusMessage = ""
+            invitees = []
+        }
+        isLoadingInvitees = false
+    }
+    
+    func createInvitation() async {
+        // Create an invitation (delegation for read access)
+        // Same underlying mechanism as delegation, but UI semantics are different
+        clearError()
+        guard let principalId = principalSub else {
+            setError("You must sign in first.")
+            return
+        }
+        guard let inviteeId = selectedInviteeId else {
+            setError("Select a user to invite first.")
+            return
+        }
+        guard let workflowIdToShare = selectedWorkflowId ?? workflowId else {
+            setError("Select or create a workflow first.")
+            return
+        }
+        
+        statusMessage = "Creating invitation…"
+        do {
+            _ = try await delegationClient.createDelegation(
+                principalId: principalId,
+                delegateId: inviteeId,
+                workflowId: workflowIdToShare,
+                expiresInDays: invitationExpiresInDays
+            )
+            statusMessage = "Invitation sent for workflow \(workflowIdToShare). Expires in \(invitationExpiresInDays) days."
+            // Clear selection after successful invitation
+            selectedInviteeId = nil
+        } catch {
+            setError("Create invitation failed: \(error)")
             statusMessage = ""
         }
     }

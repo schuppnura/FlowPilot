@@ -1,14 +1,13 @@
 # flowpilot-services/shared-libraries/profile.py
-"""
-Profile module for accessing Keycloak user profile data.
-
-This module provides a unified interface to Keycloak for retrieving user profile
-information using service-to-service authentication (client credentials flow).
-All functions take a user sub (subject ID) as input and return normalized profile data.
-
-All functions use service tokens (client credentials) to access Keycloak admin API,
-not admin username/password. TLS verification is always enabled (no verify_tls parameter).
-"""
+#
+# Profile module for accessing Keycloak user profile data.
+#
+# This module provides a unified interface to Keycloak for retrieving user profile
+# information using service-to-service authentication (client credentials flow).
+# All functions take a user sub (subject ID) as input and return normalized profile data.
+#
+# All functions use service tokens (client credentials) to access Keycloak admin API,
+# not admin username/password. TLS verification is always enabled (no verify_tls parameter).
 
 from __future__ import annotations
 
@@ -22,12 +21,35 @@ from urllib3.util.ssl_ import create_urllib3_context
 
 import security
 
+# ============================================================================
+# Configuration Constants
+# ============================================================================
+
+# Default Keycloak configuration for Docker environment
+DEFAULT_KEYCLOAK_BASE_URL = "https://keycloak:8443"
+DEFAULT_KEYCLOAK_REALM = "flowpilot"
+
+# SSL/TLS configuration
+CA_BUNDLE_PATH = "/app/ca-bundle.crt"
+
+# Timeouts (in seconds)
+KEYCLOAK_USER_REQUEST_TIMEOUT = 10
+KEYCLOAK_USERS_LIST_TIMEOUT = 30
+
+# HTTP connection pool settings
+HTTP_POOL_CONNECTIONS = 10
+HTTP_POOL_MAXSIZE = 10
+
+# ============================================================================
+# Module State
+# ============================================================================
+
 # Cache for service token to avoid repeated token requests
 _service_token: Optional[str] = None
 
 
 def _get_service_token() -> Optional[str]:
-    """Get service token for Keycloak admin API access."""
+    # Get service token for Keycloak admin API access.
     global _service_token
     token = security.get_service_token()
     _service_token = token
@@ -35,9 +57,10 @@ def _get_service_token() -> Optional[str]:
 
 
 def _get_keycloak_config() -> Dict[str, str]:
-    """Get Keycloak configuration from environment variables."""
-    base_url = os.environ.get("KEYCLOAK_BASE_URL", "").strip()
-    realm = os.environ.get("KEYCLOAK_REALM", "flowpilot").strip()
+    # Get Keycloak configuration from environment variables.
+    # Default to internal Docker hostname for container-to-container communication
+    base_url = os.environ.get("KEYCLOAK_BASE_URL", DEFAULT_KEYCLOAK_BASE_URL).strip()
+    realm = os.environ.get("KEYCLOAK_REALM", DEFAULT_KEYCLOAK_REALM).strip()
 
     if not base_url:
         raise ValueError("KEYCLOAK_BASE_URL environment variable is required")
@@ -49,11 +72,9 @@ def _get_keycloak_config() -> Dict[str, str]:
 
 
 def _fetch_user_by_id(user_sub: str) -> Optional[Dict[str, Any]]:
-    """
-    Fetch user data from Keycloak admin API by user sub.
-
-    Returns None if user not found or request fails.
-    """
+    # Fetch user data from Keycloak admin API by user sub.
+    #
+    # Returns None if user not found or request fails.
     token = _get_service_token()
     if not token:
         print(
@@ -72,7 +93,7 @@ def _fetch_user_by_id(user_sub: str) -> Optional[Dict[str, Any]]:
         # Use combined cert bundle if available, otherwise use True (system certs) or False
         if verify_tls:
             # Try to use combined cert bundle (certifi + mkcert CA) if it exists
-            ca_bundle = "/app/ca-bundle.crt" if os.path.exists("/app/ca-bundle.crt") else True
+            ca_bundle = CA_BUNDLE_PATH if os.path.exists(CA_BUNDLE_PATH) else True
             # For internal Docker communication, disable hostname verification
             # (certificate is valid, but issued for localhost, not container hostname)
             ssl_context = create_urllib3_context()
@@ -87,16 +108,16 @@ def _fetch_user_by_id(user_sub: str) -> Optional[Dict[str, Any]]:
             adapter = HTTPAdapter()
             # Initialize poolmanager with our custom SSL context
             adapter.init_poolmanager(
-                connections=10,
-                maxsize=10,
+                connections=HTTP_POOL_CONNECTIONS,
+                maxsize=HTTP_POOL_MAXSIZE,
                 ssl_context=ssl_context,
                 assert_hostname=False
             )
             session.mount("https://", adapter)
-            response = session.get(user_url, headers=headers, timeout=10)
+            response = session.get(user_url, headers=headers, timeout=KEYCLOAK_USER_REQUEST_TIMEOUT)
         else:
             response = requests.get(
-                user_url, headers=headers, timeout=10, verify=False
+                user_url, headers=headers, timeout=KEYCLOAK_USER_REQUEST_TIMEOUT, verify=False
             )
         if response.status_code == 200:
             return response.json()
@@ -115,11 +136,9 @@ def _fetch_user_by_id(user_sub: str) -> Optional[Dict[str, Any]]:
 
 
 def _fetch_all_users() -> List[Dict[str, Any]]:
-    """
-    Fetch all users from Keycloak admin API.
-
-    Returns empty list if request fails.
-    """
+    # Fetch all users from Keycloak admin API.
+    #
+    # Returns empty list if request fails.
     token = _get_service_token()
     if not token:
         print(
@@ -138,7 +157,7 @@ def _fetch_all_users() -> List[Dict[str, Any]]:
         # Use combined cert bundle if available, otherwise use True (system certs) or False
         if verify_tls:
             # Try to use combined cert bundle (certifi + mkcert CA) if it exists
-            ca_bundle = "/app/ca-bundle.crt" if os.path.exists("/app/ca-bundle.crt") else True
+            ca_bundle = CA_BUNDLE_PATH if os.path.exists(CA_BUNDLE_PATH) else True
             # For internal Docker communication, disable hostname verification
             # (certificate is valid, but issued for localhost, not container hostname)
             ssl_context = create_urllib3_context()
@@ -153,16 +172,16 @@ def _fetch_all_users() -> List[Dict[str, Any]]:
             adapter = HTTPAdapter()
             # Initialize poolmanager with our custom SSL context
             adapter.init_poolmanager(
-                connections=10,
-                maxsize=10,
+                connections=HTTP_POOL_CONNECTIONS,
+                maxsize=HTTP_POOL_MAXSIZE,
                 ssl_context=ssl_context,
                 assert_hostname=False
             )
             session.mount("https://", adapter)
-            response = session.get(users_url, headers=headers, timeout=30)
+            response = session.get(users_url, headers=headers, timeout=KEYCLOAK_USERS_LIST_TIMEOUT)
         else:
             response = requests.get(
-                users_url, headers=headers, timeout=30, verify=False
+                users_url, headers=headers, timeout=KEYCLOAK_USERS_LIST_TIMEOUT, verify=False
             )
         if response.status_code == 200:
             users = response.json()
@@ -187,11 +206,9 @@ def _fetch_all_users() -> List[Dict[str, Any]]:
 def _extract_attribute_value(
     attributes: Dict[str, Any], attr_name: str, default: Any = None
 ) -> Any:
-    """
-    Extract attribute value from Keycloak user attributes.
-
-    Keycloak returns attributes as lists, so we take the first element if it's a list.
-    """
+    # Extract attribute value from Keycloak user attributes.
+    #
+    # Keycloak returns attributes as lists, so we take the first element if it's a list.
     if not attributes or not isinstance(attributes, dict):
         return default
 
@@ -204,16 +221,14 @@ def _extract_attribute_value(
     return default
 
 
-def get_username(user_sub: str) -> Optional[str]:
-    """
-    Get username for a user by their sub (subject ID).
-
-    Args:
-        user_sub: User subject ID (Keycloak user ID)
-
-    Returns:
-        Username string, or None if user not found
-    """
+def fetch_username(user_sub: str) -> Optional[str]:
+    # Fetch username for a user by their sub (subject ID).
+    #
+    # Args:
+    #     user_sub: User subject ID (Keycloak user ID)
+    #
+    # Returns:
+    #     Username string, or None if user not found
     user_data = _fetch_user_by_id(user_sub)
     if not user_data:
         return None
@@ -221,18 +236,16 @@ def get_username(user_sub: str) -> Optional[str]:
     return user_data.get("username")
 
 
-def get_persona(user_sub: str) -> List[str]:
-    """
-    Get persona(s) for a user by their sub (subject ID).
-
-    Users can have multiple personas, so this returns a list.
-
-    Args:
-        user_sub: User subject ID (Keycloak user ID)
-
-    Returns:
-        List of persona strings (e.g., ["traveler", "travel-agent"]), empty list if none
-    """
+def fetch_persona(user_sub: str) -> List[str]:
+    # Fetch persona(s) for a user by their sub (subject ID).
+    #
+    # Users can have multiple personas, so this returns a list.
+    #
+    # Args:
+    #     user_sub: User subject ID (Keycloak user ID)
+    #
+    # Returns:
+    #     List of persona strings (e.g., ["traveler", "travel-agent"]), empty list if none
     user_data = _fetch_user_by_id(user_sub)
     if not user_data:
         return []
@@ -257,28 +270,43 @@ def get_persona(user_sub: str) -> List[str]:
     return []
 
 
-def get_autobook_settings(user_sub: str) -> Dict[str, Any]:
-    """
-    Get autobook settings for a user by their sub (subject ID).
-
-    Args:
-        user_sub: User subject ID (Keycloak user ID)
-
-    Returns:
-        Dictionary with autobook settings:
-        - autobook_consent: string (e.g., "Yes", "No")
-        - autobook_price: string (e.g., "1500")
-        - autobook_leadtime: string (e.g., "7")
-        - autobook_risklevel: string (e.g., "2")
-        Returns empty dict if user not found or settings missing
-    """
+def fetch_attributes(user_sub: str) -> Dict[str, Any]:
+    # Fetch user attributes from Keycloak including personas and autobook settings.
+    #
+    # This is a unified function that fetches all user attributes in a single call,
+    # replacing the need to call both fetch_persona() and get_autobook_settings().
+    #
+    # Args:
+    #     user_sub: User subject ID (Keycloak user ID)
+    #
+    # Returns:
+    #     Dictionary with user attributes:
+    #     - persona: List[str] - List of persona strings (e.g., ["traveler", "travel-agent"])
+    #     - autobook_consent: string (e.g., "Yes", "No")
+    #     - autobook_price: string (e.g., "1500")
+    #     - autobook_leadtime: string (e.g., "7")
+    #     - autobook_risklevel: string (e.g., "2")
+    #     Returns empty dict if user not found
     user_data = _fetch_user_by_id(user_sub)
     if not user_data:
         return {}
 
     attributes = user_data.get("attributes") or {}
 
+    # Extract personas (multi-valued)
+    persona_attr = attributes.get("persona")
+    personas: List[str] = []
+    if persona_attr:
+        if isinstance(persona_attr, list):
+            personas = [str(p).strip() for p in persona_attr if p and str(p).strip()]
+        elif isinstance(persona_attr, str):
+            persona_str = persona_attr.strip()
+            if persona_str:
+                personas = [persona_str]
+
+    # Extract autobook settings
     return {
+        "persona": personas,
         "autobook_consent": _extract_attribute_value(
             attributes, "autobook_consent", ""
         ),
@@ -293,18 +321,16 @@ def get_autobook_settings(user_sub: str) -> Dict[str, Any]:
 
 
 def list_users_by_persona(persona: str) -> List[Dict[str, Any]]:
-    """
-    List all users who have a specific persona.
-
-    Args:
-        persona: Persona value to filter by (e.g., "travel-agent")
-
-    Returns:
-        List of user dictionaries with:
-        - id: User sub (subject ID)
-        - username: Username
-        - email: Email (if available)
-    """
+    # List all users who have a specific persona.
+    #
+    # Args:
+    #     persona: Persona value to filter by (e.g., "travel-agent")
+    #
+    # Returns:
+    #     List of user dictionaries with:
+    #     - id: User sub (subject ID)
+    #     - username: Username
+    #     - email: Email (if available)
     all_users = _fetch_all_users()
     matching_users: List[Dict[str, Any]] = []
 
@@ -317,7 +343,7 @@ def list_users_by_persona(persona: str) -> List[Dict[str, Any]]:
             continue
 
         # Get personas for this user
-        user_personas = get_persona(user_id)
+        user_personas = fetch_persona(user_id)
 
         # Check if the requested persona is in the user's personas
         if persona in user_personas:

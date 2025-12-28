@@ -134,6 +134,7 @@ All API responses include security headers:
   - Sanitizes all input payloads before processing
   - Calls OPA to evaluate Rego policies
   - Returns allow/deny decisions with optional reasons/obligations
+  - Stateless service with no in-memory storage
 
 - **`opa`** - Open Policy Agent in server mode
   - Evaluates attribute-based access control (ABAC) policies

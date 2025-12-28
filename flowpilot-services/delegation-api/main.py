@@ -1,7 +1,127 @@
-# FlowPilot Delegation API - FastAPI Application
+# FlowPilot Delegation API (flowpilot-delegation-api)
 #
-# Service for managing delegation relationships in a graph database.
-# Maintains delegation chains for authorization checks.
+# This service implements the Delegation capability used by FlowPilot to manage
+# and validate delegation relationships between principals and delegates
+# (users or agents). Delegation is treated as a first-class authorization
+# primitive and is evaluated before attribute-based policy checks (OPA / Rego).
+#
+# Delegation answers the question:
+#
+#   “Is subject X allowed to act on behalf of principal Y in this context?”
+#
+# The delegation model is relationship-based (ReBAC) and supports both direct
+# and transitive delegation chains with explicit constraints and fail-closed
+# semantics.
+#
+# ---------------------------------------------------------------------------
+# Supported HTTP Endpoints
+# ---------------------------------------------------------------------------
+#
+# Health:
+#
+#   GET /health
+#     - Liveness/readiness check
+#     - No authentication required
+#
+# Delegation lifecycle:
+#
+#   POST /v1/delegations
+#     - Creates a new delegation from the authenticated principal
+#       to a delegate (user or agent)
+#     - Request fields include:
+#         delegate_id
+#         delegate_type (user | agent)
+#         workflow_id (optional)
+#         scope (optional, defaults applied)
+#         expires_at (optional, ISO-8601 UTC)
+#
+#   GET /v1/delegations/{delegation_id}
+#     - Retrieves a single delegation record by id
+#
+#   GET /v1/delegations
+#     - Lists delegations
+#     - Optional query parameters:
+#         principal_id
+#         delegate_id
+#
+#   DELETE /v1/delegations/{delegation_id}
+#     - Revokes an existing delegation
+#     - Operation is idempotent
+#
+# Delegation validation:
+#
+#   GET /v1/delegations/validate
+#     - Validates whether a delegate may act on behalf of a principal
+#     - Resolves delegation chains transitively (A → B → C)
+#     - Query parameters:
+#         principal_id   (required)
+#         delegate_id    (required)
+#         workflow_id    (optional)
+#     - Returns:
+#         valid: true | false
+#         delegation_chain: ordered list of delegation edges (if valid)
+#         reason: human-readable explanation
+#
+# ---------------------------------------------------------------------------
+# Delegation Semantics
+# ---------------------------------------------------------------------------
+#
+# • Delegations are directional: owner → delegate
+# • Delegations may be:
+#     - Workflow-scoped (apply only to a specific workflow)
+#     - Unscoped (apply to all workflows)
+# • Delegations may expire automatically via expires_at
+# • Delegations may be revoked explicitly
+#
+# A delegation is considered valid if:
+#   • It exists and is marked active
+#   • It is not revoked
+#   • It is not expired
+#   • It matches the requested workflow scope (if any)
+#   • A valid delegation chain exists within the configured hop limit
+#
+# Transitive delegation is supported but bounded by configuration to prevent
+# privilege amplification and unbounded graph traversal.
+#
+# ---------------------------------------------------------------------------
+# Role in the Authorization Architecture
+# ---------------------------------------------------------------------------
+#
+# This service is consumed by flowpilot-authz-api as part of the authorization
+# decision flow:
+#
+#   1. An AuthZEN-like request is received by the AuthZ API.
+#   2. If subject != principal, delegation is validated via this service.
+#   3. If delegation is invalid, authorization fails immediately.
+#   4. If delegation is valid, ABAC policy evaluation (OPA) proceeds.
+#
+# Delegation therefore acts as a ReBAC guardrail in front of ABAC policies.
+#
+# ---------------------------------------------------------------------------
+# Security Model
+# ---------------------------------------------------------------------------
+#
+# • All endpoints except /health require JWT bearer authentication
+# • Tokens are validated locally using JWKS
+# • The principal identity is derived from the JWT `sub` claim
+# • Only identifiers are processed; no PII is stored or exposed
+#
+# ---------------------------------------------------------------------------
+# Design Goals
+# ---------------------------------------------------------------------------
+#
+# • Minimal and explicit API surface
+# • Deterministic, fail-closed authorization behavior
+# • Explainable authorization via delegation chains
+# • Clear separation between delegation (ReBAC) and policy (ABAC)
+# • Storage abstraction allowing future migration to graph backends
+#
+# This service is business-agnostic and intentionally does not evaluate business policies.
+# It answers only “who may act for whom, and why”.
+#
+# See also:
+#   • README.md for architectural context and usage guidance
+#   • flowpilot-delegation.openapi.yaml for the formal API contract
 
 from __future__ import annotations
 
@@ -26,18 +146,24 @@ from utils import (
     require_non_empty_string,
 )
 
+# ============================================================================
+# Configuration Constants
+# ============================================================================
+
 # Environment flag for detailed error messages (disable in production)
 INCLUDE_ERROR_DETAILS = os.environ.get("INCLUDE_ERROR_DETAILS", "1") == "1"
 
-
+# Default configuration values
 DEFAULT_CONFIG: Dict[str, Any] = {
     "service_name": "flowpilot-delegation-api",
     "log_level": "info",
     "db_path": "./delegations.db",  # SQLite database file path
     "request_timeout_seconds": 10,
-    "keycloak_base_url": "https://keycloak:8443",
-    "keycloak_realm": "flowpilot",
 }
+
+# ============================================================================
+# Request/Response Models
+# ============================================================================
 
 
 class CreateDelegationRequest(BaseModel):
@@ -62,17 +188,17 @@ class CreateDelegationRequest(BaseModel):
 
     @validator("principal_id")
     def sanitize_principal_id(cls, v: str) -> str:
-        return security.sanitize_string(v, max_length=255)
+        return security.sanitize_string(v, 255)
 
     @validator("delegate_id")
     def sanitize_delegate_id(cls, v: str) -> str:
-        return security.sanitize_string(v, max_length=255)
+        return security.sanitize_string(v, 255)
 
     @validator("workflow_id")
     def sanitize_workflow_id(cls, v: Optional[str]) -> Optional[str]:
         if v is None:
             return None
-        return security.sanitize_string(v, max_length=255)
+        return security.sanitize_string(v, 255)
 
 
 class RevokeDelegationRequest(BaseModel):
@@ -88,17 +214,17 @@ class RevokeDelegationRequest(BaseModel):
 
     @validator("principal_id")
     def sanitize_principal_id(cls, v: str) -> str:
-        return security.sanitize_string(v, max_length=255)
+        return security.sanitize_string(v, 255)
 
     @validator("delegate_id")
     def sanitize_delegate_id(cls, v: str) -> str:
-        return security.sanitize_string(v, max_length=255)
+        return security.sanitize_string(v, 255)
 
     @validator("workflow_id")
     def sanitize_workflow_id(cls, v: Optional[str]) -> Optional[str]:
         if v is None:
             return None
-        return security.sanitize_string(v, max_length=255)
+        return security.sanitize_string(v, 255)
 
 
 def build_config(config_path: Optional[str]) -> Dict[str, Any]:
@@ -116,15 +242,6 @@ def build_config(config_path: Optional[str]) -> Dict[str, Any]:
         ),
         "REQUEST_TIMEOUT_SECONDS",
     )
-
-    # Keycloak configuration
-    config["keycloak_base_url"] = os.environ.get(
-        "KEYCLOAK_BASE_URL", str(config["keycloak_base_url"])
-    )
-    config["keycloak_realm"] = os.environ.get(
-        "KEYCLOAK_REALM", str(config["keycloak_realm"])
-    )
-    config["verify_tls"] = os.environ.get("VERIFY_TLS", "false").lower() == "true"
 
     require_non_empty_string(str(config.get("db_path", "")), "db_path")
 
@@ -150,13 +267,7 @@ def handle_post_delegations(
     service: DelegationService = request.app.state.service
 
     try:
-        api_logging.log_api_request(
-            method="POST",
-            path="/v1/delegations",
-            request_body=body.dict(),
-            token_claims=token_claims,
-            request=request,
-        )
+        api_logging.log_api_request("POST", "/v1/delegations", request_body=body.dict(), token_claims=token_claims, request=request)
 
         delegation = service.create_delegation(
             principal_id=body.principal_id,
@@ -165,35 +276,20 @@ def handle_post_delegations(
             expires_in_days=body.expires_in_days,
         )
 
-        api_logging.log_api_response(
-            method="POST",
-            path="/v1/delegations",
-            status_code=200,
-            response_body=delegation,
-        )
+        api_logging.log_api_response("POST", "/v1/delegations", 200, response_body=delegation)
 
         return delegation
     except ValueError as exception:
         error_detail = security.sanitize_error_message(
             str(exception), INCLUDE_ERROR_DETAILS
         )
-        api_logging.log_api_response(
-            method="POST",
-            path="/v1/delegations",
-            status_code=400,
-            error=error_detail,
-        )
+        api_logging.log_api_response("POST", "/v1/delegations", 400, error=error_detail)
         raise HTTPException(status_code=400, detail=error_detail) from exception
     except Exception as exception:
         error_detail = security.sanitize_error_message(
             str(exception), INCLUDE_ERROR_DETAILS
         )
-        api_logging.log_api_response(
-            method="POST",
-            path="/v1/delegations",
-            status_code=500,
-            error=error_detail,
-        )
+        api_logging.log_api_response("POST", "/v1/delegations", 500, error=error_detail)
         raise HTTPException(status_code=500, detail=error_detail) from exception
 
 
@@ -206,13 +302,7 @@ def handle_delete_delegations(
     service: DelegationService = request.app.state.service
 
     try:
-        api_logging.log_api_request(
-            method="DELETE",
-            path="/v1/delegations",
-            request_body=body.dict(),
-            token_claims=token_claims,
-            request=request,
-        )
+        api_logging.log_api_request("DELETE", "/v1/delegations", request_body=body.dict(), token_claims=token_claims, request=request)
 
         result = service.revoke_delegation(
             principal_id=body.principal_id,
@@ -220,35 +310,20 @@ def handle_delete_delegations(
             workflow_id=body.workflow_id,
         )
 
-        api_logging.log_api_response(
-            method="DELETE",
-            path="/v1/delegations",
-            status_code=200,
-            response_body=result,
-        )
+        api_logging.log_api_response("DELETE", "/v1/delegations", 200, response_body=result)
 
         return result
     except ValueError as exception:
         error_detail = security.sanitize_error_message(
             str(exception), INCLUDE_ERROR_DETAILS
         )
-        api_logging.log_api_response(
-            method="DELETE",
-            path="/v1/delegations",
-            status_code=400,
-            error=error_detail,
-        )
+        api_logging.log_api_response("DELETE", "/v1/delegations", 400, error=error_detail)
         raise HTTPException(status_code=400, detail=error_detail) from exception
     except Exception as exception:
         error_detail = security.sanitize_error_message(
             str(exception), INCLUDE_ERROR_DETAILS
         )
-        api_logging.log_api_response(
-            method="DELETE",
-            path="/v1/delegations",
-            status_code=500,
-            error=error_detail,
-        )
+        api_logging.log_api_response("DELETE", "/v1/delegations", 500, error=error_detail)
         raise HTTPException(status_code=500, detail=error_detail) from exception
 
 
@@ -263,17 +338,7 @@ def handle_get_delegations_validate(
     service: DelegationService = request.app.state.service
 
     try:
-        api_logging.log_api_request(
-            method="GET",
-            path="/v1/delegations/validate",
-            token_claims=token_claims,
-            request=request,
-            path_params={
-                "principal_id": principal_id,
-                "delegate_id": delegate_id,
-                "workflow_id": workflow_id,
-            },
-        )
+        api_logging.log_api_request("GET", "/v1/delegations/validate", token_claims=token_claims, request=request, path_params={"principal_id": principal_id, "delegate_id": delegate_id, "workflow_id": workflow_id})
 
         result = service.validate_delegation(
             principal_id=principal_id,
@@ -281,35 +346,19 @@ def handle_get_delegations_validate(
             workflow_id=workflow_id,
         )
 
-        api_logging.log_api_response(
-            method="GET",
-            path="/v1/delegations/validate",
-            status_code=200,
-            response_body=result,
-        )
-
+        api_logging.log_api_response("GET", "/v1/delegations/validate", 200, response_body=result)
         return result
     except ValueError as exception:
         error_detail = security.sanitize_error_message(
             str(exception), INCLUDE_ERROR_DETAILS
         )
-        api_logging.log_api_response(
-            method="GET",
-            path="/v1/delegations/validate",
-            status_code=400,
-            error=error_detail,
-        )
+        api_logging.log_api_response("GET", "/v1/delegations/validate", 400, error=error_detail)
         raise HTTPException(status_code=400, detail=error_detail) from exception
     except Exception as exception:
         error_detail = security.sanitize_error_message(
             str(exception), INCLUDE_ERROR_DETAILS
         )
-        api_logging.log_api_response(
-            method="GET",
-            path="/v1/delegations/validate",
-            status_code=500,
-            error=error_detail,
-        )
+        api_logging.log_api_response("GET", "/v1/delegations/validate", 500, error=error_detail)
         raise HTTPException(status_code=500, detail=error_detail) from exception
 
 
@@ -325,12 +374,7 @@ def handle_get_delegations(
     service: DelegationService = request.app.state.service
 
     try:
-        api_logging.log_api_request(
-            method="GET",
-            path="/v1/delegations",
-            token_claims=token_claims,
-            request=request,
-        )
+        api_logging.log_api_request("GET", "/v1/delegations", token_claims=token_claims, request=request)
 
         delegations = service.list_delegations(
             principal_id=principal_id,
@@ -338,37 +382,21 @@ def handle_get_delegations(
             workflow_id=workflow_id,
             include_expired=include_expired,
         )
-
         result = {"delegations": delegations}
-        api_logging.log_api_response(
-            method="GET",
-            path="/v1/delegations",
-            status_code=200,
-            response_body=result,
-        )
 
+        api_logging.log_api_response("GET", "/v1/delegations", 200, response_body=result)
         return result
     except ValueError as exception:
         error_detail = security.sanitize_error_message(
             str(exception), INCLUDE_ERROR_DETAILS
         )
-        api_logging.log_api_response(
-            method="GET",
-            path="/v1/delegations",
-            status_code=400,
-            error=error_detail,
-        )
+        api_logging.log_api_response("GET", "/v1/delegations", 400, error=error_detail)
         raise HTTPException(status_code=400, detail=error_detail) from exception
     except Exception as exception:
         error_detail = security.sanitize_error_message(
             str(exception), INCLUDE_ERROR_DETAILS
         )
-        api_logging.log_api_response(
-            method="GET",
-            path="/v1/delegations",
-            status_code=500,
-            error=error_detail,
-        )
+        api_logging.log_api_response("GET", "/v1/delegations", 500, error=error_detail)
         raise HTTPException(status_code=500, detail=error_detail) from exception
 
 
@@ -381,46 +409,24 @@ def handle_get_delegation_candidates(
 ) -> Dict[str, Any]:
     # List users who have a specific persona (delegation candidates).
     try:
-        api_logging.log_api_request(
-            method="GET",
-            path="/v1/users",
-            token_claims=token_claims,
-            request=request,
-            path_params={"persona": persona},
-        )
+        api_logging.log_api_request("GET", "/v1/users", token_claims=token_claims, request=request, path_params={"persona": persona})
 
         users = profile.list_users_by_persona(persona)
-
         result = {"users": users}
-        api_logging.log_api_response(
-            method="GET",
-            path="/v1/users",
-            status_code=200,
-            response_body=result,
-        )
-
+        
+        api_logging.log_api_response("GET", "/v1/users", 200, response_body=result)
         return result
     except ValueError as exception:
         error_detail = security.sanitize_error_message(
             str(exception), INCLUDE_ERROR_DETAILS
         )
-        api_logging.log_api_response(
-            method="GET",
-            path="/v1/users",
-            status_code=400,
-            error=error_detail,
-        )
+        api_logging.log_api_response("GET", "/v1/users", 400, error=error_detail)
         raise HTTPException(status_code=400, detail=error_detail) from exception
     except Exception as exception:
         error_detail = security.sanitize_error_message(
             str(exception), INCLUDE_ERROR_DETAILS
         )
-        api_logging.log_api_response(
-            method="GET",
-            path="/v1/users",
-            status_code=500,
-            error=error_detail,
-        )
+        api_logging.log_api_response("GET", "/v1/users", 500, error=error_detail)
         raise HTTPException(status_code=500, detail=error_detail) from exception
 
 

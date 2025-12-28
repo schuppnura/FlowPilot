@@ -14,6 +14,7 @@ struct ContentView: View {
                 workflowTemplatesPanel
                 workflowsPanel
                 delegationPanel
+                invitationsPanel
                 authorizationResultsPanel
             }
             .padding(20)
@@ -196,13 +197,10 @@ struct ContentView: View {
                     .pickerStyle(.menu)
                     .controlSize(.large)
                     .disabled(personaRequired)
-                }
-                
-                HStack(alignment: .center, spacing: 12) {
-                    Text("Departure Date")
-                        .font(.subheadline)
+                    
+                    Text("→")
                         .foregroundStyle(.secondary)
-                        .frame(width: 100, alignment: .leading)
+                    
                     DatePicker(
                         "",
                         selection: $state.workflowStartDate,
@@ -285,7 +283,7 @@ struct ContentView: View {
                     )) {
                         Text("Choose an existing trip…").tag("")
                         ForEach(state.workflows, id: \.id) { workflow in
-                            Text("\(workflow.workflow_id) - \(workflow.template_id) (\(workflow.item_count) items)").tag(workflow.id)
+                            Text("\(workflow.workflow_id) - \(workflow.departure_date ?? "no date") (\(workflow.item_count) items)").tag(workflow.id)
                         }
                     }
                     .pickerStyle(.menu)
@@ -324,16 +322,16 @@ struct ContentView: View {
                         Text(workflowId)
                             .textSelection(.enabled)
                             .font(.system(.body, design: .monospaced))
-                    }
-                    
-                    if let startDate = state.workflowStartDateString {
-                        HStack(spacing: 8) {
+                        
+                        // Show departure date next to Trip ID
+                        if let currentWorkflow = state.workflows.first(where: { $0.workflow_id == workflowId }),
+                           let departureDate = currentWorkflow.departure_date {
+                            Text("|")
+                                .foregroundStyle(.secondary)
                             Image(systemName: "calendar")
                                 .foregroundStyle(.secondary)
-                            Text("Departure:")
-                                .foregroundStyle(.secondary)
-                            Text(startDate)
-                                .textSelection(.enabled)
+                            Text(departureDate)
+                                .foregroundStyle(.primary)
                         }
                     }
                 }
@@ -346,16 +344,8 @@ struct ContentView: View {
             }
             
             if !state.workflowItems.isEmpty {
-                Divider()
-                
-                Text("Itinerary Items (\(state.workflowItems.count))")
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.secondary)
-                    .padding(.top, 4)
-                
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 4) {
                         ForEach(state.workflowItems) { item in
                             workflowItemRow(item)
                         }
@@ -379,7 +369,7 @@ struct ContentView: View {
                 HStack {
                     Image(systemName: "person.2.badge.gearshape.fill")
                         .foregroundStyle(Color(red: 0.3, green: 0.3, blue: 0.35))
-                    Text("Delegation")
+                    Text("Delegations")
                         .font(.headline)
                         .fontWeight(.medium)
                         .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.25))
@@ -420,13 +410,10 @@ struct ContentView: View {
                             await state.loadTravelAgents()
                         }
                     }
-                }
-                
-                HStack(alignment: .center, spacing: 12) {
-                    Text("Expiration (days)")
-                        .font(.subheadline)
+                    
+                    Text("→")
                         .foregroundStyle(.secondary)
-                        .frame(width: 100, alignment: .leading)
+                    
                     Stepper(value: $state.delegationExpiresInDays, in: 1...365, step: 1) {
                         Text("\(state.delegationExpiresInDays) days")
                             .foregroundStyle(.primary)
@@ -448,6 +435,105 @@ struct ContentView: View {
             .disabled(
                 state.principalSub == nil ||
                 (state.selectedDelegateId ?? "").isEmpty ||
+                (state.workflowId ?? "").isEmpty ||
+                (state.personas.count > 1 && state.selectedPersona == nil)
+            )
+            .frame(width: 150)
+        }
+        .padding(16)
+        .background(Color.white)
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.03), radius: 4, x: 0, y: 1)
+        .opacity(personaRequired ? 0.5 : 1.0)
+    }
+    
+    private var invitationsPanel: some View {
+        let personaRequired = state.personas.count > 1 && state.selectedPersona == nil
+        
+        return HStack(alignment: .top, spacing: 16) {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    Image(systemName: "envelope.badge.person.crop")
+                        .foregroundStyle(Color(red: 0.3, green: 0.3, blue: 0.35))
+                    Text("Invitations")
+                        .font(.headline)
+                        .fontWeight(.medium)
+                        .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.25))
+                }
+                
+                if personaRequired {
+                    HStack(spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                        Text("Please select a persona first")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 8)
+                }
+                
+                HStack(alignment: .center, spacing: 12) {
+                    Text("Invite User")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 100, alignment: .leading)
+                    Picker("", selection: Binding<String>(
+                        get: { state.selectedInviteeId ?? "" },
+                        set: { newValue in state.selectedInviteeId = newValue.isEmpty ? nil : newValue }
+                    )) {
+                        Text("Invite a user…").tag("")
+                        ForEach(state.invitees) { user in
+                            Text(user.displayName).tag(user.id)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .controlSize(.large)
+                    .disabled(personaRequired)
+                    .task {
+                        // Load invitees when view appears and persona is selected
+                        if state.principalSub != nil && state.selectedPersona != nil && state.invitees.isEmpty {
+                            await state.loadInvitees()
+                        }
+                    }
+                    .onChange(of: state.selectedPersona) { oldValue, newValue in
+                        // Reload invitees when persona changes
+                        if newValue != nil && newValue != oldValue {
+                            Task {
+                                state.invitees = []  // Clear old list
+                                await state.loadInvitees()
+                            }
+                        }
+                    }
+                    
+                    Text("→")
+                        .foregroundStyle(.secondary)
+                    
+                    Stepper(value: $state.invitationExpiresInDays, in: 1...365, step: 1) {
+                        Text("\(state.invitationExpiresInDays) days")
+                            .foregroundStyle(.primary)
+                    }
+                    .disabled(personaRequired)
+                }
+                
+                Text("Invites users with the same persona to view your trip (read-only)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .italic()
+            }
+            
+            Spacer()
+            
+            Button(action: {
+                Task { await state.createInvitation() }
+            }) {
+                Label("Invite to View", systemImage: "envelope.circle.fill")
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .tint(Color(red: 0.2, green: 0.6, blue: 0.8))  // Different color (blue) from delegations
+            .disabled(
+                state.principalSub == nil ||
+                (state.selectedInviteeId ?? "").isEmpty ||
                 (state.workflowId ?? "").isEmpty ||
                 (state.personas.count > 1 && state.selectedPersona == nil)
             )
@@ -491,11 +577,11 @@ struct ContentView: View {
             .background(statusColor(for: item.status).opacity(0.08))
             .cornerRadius(6)
         }
-        .padding(12)
+        .padding(8)
         .background(Color.white)
-        .cornerRadius(10)
+        .cornerRadius(8)
         .overlay(
-            RoundedRectangle(cornerRadius: 10)
+            RoundedRectangle(cornerRadius: 8)
                 .stroke(Color.gray.opacity(0.15), lineWidth: 0.5)
         )
     }
@@ -632,25 +718,19 @@ struct ContentView: View {
             }
             
             if let run = state.lastAgentRun {
-                Divider()
-                    .padding(.vertical, 8)
-                
-                HStack {
-                    Text("Run: \(run.run_id)")
-                        .font(.caption)
+                HStack(spacing: 8) {
+                    Image(systemName: "number.circle.fill")
                         .foregroundStyle(.secondary)
+                    Text("Run ID:")
+                        .foregroundStyle(.secondary)
+                    Text(run.run_id)
                         .textSelection(.enabled)
-                    Spacer()
+                        .font(.system(.body, design: .monospaced))
                 }
-                
-                Text("Authorization Results (\(run.results.count))")
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.secondary)
-                    .padding(.top, 4)
+                .padding(.bottom, 8)
                 
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 4) {
                         ForEach(run.results) { result in
                             resultItemView(result)
                         }
@@ -694,11 +774,11 @@ struct ContentView: View {
             // Status badge
             statusBadge(status: result.status, decision: result.decision)
         }
-        .padding(12)
+        .padding(8)
         .background(Color.white)
-        .cornerRadius(10)
+        .cornerRadius(8)
         .overlay(
-            RoundedRectangle(cornerRadius: 10)
+            RoundedRectangle(cornerRadius: 8)
                 .stroke(Color.gray.opacity(0.15), lineWidth: 0.5)
         )
     }

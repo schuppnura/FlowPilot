@@ -82,15 +82,13 @@ def _sanitize_token_for_logging(token: Optional[str]) -> Optional[Dict[str, Any]
 
 
 def _extract_raw_token_from_request(request: Any) -> Optional[str]:
-    """
-    Extract raw JWT token from FastAPI Request object.
-
-    Args:
-        request: FastAPI Request object with headers attribute
-
-    Returns:
-        Raw token string (without "Bearer " prefix) or None
-    """
+    # Extract raw JWT token from FastAPI Request object.
+    #
+    # Args:
+    #     request: FastAPI Request object with headers attribute
+    #
+    # Returns:
+    #     Raw token string (without "Bearer " prefix) or None
     if not request or not hasattr(request, "headers"):
         return None
 
@@ -111,34 +109,32 @@ def log_api_request(
     path_params: Optional[Dict[str, Any]] = None,
     query_params: Optional[Dict[str, Any]] = None,
 ) -> None:
-    """
-    Log an API request with full context.
-
-    Args:
-        method: HTTP method (GET, POST, etc.)
-        path: Request path
-        request_body: Request body (for POST/PUT/PATCH)
-        token_claims: Already decoded token claims (from verify_token dependency)
-        raw_token: Raw JWT token string (optional, will be decoded if provided)
-        request: FastAPI Request object (optional, will extract raw_token from headers if provided)
-        path_params: Path parameters (from FastAPI path params)
-        query_params: Query parameters (from FastAPI query params)
-
-    Note: If both `raw_token` and `request` are provided, `raw_token` takes precedence.
-          If only `request` is provided, the token will be extracted from the Authorization header.
-
-    Outputs JSON to stdout with structure:
-    {
-        "type": "api_request",
-        "timestamp": "2025-12-21T13:00:00Z",
-        "method": "POST",
-        "path": "/v1/evaluate",
-        "request_body": {...},
-        "token_claims": {...},
-        "path_params": {...},
-        "query_params": {...}
-    }
-    """
+    # Log an API request with full context.
+    #
+    # Args:
+    #     method: HTTP method (GET, POST, etc.)
+    #     path: Request path
+    #     request_body: Request body (for POST/PUT/PATCH)
+    #     token_claims: Already decoded token claims (from verify_token dependency)
+    #     raw_token: Raw JWT token string (optional, will be decoded if provided)
+    #     request: FastAPI Request object (optional, will extract raw_token from headers if provided)
+    #     path_params: Path parameters (from FastAPI path params)
+    #     query_params: Query parameters (from FastAPI query params)
+    #
+    # Note: If both `raw_token` and `request` are provided, `raw_token` takes precedence.
+    #       If only `request` is provided, the token will be extracted from the Authorization header.
+    #
+    # Outputs JSON to stdout with structure:
+    # {
+    #     "type": "api_request",
+    #     "timestamp": "2025-12-21T13:00:00Z",
+    #     "method": "POST",
+    #     "path": "/v1/evaluate",
+    #     "request_body": {...},
+    #     "token_claims": {...},
+    #     "path_params": {...},
+    #     "query_params": {...}
+    # }
     if not _should_log():
         return
 
@@ -184,26 +180,24 @@ def log_api_response(
     response_body: Optional[Dict[str, Any]] = None,
     error: Optional[str] = None,
 ) -> None:
-    """
-    Log an API response.
-
-    Args:
-        method: HTTP method (GET, POST, etc.)
-        path: Request path
-        status_code: HTTP status code
-        response_body: Response body (if successful)
-        error: Error message (if failed)
-
-    Outputs JSON to stdout with structure:
-    {
-        "type": "api_response",
-        "timestamp": "2025-12-21T13:00:00Z",
-        "method": "POST",
-        "path": "/v1/evaluate",
-        "status_code": 200,
-        "response_body": {...}
-    }
-    """
+    # Log an API response.
+    #
+    # Args:
+    #     method: HTTP method (GET, POST, etc.)
+    #     path: Request path
+    #     status_code: HTTP status code
+    #     response_body: Response body (if successful)
+    #     error: Error message (if failed)
+    #
+    # Outputs JSON to stdout with structure:
+    # {
+    #     "type": "api_response",
+    #     "timestamp": "2025-12-21T13:00:00Z",
+    #     "method": "POST",
+    #     "path": "/v1/evaluate",
+    #     "status_code": 200,
+    #     "response_body": {...}
+    # }
     if not _should_log():
         return
 
@@ -238,10 +232,8 @@ def log_api_call(
     response_body: Optional[Dict[str, Any]] = None,
     error: Optional[str] = None,
 ) -> None:
-    """
-    Convenience function to log both request and response in one call.
-    Useful when you have all the information at once.
-    """
+    # Convenience function to log both request and response in one call.
+    # Useful when you have all the information at once.
     log_api_request(
         method=method,
         path=path,

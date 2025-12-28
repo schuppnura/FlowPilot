@@ -81,7 +81,7 @@ services:
       - MAX_STRING_LENGTH=10000
       # Delegation API integration
       - DELEGATION_API_BASE_URL=http://flowpilot-delegation-api:8000
-      # Service-to-service authentication for delegation-api calls
+      # Service-to-service authentication for delegation-api and Keycloak calls
       - KEYCLOAK_TOKEN_URL=https://keycloak:8443/realms/flowpilot/protocol/openid-connect/token
       - AGENT_CLIENT_ID=flowpilot-agent
       - AGENT_CLIENT_SECRET=${AGENT_CLIENT_SECRET}
@@ -181,9 +181,6 @@ services:
       - KEYCLOAK_AUDIENCE=flowpilot-desktop
       # Service-to-service authentication
       - KEYCLOAK_TOKEN_URL=https://keycloak:8443/realms/flowpilot/protocol/openid-connect/token
-      - KEYCLOAK_BASE_URL=https://keycloak:8443
-      - KEYCLOAK_REALM=flowpilot
-      - VERIFY_TLS=true
       - AGENT_CLIENT_ID=flowpilot-agent
       - AGENT_CLIENT_SECRET=${AGENT_CLIENT_SECRET}
       # Database

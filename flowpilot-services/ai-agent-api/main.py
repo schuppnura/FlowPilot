@@ -71,17 +71,17 @@ class WorkflowRunRequest(BaseModel):
 
     @validator("workflow_id")
     def validate_workflow_id(cls, v: str) -> str:
-        return security.validate_id(v, "workflow_id", max_length=255)
+        return security.validate_id(v, "workflow_id", 255)
 
     @validator("principal_sub")
     def sanitize_principal_sub(cls, v: str) -> str:
-        return security.sanitize_string(v, max_length=255)
+        return security.sanitize_string(v, 255)
 
     @validator("persona")
     def sanitize_persona(cls, v: Optional[str]) -> Optional[str]:
         if v is None:
             return None
-        return security.sanitize_string(v, max_length=255)
+        return security.sanitize_string(v, 255)
 
 
 def build_config(config_path: Optional[str]) -> Dict[str, Any]:
@@ -174,25 +174,10 @@ def handle_post_workflow_runs(
         if user_token:
             try:
                 user_claims = security.verify_token_string(user_token)
-                # Create principal-user object with relevant claims/scopes (AuthZEN format)
+                # Create principal-user object (AuthZEN format)
                 # Note: Excluding PII (email, preferred_username) for privacy
-                claims = {
-                    "sub": user_claims.get("sub"),
-                    "scope": user_claims.get("scope", "").split()
-                    if user_claims.get("scope")
-                    else [],
-                    "realm_access": user_claims.get("realm_access", {}),
-                    "resource_access": user_claims.get("resource_access", {}),
-                }
-                # Include autobook attributes if present in token
-                for attr in [
-                    "autobook_consent",
-                    "autobook_price",
-                    "autobook_leadtime",
-                    "autobook_risklevel",
-                ]:
-                    if attr in user_claims:
-                        claims[attr] = user_claims[attr]
+                # Note: Autobook attributes are fetched by authz-api for the resource owner, not passed here
+                # Note: No claims field needed - identity is in principal_user.id
 
                 # Include persona from request body if provided (selected persona)
                 # The token contains all personas, but the request body has the selected one
@@ -201,7 +186,6 @@ def handle_post_workflow_runs(
                     "id": user_claims.get(
                         "sub", body.principal_sub
                     ),  # Use token sub, fallback to body
-                    "claims": claims,
                 }
 
                 # Add selected persona to principal_user if provided
@@ -217,11 +201,10 @@ def handle_post_workflow_runs(
                 principal_user = {
                     "type": "user",
                     "id": body.principal_sub,
-                    "claims": {},
                 }
         else:
             # No token provided, use principal_sub from body
-            principal_user = {"type": "user", "id": body.principal_sub, "claims": {}}
+            principal_user = {"type": "user", "id": body.principal_sub}
 
         workflow_id = normalize_workflow_id(workflow_id=body.workflow_id)
 

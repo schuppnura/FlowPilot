@@ -72,11 +72,11 @@ class CreateWorkflowRequest(BaseModel):
 
     @validator("template_id")
     def validate_template_id(cls, v: str) -> str:
-        return security.validate_id(v, "template_id", max_length=255)
+        return security.validate_id(v, "template_id", 255)
 
     @validator("principal_sub")
     def sanitize_principal_sub(cls, v: str) -> str:
-        return security.sanitize_string(v, max_length=255)
+        return security.sanitize_string(v, 255)
 
     @validator("start_date")
     def validate_start_date(cls, v: str) -> str:
@@ -86,7 +86,7 @@ class CreateWorkflowRequest(BaseModel):
     def sanitize_persona(cls, v: Optional[str]) -> Optional[str]:
         if v is None:
             return None
-        return security.sanitize_string(v, max_length=255)
+        return security.sanitize_string(v, 255)
 
 
 class ExecuteWorkflowItemRequest(BaseModel):
@@ -106,7 +106,7 @@ class ExecuteWorkflowItemRequest(BaseModel):
     def sanitize_principal_sub(cls, v: Optional[str]) -> Optional[str]:
         if v is None:
             return None
-        return security.sanitize_string(v, max_length=255)
+        return security.sanitize_string(v, 255)
 
     def get_principal_user(self) -> Dict[str, Any]:
         # AuthZEN: Return principal_user if provided, otherwise construct from principal_sub
@@ -114,7 +114,7 @@ class ExecuteWorkflowItemRequest(BaseModel):
             # Return as-is, preserving persona and all other fields
             return self.principal_user
         if self.principal_sub:
-            return {"type": "user", "id": self.principal_sub, "claims": {}}
+            return {"type": "user", "id": self.principal_sub}
         raise ValueError("Either principal_user or principal_sub must be provided")
 
 
@@ -276,14 +276,31 @@ def handle_post_workflows(
         ) from exception
 
 
-def handle_get_workflow(request: Request, workflow_id: str) -> Dict[str, Any]:
-    # Return one workflow record
-    # why: demo visibility and debugging
+def handle_get_workflow(
+    request: Request,
+    workflow_id: str,
+    persona: str = None,
+    token_claims: dict = Depends(security.verify_token),
+) -> Dict[str, Any]:
+    # Return one workflow record with authorization check
+    # why: enforce read access control
     # side effect: none.
     service: FlowPilotService = request.app.state.service
     try:
         # Validate path parameter
         workflow_id = security.validate_id(workflow_id, "workflow_id", max_length=255)
+        
+        # Check authorization
+        user_sub = token_claims.get("sub")
+        if not user_sub:
+            raise HTTPException(status_code=401, detail="Invalid token: missing sub claim")
+        
+        service.check_read_authorization(
+            workflow_id=workflow_id,
+            user_sub=user_sub,
+            user_persona=persona,
+        )
+        
         return service.get_workflow(workflow_id=workflow_id)
     except security.InputValidationError as exception:
         raise HTTPException(
@@ -292,6 +309,13 @@ def handle_get_workflow(request: Request, workflow_id: str) -> Dict[str, Any]:
                 str(exception), INCLUDE_ERROR_DETAILS
             ),
         ) from exception
+    except PolicyDeniedError as exception:
+        error_detail = {
+            "detail": "Permission denied",
+            "reason_codes": exception.reason_codes,
+            "advice": exception.advice,
+        }
+        raise HTTPException(status_code=403, detail=error_detail) from exception
     except KeyError as exception:
         raise HTTPException(status_code=404, detail="Workflow not found") from exception
     except ValueError as exception:
@@ -303,14 +327,45 @@ def handle_get_workflow(request: Request, workflow_id: str) -> Dict[str, Any]:
         ) from exception
 
 
-def handle_get_workflow_items(request: Request, workflow_id: str) -> Dict[str, Any]:
-    # Return the items for a workflow
-    # why: agent-runner lists items from here
+def handle_get_workflow_items(
+    request: Request,
+    workflow_id: str,
+    persona: str = None,
+    user_sub: str = None,
+    token_claims: dict = Depends(security.verify_token),
+) -> Dict[str, Any]:
+    # Return the items for a workflow with authorization check
+    # why: enforce read access control
     # side effect: none.
+    # user_sub: Optional query parameter for service-to-service calls where the service account
+    #           is making the request on behalf of a user
     service: FlowPilotService = request.app.state.service
     try:
         # Validate path parameter
         workflow_id = security.validate_id(workflow_id, "workflow_id", max_length=255)
+        
+        # Check authorization
+        # If user_sub is provided as query parameter (service-to-service call), use that
+        # Otherwise, extract from token (direct user call)
+        if user_sub:
+            # Service-to-service call: validate the query parameter
+            user_sub = security.validate_id(user_sub, "user_sub", max_length=255)
+            print(f"[handle_get_workflow_items] Using user_sub from query param: {user_sub}", flush=True)
+        else:
+            # Direct user call: extract from token
+            user_sub = token_claims.get("sub")
+            if not user_sub:
+                raise HTTPException(status_code=401, detail="Invalid token: missing sub claim")
+            print(f"[handle_get_workflow_items] Using user_sub from token: {user_sub}", flush=True)
+        
+        print(f"[handle_get_workflow_items] Token sub={token_claims.get('sub')}, user_sub param={user_sub}, persona={persona}", flush=True)
+        
+        service.check_read_authorization(
+            workflow_id=workflow_id,
+            user_sub=user_sub,
+            user_persona=persona,
+        )
+        
         return service.get_workflow_items(workflow_id=workflow_id)
     except security.InputValidationError as exception:
         raise HTTPException(
@@ -319,6 +374,13 @@ def handle_get_workflow_items(request: Request, workflow_id: str) -> Dict[str, A
                 str(exception), INCLUDE_ERROR_DETAILS
             ),
         ) from exception
+    except PolicyDeniedError as exception:
+        error_detail = {
+            "detail": "Permission denied",
+            "reason_codes": exception.reason_codes,
+            "advice": exception.advice,
+        }
+        raise HTTPException(status_code=403, detail=error_detail) from exception
     except KeyError as exception:
         raise HTTPException(status_code=404, detail="Workflow not found") from exception
     except ValueError as exception:

@@ -19,11 +19,10 @@ class DelegationService:
     # Business logic for delegation management.
 
     def __init__(self, graphdb: DelegationGraphDB):
-        """Initialize the delegation service.
-
-        Args:
-            graphdb: Graph database instance
-        """
+        # Initialize the delegation service.
+        #
+        # Args:
+        #     graphdb: Graph database instance
         self.graphdb = graphdb
 
     def create_delegation(
@@ -33,17 +32,16 @@ class DelegationService:
         expires_in_days: int = 7,
         workflow_id: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Create a delegation relationship.
-
-        Args:
-            principal_id: ID of the principal delegating authority
-            delegate_id: ID of the delegate receiving authority
-            expires_in_days: Number of days until expiration (default 7)
-            workflow_id: Optional workflow ID to scope the delegation
-
-        Returns:
-            Dictionary with delegation details
-        """
+        # Create a delegation relationship.
+        #
+        # Args:
+        #     principal_id: ID of the principal delegating authority
+        #     delegate_id: ID of the delegate receiving authority
+        #     expires_in_days: Number of days until expiration (default 7)
+        #     workflow_id: Optional workflow ID to scope the delegation
+        #
+        # Returns:
+        #     Dictionary with delegation details
         principal_id = require_non_empty_string(principal_id, "principal_id")
         delegate_id = require_non_empty_string(delegate_id, "delegate_id")
 
@@ -73,16 +71,15 @@ class DelegationService:
         delegate_id: str,
         workflow_id: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Revoke a delegation relationship.
-
-        Args:
-            principal_id: ID of the principal
-            delegate_id: ID of the delegate
-            workflow_id: Optional workflow ID to scope the revocation
-
-        Returns:
-            Dictionary with revocation status
-        """
+        # Revoke a delegation relationship.
+        #
+        # Args:
+        #     principal_id: ID of the principal
+        #     delegate_id: ID of the delegate
+        #     workflow_id: Optional workflow ID to scope the revocation
+        #
+        # Returns:
+        #     Dictionary with revocation status
         principal_id = require_non_empty_string(principal_id, "principal_id")
         delegate_id = require_non_empty_string(delegate_id, "delegate_id")
 
@@ -109,17 +106,16 @@ class DelegationService:
         workflow_id: Optional[str] = None,
         include_expired: bool = False,
     ) -> List[Dict[str, Any]]:
-        """List delegations.
-
-        Args:
-            principal_id: Filter by principal ID (outgoing delegations)
-            delegate_id: Filter by delegate ID (incoming delegations)
-            workflow_id: Filter by workflow ID
-            include_expired: Include expired delegations
-
-        Returns:
-            List of delegation dictionaries
-        """
+        # List delegations.
+        #
+        # Args:
+        #     principal_id: Filter by principal ID (outgoing delegations)
+        #     delegate_id: Filter by delegate ID (incoming delegations)
+        #     workflow_id: Filter by workflow ID
+        #     include_expired: Include expired delegations
+        #
+        # Returns:
+        #     List of delegation dictionaries
         if principal_id:
             principal_id = require_non_empty_string(principal_id, "principal_id")
             return self.graphdb.list_outgoing_edges(
@@ -143,16 +139,15 @@ class DelegationService:
         delegate_id: str,
         workflow_id: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Validate that a delegation exists and is active.
-
-        Args:
-            principal_id: ID of the principal (resource owner)
-            delegate_id: ID of the delegate (user/agent attempting to act)
-            workflow_id: Optional workflow ID to scope the validation
-
-        Returns:
-            Dictionary with validation result and delegation chain
-        """
+        # Validate that a delegation exists and is active.
+        #
+        # Args:
+        #     principal_id: ID of the principal (resource owner)
+        #     delegate_id: ID of the delegate (user/agent attempting to act)
+        #     workflow_id: Optional workflow ID to scope the validation
+        #
+        # Returns:
+        #     Dictionary with validation result and delegation chain
         principal_id = require_non_empty_string(principal_id, "principal_id")
         delegate_id = require_non_empty_string(delegate_id, "delegate_id")
 

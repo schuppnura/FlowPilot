@@ -40,9 +40,11 @@ def normalize_workflow_id(workflow_id: str) -> str:
     raise ValueError("Missing workflow_id")
 
 
-def list_workflow_items(config: Dict[str, Any], workflow_id: str) -> List[WorkflowItem]:
+def list_workflow_items(config: Dict[str, Any], workflow_id: str, principal_user_id: str = None, principal_persona: str = None) -> List[WorkflowItem]:
     # List workflow items from the workflow service
     # assumption: response contains an 'items' list of dicts.
+    # principal_user_id: user's UUID for authorization (passed as query parameter)
+    # principal_persona: user's persona for authorization (passed as query parameter)
     require_non_empty_string(workflow_id, "workflow_id")
 
     base_url = require_non_empty_string(
@@ -54,7 +56,19 @@ def list_workflow_items(config: Dict[str, Any], workflow_id: str) -> List[Workfl
     )
     timeout_seconds = int(config.get("request_timeout_seconds", 10))
 
-    url = build_url(base_url, template.format(workflow_id=workflow_id))
+    # Build URL with user_sub and persona query parameters if provided
+    base_url_with_path = build_url(base_url, template.format(workflow_id=workflow_id))
+    query_params = []
+    if principal_user_id:
+        query_params.append(f"user_sub={principal_user_id}")
+    if principal_persona:
+        query_params.append(f"persona={principal_persona}")
+    
+    if query_params:
+        separator = "&" if "?" in base_url_with_path else "?"
+        url = f"{base_url_with_path}{separator}{'&'.join(query_params)}"
+    else:
+        url = base_url_with_path
 
     headers = {}
     token = security.get_service_token()
@@ -308,7 +322,15 @@ def execute_workflow_run(
         raise ValueError("Invalid principal_user object")
 
     run_id = "wr_" + uuid.uuid4().hex[:10]
-    items = list_workflow_items(config=config, workflow_id=workflow_id)
+    # Extract user ID and persona from principal_user to pass to list_workflow_items
+    principal_user_id = principal_user.get("id") if isinstance(principal_user, dict) else None
+    principal_persona = principal_user.get("persona") if isinstance(principal_user, dict) else None
+    items = list_workflow_items(
+        config=config, 
+        workflow_id=workflow_id, 
+        principal_user_id=principal_user_id,
+        principal_persona=principal_persona
+    )
 
     results: List[Dict[str, Any]] = []
     for item in items:
