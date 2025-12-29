@@ -41,15 +41,15 @@ import security
 # ============================================================================
 
 # Default values for autobook attributes when not present in Keycloak
-# These can be overridden via environment variables
-DEFAULT_AUTOBOOK_CONSENT = read_env_bool("DEFAULT_AUTOBOOK_CONSENT", False)
-DEFAULT_AUTOBOOK_PRICE = read_env_int("DEFAULT_AUTOBOOK_PRICE", 0)
-DEFAULT_AUTOBOOK_LEADTIME = read_env_int("DEFAULT_AUTOBOOK_LEADTIME", 10000)
-DEFAULT_AUTOBOOK_RISKLEVEL = read_env_int("DEFAULT_AUTOBOOK_RISKLEVEL", 0)
+# These must be configured via environment variables in docker-compose.yml
+DEFAULT_AUTOBOOK_CONSENT = read_env_bool("DEFAULT_AUTOBOOK_CONSENT")
+DEFAULT_AUTOBOOK_PRICE = read_env_int("DEFAULT_AUTOBOOK_PRICE")
+DEFAULT_AUTOBOOK_LEADTIME = read_env_int("DEFAULT_AUTOBOOK_LEADTIME")
+DEFAULT_AUTOBOOK_RISKLEVEL = read_env_int("DEFAULT_AUTOBOOK_RISKLEVEL")
 
-# Allowed action names (AuthZEN compliant)
-# Can be overridden via ALLOWED_ACTIONS env var (comma-separated)
-_ALLOWED_ACTIONS_STR = read_env_string("ALLOWED_ACTIONS", "create,read,write,delete,execute")
+# Allowed action names (AuthZEN compliant, comma-separated)
+# Must be configured via ALLOWED_ACTIONS environment variable
+_ALLOWED_ACTIONS_STR = read_env_string("ALLOWED_ACTIONS")
 ALLOWED_ACTIONS = {action.strip() for action in _ALLOWED_ACTIONS_STR.split(",") if action.strip()}
 
 
@@ -103,10 +103,10 @@ class OpaClient:
 
 
 def _build_opa_client() -> OpaClient:
-    # Build OPA client from environment variables.
+    # Build OPA client from required environment variables.
     config = OpaConfig(
-        base_url=read_env_string("OPA_URL", "http://opa:8181"),
-        package=read_env_string("OPA_PACKAGE", "auto_book"),
+        base_url=read_env_string("OPA_URL"),
+        package=read_env_string("OPA_PACKAGE"),
     )
     return OpaClient(config=config)
 
@@ -118,13 +118,9 @@ def _build_opa_client() -> OpaClient:
 # OPA client instance (initialized on module load)
 _OPA_CLIENT = _build_opa_client()
 
-# Delegation API configuration
-_DELEGATION_API_BASE_URL = read_env_string(
-    "DELEGATION_API_BASE_URL", "http://flowpilot-delegation-api:8000"
-)
-_DELEGATION_API_TIMEOUT_SECONDS = read_env_float(
-    "DELEGATION_API_TIMEOUT_SECONDS", 5.0
-)
+# Delegation API configuration (required environment variables)
+_DELEGATION_API_BASE_URL = read_env_string("DELEGATION_API_BASE_URL")
+_DELEGATION_API_TIMEOUT_SECONDS = read_env_float("DELEGATION_API_TIMEOUT_SECONDS")
 
 
 @dataclass(frozen=True)
@@ -151,7 +147,7 @@ def build_opa_input(
     request_context = authzen_request.get("context") or {}
     request_resource = authzen_request.get("resource") or {}
     request_action = authzen_request.get("action") or {}
-    resource_properties = coerce_dict(request_resource.get("properties"))
+    resource_properties = coerce_dict(request_resource.get("properties"), "resource.properties")
     
     # ========================================================================
     # SUBJECT: Extract principal (current user) information
@@ -175,7 +171,7 @@ def build_opa_input(
     # RESOURCE: Build resource with owner information and autobook settings
     # ========================================================================
     # Extract owner from resource properties
-    owner_props = coerce_dict(resource_properties.get("owner"))
+    owner_props = coerce_dict(resource_properties.get("owner"), "resource.properties.owner")
     owner_id = owner_props.get("id") if owner_props else None
     owner_persona_from_resource = owner_props.get("persona") if owner_props else None
     

@@ -14,8 +14,8 @@ from typing import Any, Dict, List, Optional
 from graphdb import DelegationGraphDB
 from utils import require_non_empty_string, read_env_string
 
-# Delegation allowed actions configuration (imported from environment)
-_DELEGATION_ALLOWED_ACTIONS_STR = read_env_string("DELEGATION_ALLOWED_ACTIONS", "read,execute")
+# Delegation allowed actions configuration (required environment variable, comma-separated)
+_DELEGATION_ALLOWED_ACTIONS_STR = read_env_string("DELEGATION_ALLOWED_ACTIONS")
 DELEGATION_ALLOWED_ACTIONS = {action.strip() for action in _DELEGATION_ALLOWED_ACTIONS_STR.split(",") if action.strip()}
 
 

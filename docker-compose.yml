@@ -74,13 +74,21 @@ services:
       - KEYCLOAK_JWKS_URI=https://keycloak:8443/realms/flowpilot/protocol/openid-connect/certs
       - KEYCLOAK_ISSUER=https://localhost:8443/realms/flowpilot
       - KEYCLOAK_AUDIENCE=flowpilot-desktop
-      # Optional: Enable payload signature scanning
+      # Payload signature scanning
       - ENABLE_PAYLOAD_SIGNATURE_SCAN=0
-      # Optional: Configure request limits
+      # Request limits
       - MAX_REQUEST_SIZE_MB=1
       - MAX_STRING_LENGTH=10000
+      # Default autobook attribute values (used when not present in Keycloak user profile)
+      - DEFAULT_AUTOBOOK_CONSENT=false
+      - DEFAULT_AUTOBOOK_PRICE=0
+      - DEFAULT_AUTOBOOK_LEADTIME=10000
+      - DEFAULT_AUTOBOOK_RISKLEVEL=0
+      # Allowed action names (AuthZEN compliant, comma-separated)
+      - ALLOWED_ACTIONS=create,read,write,delete,execute
       # Delegation API integration
       - DELEGATION_API_BASE_URL=http://flowpilot-delegation-api:8000
+      - DELEGATION_API_TIMEOUT_SECONDS=5.0
       # Service-to-service authentication for delegation-api and Keycloak calls
       - KEYCLOAK_TOKEN_URL=https://keycloak:8443/realms/flowpilot/protocol/openid-connect/token
       - AGENT_CLIENT_ID=flowpilot-agent
@@ -141,6 +149,7 @@ services:
     environment:
       AUTHZ_BASE_URL: "http://flowpilot-authz-api:8000"
       AGENT_SUB: "febf7643-7b95-4201-959a-009dedb1c87e"  # Service account sub from flowpilot-agent
+      AI_AGENT_PERSONA: "ai-agent"  # Persona used by AI agent for authorization checks
       DOMAIN: "flowpilot"
 
       # Templates are mounted at /data inside the container.
@@ -183,9 +192,11 @@ services:
       - KEYCLOAK_TOKEN_URL=https://keycloak:8443/realms/flowpilot/protocol/openid-connect/token
       - AGENT_CLIENT_ID=flowpilot-agent
       - AGENT_CLIENT_SECRET=${AGENT_CLIENT_SECRET}
+      # Delegation configuration
+      - DELEGATION_ALLOWED_ACTIONS=read,execute
       # Database
       - DB_PATH=/app/data/delegations.db
-      # Optional: Enable payload signature scanning
+      # Payload signature scanning
       - ENABLE_PAYLOAD_SIGNATURE_SCAN=0
       # Error message detail (set to 0 in production)
       - INCLUDE_ERROR_DETAILS=1

@@ -28,8 +28,8 @@ import security
 from template_loader import load_workflow_templates_from_directory
 from utils import build_url, require_non_empty_string, read_env_string, coerce_timestamp
 
-# AI Agent persona configuration
-AI_AGENT_PERSONA = read_env_string("AI_AGENT_PERSONA", "ai-agent")
+# AI Agent persona configuration (required environment variable)
+AI_AGENT_PERSONA = read_env_string("AI_AGENT_PERSONA")
 
 
 class PolicyDeniedError(PermissionError):

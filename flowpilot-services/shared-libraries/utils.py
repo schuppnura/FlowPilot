@@ -19,62 +19,86 @@ from urllib.parse import urljoin
 import requests
 
 
-def read_env_string(name: str, default_value: str) -> str:
-    # Read environment variable with default value, normalizing empty strings to default.
+def read_env_string(name: str, default_value: Optional[str] = None) -> str:
+    # Read required environment variable as string.
     # Args:
     #     name: Environment variable name
-    #     default_value: Default value if not set or empty
+    #     default_value: Optional default value; if None, raises error when missing
     # Returns:
     #     Normalized string value (stripped of whitespace)
+    # Raises:
+    #     ValueError: If variable is not set or empty and no default provided
     value = os.getenv(name)
     if value is None or value.strip() == "":
+        if default_value is None:
+            raise ValueError(f"Required environment variable not set: {name}")
         return default_value
     return value.strip()
 
 
-def read_env_int(name: str, default_value: int) -> int:
-    # Read integer environment variable with default value using coerce_int.
+def read_env_int(name: str, default_value: Optional[int] = None) -> int:
+    # Read required environment variable as integer.
     # Args:
     #     name: Environment variable name
-    #     default_value: Default value if not set, empty, or invalid
+    #     default_value: Optional default value; if None, raises error when missing
     # Returns:
-    #     Integer value or default if parsing fails
+    #     Integer value
+    # Raises:
+    #     ValueError: If variable is not set/empty and no default, or if invalid integer
     value = os.getenv(name)
     if value is None or value.strip() == "":
+        if default_value is None:
+            raise ValueError(f"Required environment variable not set: {name}")
         return default_value
-    return coerce_int(value.strip(), default_value)
+    try:
+        return int(value.strip())
+    except ValueError as exc:
+        raise ValueError(f"Invalid integer value for {name}: {value}") from exc
 
 
-def read_env_float(name: str, default_value: float) -> float:
-    # Read float environment variable with default value.
+def read_env_float(name: str, default_value: Optional[float] = None) -> float:
+    # Read required environment variable as float.
     # Args:
     #     name: Environment variable name
-    #     default_value: Default value if not set, empty, or invalid
+    #     default_value: Optional default value; if None, raises error when missing
     # Returns:
-    #     Float value or default if parsing fails
+    #     Float value
+    # Raises:
+    #     ValueError: If variable is not set/empty and no default, or if invalid float
     value = os.getenv(name)
     if value is None or value.strip() == "":
+        if default_value is None:
+            raise ValueError(f"Required environment variable not set: {name}")
         return default_value
     try:
         return float(value.strip())
-    except ValueError:
-        return default_value
+    except ValueError as exc:
+        raise ValueError(f"Invalid float value for {name}: {value}") from exc
 
 
-def read_env_bool(name: str, default_value: bool) -> bool:
-    # Read boolean environment variable with default value using coerce_bool.
+def read_env_bool(name: str, default_value: Optional[bool] = None) -> bool:
+    # Read required environment variable as boolean.
     # Recognizes common boolean representations:
     #   True: "true", "yes", "y", "1", "on" (case-insensitive)
-    #   False: any other present value
+    #   False: "false", "no", "n", "0", "off" (case-insensitive)
     # Args:
     #     name: Environment variable name
-    #     default_value: Default value if not set or empty
+    #     default_value: Optional default value; if None, raises error when missing
     # Returns:
-    #     Boolean value or default
+    #     Boolean value
+    # Raises:
+    #     ValueError: If variable is not set or empty and no default provided
     value = os.getenv(name)
     if value is None or value.strip() == "":
+        if default_value is None:
+            raise ValueError(f"Required environment variable not set: {name}")
         return default_value
-    return coerce_bool(value.strip(), default_value)
+    normalized = value.strip().lower()
+    if normalized in {"yes", "y", "true", "t", "1", "on"}:
+        return True
+    if normalized in {"no", "n", "false", "f", "0", "off"}:
+        return False
+    raise ValueError(f"Invalid boolean value for {name}: {value} (expected true/false/yes/no/1/0)")
 
 
 def coerce_int(value: Any, default: int) -> int:
@@ -87,11 +111,24 @@ def coerce_int(value: Any, default: int) -> int:
         return default
 
 
-def coerce_dict(value: Any) -> dict[str, Any]:
-    # Convert a value to a dict, returning empty dict if not a dict.
+def coerce_dict(value: Any, field_name: Optional[str] = None) -> dict[str, Any]:
+    # Convert a value to a dict, raising error on invalid types.
+    # Args:
+    #     value: Value to convert (None or dict are acceptable)
+    #     field_name: Optional field name for error messages
+    # Returns:
+    #     dict if value is dict, empty dict if value is None
+    # Raises:
+    #     ValueError: If value is not None and not a dict (API contract violation)
+    if value is None:
+        return {}
     if isinstance(value, dict):
         return value
-    return {}
+    # API contract violation - someone sent wrong type
+    field_msg = f" for {field_name}" if field_name else ""
+    raise ValueError(
+        f"Invalid type{field_msg}: expected dict or null, got {type(value).__name__}"
+    )
 
 
 def coerce_bool(value: Any, default: bool) -> bool:
