@@ -205,12 +205,6 @@ persona_valid if {
   input.subject.persona != ""  # Subject persona must be set
 }
 
-# Check if a delegation exists from owner to principal
-# Uses computed delegation result from authz-api (which calls delegation-api)
-delegation_exists(owner_id, principal_id) if {
-  input.delegation.valid == true
-}
-
 # ============================================================================
 # Read Action Rules
 # ============================================================================
