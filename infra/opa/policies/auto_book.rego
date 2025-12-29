@@ -66,7 +66,7 @@ reasons[code] if {
   principal_id != owner_id
   # Delegation exists but doesn't have execute permission
   input.delegation.valid == true
-  not input.delegation.has_action
+  not input.action.name in input.delegation.effective_actions
   code := "auto_book.insufficient_delegation_permissions"
 }
 
@@ -129,7 +129,7 @@ reasons[code] if {
   principal_id != owner_id
   # Delegation exists but doesn't have read permission
   input.delegation.valid == true
-  not input.delegation.has_action
+  not input.action.name in input.delegation.effective_actions
   code := "read.insufficient_delegation_permissions"
 }
 
@@ -165,9 +165,11 @@ authorized_principal if {
 }
 
 # Helper: Check if delegation exists with required action
+# OPA makes the policy decision by checking if the requested action
+# is present in the effective_actions returned by delegation-api
 has_valid_delegation_for_action if {
   input.delegation.valid == true
-  input.delegation.has_action == true
+  input.action.name in input.delegation.effective_actions
 }
 
 # Persona validation
@@ -222,7 +224,7 @@ allow_read if {
   owner_id := input.resource.owner_id
   principal_id != owner_id
   input.delegation.valid == true
-  input.delegation.has_action == true  # Delegation chain permits read action
+  input.action.name in input.delegation.effective_actions  # Delegation permits read
   read_persona_valid
 }
 

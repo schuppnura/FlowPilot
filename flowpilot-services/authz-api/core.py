@@ -236,14 +236,14 @@ def build_opa_input(
     context = {"principal": context_principal}
     
     # ========================================================================
-    # DELEGATION: Computed delegation chain result
+    # DELEGATION: Delegation data from delegation-api (PIP)
+    # OPA will check if effective_actions contains the requested action
     # ========================================================================
     if delegation_result is not None:
         delegation = delegation_result
     else:
         delegation = {
             "valid": False,
-            "has_action": False,
             "delegation_chain": [],
             "effective_actions": [],
         }
@@ -268,25 +268,25 @@ def compute_delegation_chain(
     workflow_id: Optional[str],
     requested_action: str,
 ) -> Dict[str, Any]:
-    # Compute delegation chain by calling delegation-api's validate endpoint.
-    # Returns computed result indicating whether a valid delegation exists for the requested action.
+    # Fetch delegation chain data from delegation-api.
+    # Returns delegation information for OPA to evaluate.
     #
-    # This replaces an approach of fetching all delegation edges and letting OPA
-    # try to traverse them, because this doesn't work for recursive chains in OPA.
+    # This function acts as a Policy Information Point (PIP) - it fetches data
+    # but does NOT make policy decisions. The OPA policy (PDP) decides whether
+    # the available delegation permissions are sufficient.
     #
     # Args:
     #     bearer_token: Service token for authenticating with delegation API
     #     owner_id: Owner ID (resource owner)
     #     principal_id: Principal ID (user attempting to act)
     #     workflow_id: Optional workflow ID to scope the delegation
-    #     requested_action: The action being requested ("read" or "execute")
+    #     requested_action: Unused - kept for API compatibility, will be removed
     #
     # Returns:
     #     Dictionary with:
-    #       - valid: boolean (whether delegation exists)
-    #       - has_action: boolean (whether delegation chain permits the requested action)
+    #       - valid: boolean (whether delegation path exists)
     #       - delegation_chain: list of user IDs in the chain
-    #       - effective_actions: list of actions available through this chain
+    #       - effective_actions: list of actions available through delegation
     headers = {"Authorization": f"Bearer {bearer_token.strip()}"}
     
     params: Dict[str, str] = {
@@ -310,12 +310,9 @@ def compute_delegation_chain(
     delegation_chain = data.get("delegation_chain", [])
     effective_actions = data.get("effective_actions", [])
     
-    # Check if the requested action is in effective actions
-    has_action = requested_action in effective_actions
-    
+    # Return raw delegation data - let OPA decide if permissions are sufficient
     return {
         "valid": valid,
-        "has_action": has_action,
         "delegation_chain": delegation_chain,
         "effective_actions": effective_actions,
     }
