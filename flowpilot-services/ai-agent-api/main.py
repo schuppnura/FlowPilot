@@ -403,6 +403,12 @@ def main() -> int:
         return 2
 
     api = create_app(config)
+    
+    # Uvicorn server configuration (can be overridden via environment variables)
+    uvicorn_max_requests = int(os.environ.get("UVICORN_MAX_REQUESTS", "10000"))
+    uvicorn_max_concurrency = int(os.environ.get("UVICORN_MAX_CONCURRENCY", "100"))
+    uvicorn_keepalive_timeout = int(os.environ.get("UVICORN_KEEPALIVE_TIMEOUT", "5"))
+    
     uvicorn.run(
         api,
         host=str(args.host),
@@ -410,9 +416,9 @@ def main() -> int:
         reload=bool(args.reload),
         log_level=str(config.get("log_level", "info")),
         # Security: Limit request body size to prevent memory exhaustion
-        limit_max_requests=10000,  # Max requests before worker restart
-        limit_concurrency=100,  # Max concurrent connections
-        timeout_keep_alive=5,  # Keep-alive timeout
+        limit_max_requests=uvicorn_max_requests,  # Max requests before worker restart
+        limit_concurrency=uvicorn_max_concurrency,  # Max concurrent connections
+        timeout_keep_alive=uvicorn_keepalive_timeout,  # Keep-alive timeout
     )
     return 0
 

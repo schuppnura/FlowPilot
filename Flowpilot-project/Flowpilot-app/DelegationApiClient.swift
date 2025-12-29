@@ -11,7 +11,7 @@ final class DelegationApiClient {
         self.accessTokenProvider = accessTokenProvider
     }
     
-    func createDelegation(principalId: String, delegateId: String, workflowId: String?, expiresInDays: Int) async throws -> DelegationResponse {
+    func createDelegation(principalId: String, delegateId: String, workflowId: String?, scope: [String]?, expiresInDays: Int) async throws -> DelegationResponse {
         let url = baseUrl.appendingPathComponent("v1/delegations")
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -25,6 +25,7 @@ final class DelegationApiClient {
             principal_id: principalId,
             delegate_id: delegateId,
             workflow_id: workflowId,
+            scope: scope,
             expires_in_days: expiresInDays
         )
         request.httpBody = try JSONEncoder().encode(payload)

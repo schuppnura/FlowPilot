@@ -11,11 +11,70 @@
 from __future__ import annotations
 
 import json
+import os
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urljoin
 
 import requests
+
+
+def read_env_string(name: str, default_value: str) -> str:
+    # Read environment variable with default value, normalizing empty strings to default.
+    # Args:
+    #     name: Environment variable name
+    #     default_value: Default value if not set or empty
+    # Returns:
+    #     Normalized string value (stripped of whitespace)
+    value = os.getenv(name)
+    if value is None or value.strip() == "":
+        return default_value
+    return value.strip()
+
+
+def read_env_int(name: str, default_value: int) -> int:
+    # Read integer environment variable with default value using coerce_int.
+    # Args:
+    #     name: Environment variable name
+    #     default_value: Default value if not set, empty, or invalid
+    # Returns:
+    #     Integer value or default if parsing fails
+    value = os.getenv(name)
+    if value is None or value.strip() == "":
+        return default_value
+    return coerce_int(value.strip(), default_value)
+
+
+def read_env_float(name: str, default_value: float) -> float:
+    # Read float environment variable with default value.
+    # Args:
+    #     name: Environment variable name
+    #     default_value: Default value if not set, empty, or invalid
+    # Returns:
+    #     Float value or default if parsing fails
+    value = os.getenv(name)
+    if value is None or value.strip() == "":
+        return default_value
+    try:
+        return float(value.strip())
+    except ValueError:
+        return default_value
+
+
+def read_env_bool(name: str, default_value: bool) -> bool:
+    # Read boolean environment variable with default value using coerce_bool.
+    # Recognizes common boolean representations:
+    #   True: "true", "yes", "y", "1", "on" (case-insensitive)
+    #   False: any other present value
+    # Args:
+    #     name: Environment variable name
+    #     default_value: Default value if not set or empty
+    # Returns:
+    #     Boolean value or default
+    value = os.getenv(name)
+    if value is None or value.strip() == "":
+        return default_value
+    return coerce_bool(value.strip(), default_value)
 
 
 def coerce_int(value: Any, default: int) -> int:

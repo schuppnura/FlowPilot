@@ -48,10 +48,26 @@ allow_execute if {
 
 # Reason codes returned as a set
 # Execute action reason codes
+# Distinguish between no delegation and insufficient permissions
 reasons[code] if {
   input.action.name == "execute"
+  principal_id := input.subject.id
+  owner_id := input.resource.owner_id
+  principal_id != owner_id
+  # No delegation exists at all
+  not input.delegation.valid
   code := "auto_book.principal_spoofing"
-  not authorized_principal
+}
+
+reasons[code] if {
+  input.action.name == "execute"
+  principal_id := input.subject.id
+  owner_id := input.resource.owner_id
+  principal_id != owner_id
+  # Delegation exists but doesn't have execute permission
+  input.delegation.valid == true
+  not input.delegation.has_action
+  code := "auto_book.insufficient_delegation_permissions"
 }
 
 reasons[code] if {
@@ -98,29 +114,42 @@ reasons[code] if {
 # Read action reason codes
 reasons[code] if {
   input.action.name == "read"
-  code := "read.no_delegation"
-  not allow_read
   principal_id := input.subject.id
   owner_id := input.resource.owner_id
   principal_id != owner_id
-  not delegation_exists(owner_id, principal_id)
+  # No delegation exists at all
+  not input.delegation.valid
+  code := "read.no_delegation"
 }
 
 reasons[code] if {
   input.action.name == "read"
-  code := "read.persona_mismatch"
+  principal_id := input.subject.id
+  owner_id := input.resource.owner_id
+  principal_id != owner_id
+  # Delegation exists but doesn't have read permission
+  input.delegation.valid == true
+  not input.delegation.has_action
+  code := "read.insufficient_delegation_permissions"
+}
+
+reasons[code] if {
+  input.action.name == "read"
   not allow_read
   principal_id := input.subject.id
   owner_id := input.resource.owner_id
   principal_id != owner_id
-  delegation_exists(owner_id, principal_id)
+  input.delegation.valid
+  input.delegation.has_action
   not read_persona_valid
+  code := "read.persona_mismatch"
 }
 
 # Anti-spoofing and delegation check
 # The principal (subject making the request) must either:
 # 1. Be the owner of the resource, OR
-# 2. Have a valid delegation from the owner
+# 2. Have a valid delegation from the owner (computed by authz-api via delegation-api)
+# 3. Have sufficient permissions for the requested action
 authorized_principal if {
   principal_id := input.subject.id
   owner_id := input.resource.owner_id
@@ -131,22 +160,38 @@ authorized_principal if {
   principal_id := input.subject.id
   owner_id := input.resource.owner_id
   principal_id != owner_id
-  # Check if there's a delegation path from owner to principal
-  delegation_exists(owner_id, principal_id)
+  # Check computed delegation result (delegation chain already traversed)
+  has_valid_delegation_for_action
+}
+
+# Helper: Check if delegation exists with required action
+has_valid_delegation_for_action if {
+  input.delegation.valid == true
+  input.delegation.has_action == true
 }
 
 # Persona validation
 # When a user is delegated to execute a workflow (principal != owner):
-#   - The principal must have selected the persona "travel-agent"
+#   - The principal must have one of the authorized agent personas: "travel-agent", "ai-agent", "secretary"
 # When a user executes their own workflow (principal == owner):
 #   - The principal must have selected the same persona as the owner's persona
+#
+# Configuration Note:
+# The valid agent personas are currently hardcoded here but should match the
+# DELEGATION_PERSONAS environment variable in the service configuration.
+# Future enhancement: Pass personas via input.config.delegation_personas
+
+# Valid agent personas that can be delegated to execute workflows
+# These should match DELEGATION_PERSONAS env var: "ai-agent,travel-agent,secretary"
+valid_agent_personas := {"travel-agent", "ai-agent", "secretary"}
+
 persona_valid if {
   principal_id := input.subject.id
   owner_id := input.resource.owner_id
   principal_id != owner_id
-  # Delegated case: must be travel-agent
-  input.subject.persona == "travel-agent"
-  input.subject.persona != ""  # Subject persona must be set
+  # Delegated case: must be one of the valid agent personas
+  input.subject.persona != ""
+  valid_agent_personas[input.subject.persona]
 }
 
 persona_valid if {
@@ -161,35 +206,9 @@ persona_valid if {
 }
 
 # Check if a delegation exists from owner to principal
-# This checks for a direct delegation in the input.delegations list
+# Uses computed delegation result from authz-api (which calls delegation-api)
 delegation_exists(owner_id, principal_id) if {
-  # Look for a delegation where owner delegates to principal (direct match)
-  some delegation in input.delegations
-  delegation.principal_id == owner_id
-  delegation.delegate_id == principal_id
-  # Check if delegation is for the current workflow or is a general delegation
-  workflow_matches(delegation, input.resource.workflow_id)
-}
-
-# Helper: Check if delegation applies to the current workflow
-workflow_matches(delegation, workflow_id) if {
-  # Delegation is workflow-specific and matches
-  delegation.workflow_id == workflow_id
-}
-
-workflow_matches(delegation, workflow_id) if {
-  # Delegation is general (no workflow_id specified)
-  not delegation.workflow_id
-}
-
-workflow_matches(delegation, workflow_id) if {
-  # Delegation workflow_id is null
-  delegation.workflow_id == null
-}
-
-workflow_matches(delegation, workflow_id) if {
-# Delegation workflow_id is empty string
-  delegation.workflow_id == ""
+  input.delegation.valid == true
 }
 
 # ============================================================================
@@ -203,17 +222,25 @@ allow_read if {
   principal_id == owner_id
 }
 
-# Allow read if user has valid delegation and matching persona
+# Allow read if user has valid delegation (with read action) and matching persona
 allow_read if {
   principal_id := input.subject.id
   owner_id := input.resource.owner_id
   principal_id != owner_id
-  delegation_exists(owner_id, principal_id)
+  input.delegation.valid == true
+  input.delegation.has_action == true  # Delegation chain permits read action
   read_persona_valid
 }
 
-# Persona validation for read: user persona must match owner persona
+# Persona validation for read: agent personas OR matching owner persona
 read_persona_valid if {
+  # Agent personas can always read (if they have delegation)
+  input.subject.persona != ""
+  valid_agent_personas[input.subject.persona]
+}
+
+read_persona_valid if {
+  # User with matching owner persona can read
   owner_persona := input.resource.properties.owner.persona
   input.subject.persona == owner_persona
   owner_persona != ""

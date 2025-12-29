@@ -103,21 +103,19 @@ def list_workflow_items(config: Dict[str, Any], workflow_id: str, principal_user
 
 def parse_policy_deny_from_body(response_text: str) -> tuple[list[str], str]:
     # Parse deny reason codes from FlowPilot/AuthZ error bodies
-    # why: map 403 policy denials to a clean agent-runner deny outcome
-    # assumptions: body may be JSON with {"detail": "..."} or plain text
-    # side effects: none.
+    # Returns (reason_codes, message) tuple
     reason_codes: list[str] = []
     message: str = response_text.strip()
 
-    try:
+    # Try to parse as JSON
+    if response_text.strip().startswith("{"):
         parsed = json.loads(response_text)
         if isinstance(parsed, dict):
             detail = parsed.get("detail")
             if isinstance(detail, str) and detail.strip() != "":
                 message = detail.strip()
-    except Exception:
-        pass
 
+    # Extract reason codes from message
     if "reason_codes" in message:
         start = message.find("reason_codes=")
         if start >= 0:
@@ -190,13 +188,12 @@ def post_execute_workflow_item(
     )
     response_text = response.text or ""
 
+    # Parse JSON response if content-type indicates JSON
     parsed_json: dict[str, Any] | None = None
-    try:
+    if response.headers.get("content-type", "").startswith("application/json"):
         parsed = response.json()
         if isinstance(parsed, dict):
             parsed_json = parsed
-    except Exception:
-        parsed_json = None
 
     return response.status_code, parsed_json, response_text
 
@@ -322,14 +319,15 @@ def execute_workflow_run(
         raise ValueError("Invalid principal_user object")
 
     run_id = "wr_" + uuid.uuid4().hex[:10]
-    # Extract user ID and persona from principal_user to pass to list_workflow_items
-    principal_user_id = principal_user.get("id") if isinstance(principal_user, dict) else None
-    principal_persona = principal_user.get("persona") if isinstance(principal_user, dict) else None
+    # List workflow items using the agent's own delegation (from workflow owner)
+    # Do NOT pass principal_user_id - that would check if the principal has read access
+    # The agent has its own read delegation and can list items regardless of who requests execution
+    # Authorization for execution is checked per-item below
     items = list_workflow_items(
         config=config, 
         workflow_id=workflow_id, 
-        principal_user_id=principal_user_id,
-        principal_persona=principal_persona
+        principal_user_id=None,
+        principal_persona=None
     )
 
     results: List[Dict[str, Any]] = []

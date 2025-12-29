@@ -65,4 +65,8 @@ echo "Step 9: Configuring persona attribute..."
 python3 scripts/configure_persona_attribute.py || echo "  (persona attribute may need manual configuration)"
 
 echo ""
+echo "Step 10: Granting agent service account permissions..."
+python3 scripts/grant_agent_permissions.py || echo "  (agent permissions may need manual configuration)"
+
+echo ""
 echo "✓ Keycloak setup complete!"

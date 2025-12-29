@@ -12,7 +12,11 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 from graphdb import DelegationGraphDB
-from utils import require_non_empty_string
+from utils import require_non_empty_string, read_env_string
+
+# Delegation allowed actions configuration (imported from environment)
+_DELEGATION_ALLOWED_ACTIONS_STR = read_env_string("DELEGATION_ALLOWED_ACTIONS", "read,execute")
+DELEGATION_ALLOWED_ACTIONS = {action.strip() for action in _DELEGATION_ALLOWED_ACTIONS_STR.split(",") if action.strip()}
 
 
 class DelegationService:
@@ -31,14 +35,18 @@ class DelegationService:
         delegate_id: str,
         expires_in_days: int = 7,
         workflow_id: Optional[str] = None,
+        scope: Optional[List[str]] = None,
+        delegator_id: Optional[str] = None,  # ID of the authenticated user creating this delegation
     ) -> Dict[str, Any]:
         # Create a delegation relationship.
         #
         # Args:
-        #     principal_id: ID of the principal delegating authority
+        #     principal_id: ID of the principal delegating authority (resource owner)
         #     delegate_id: ID of the delegate receiving authority
         #     expires_in_days: Number of days until expiration (default 7)
         #     workflow_id: Optional workflow ID to scope the delegation
+        #     scope: List of actions (e.g. ["read"] or ["read", "execute"]). Defaults to ["execute"]
+        #     delegator_id: ID of the authenticated user creating this delegation (from JWT)
         #
         # Returns:
         #     Dictionary with delegation details
@@ -50,6 +58,27 @@ class DelegationService:
 
         if expires_in_days <= 0:
             raise ValueError("expires_in_days must be positive")
+        
+        # Validate that delegator can only delegate permissions they have
+        if delegator_id and delegator_id != principal_id:
+            # Delegator is not the resource owner - check what permissions they have
+            delegator_validation = self.validate_delegation(
+                principal_id=principal_id,
+                delegate_id=delegator_id,
+                workflow_id=workflow_id,
+            )
+            
+            if not delegator_validation.get("valid"):
+                raise ValueError("You cannot delegate permissions you don't have")
+            
+            delegator_actions = set(delegator_validation.get("effective_actions", []))
+            requested_actions = set(scope) if scope else {"execute"}
+            
+            # Check if delegator is trying to delegate more than they have
+            if not requested_actions.issubset(delegator_actions):
+                raise ValueError(
+                    f"Cannot delegate {list(requested_actions)}. You only have {list(delegator_actions)} permissions."
+                )
 
         # Calculate expiration time
         expires_at = datetime.now(timezone.utc) + timedelta(days=expires_in_days)
@@ -61,6 +90,7 @@ class DelegationService:
             delegate_id=delegate_id,
             workflow_id=workflow_id,
             expires_at=expires_at_iso,
+            scope=scope,
         )
 
         return delegation
@@ -147,7 +177,7 @@ class DelegationService:
         #     workflow_id: Optional workflow ID to scope the validation
         #
         # Returns:
-        #     Dictionary with validation result and delegation chain
+        #     Dictionary with validation result, delegation chain, and effective actions
         principal_id = require_non_empty_string(principal_id, "principal_id")
         delegate_id = require_non_empty_string(delegate_id, "delegate_id")
 
@@ -156,23 +186,26 @@ class DelegationService:
             return {
                 "valid": True,
                 "delegation_chain": [principal_id],
+                "effective_actions": list(DELEGATION_ALLOWED_ACTIONS),
             }
 
-        # Find delegation path
-        path = self.graphdb.find_delegation_path(
+        # Find delegation path with action computation
+        path_result = self.graphdb.find_delegation_path(
             principal_id=principal_id,
             delegate_id=delegate_id,
             workflow_id=workflow_id,
         )
 
-        if path:
+        if path_result:
             return {
                 "valid": True,
-                "delegation_chain": path,
+                "delegation_chain": path_result["path"],
+                "effective_actions": path_result["effective_actions"],
             }
         else:
             return {
                 "valid": False,
                 "delegation_chain": [],
+                "effective_actions": [],
             }
 

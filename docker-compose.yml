@@ -109,7 +109,7 @@ services:
 
       # AuthZ API base URL for authorization checks
       AUTHZ_BASE_URL: http://flowpilot-authz-api:8000
-      AGENT_SUB: agent-runner
+      AGENT_SUB: febf7643-7b95-4201-959a-009dedb1c87e  # Service account sub from flowpilot-agent
 
       # Client credentials for service-to-service calls
       KEYCLOAK_TOKEN_URL: https://keycloak:8443/realms/flowpilot/protocol/openid-connect/token
@@ -140,7 +140,7 @@ services:
       dockerfile: flowpilot-services/domain-services-api/Dockerfile
     environment:
       AUTHZ_BASE_URL: "http://flowpilot-authz-api:8000"
-      AGENT_SUB: "agent-runner"
+      AGENT_SUB: "febf7643-7b95-4201-959a-009dedb1c87e"  # Service account sub from flowpilot-agent
       DOMAIN: "flowpilot"
 
       # Templates are mounted at /data inside the container.

@@ -43,6 +43,9 @@ from utils import (
 # Environment flag for detailed error messages (disable in production)
 INCLUDE_ERROR_DETAILS = os.environ.get("INCLUDE_ERROR_DETAILS", "1") == "1"
 
+# AI Agent persona configuration
+AI_AGENT_PERSONA = os.environ.get("AI_AGENT_PERSONA", "ai-agent")
+
 
 DEFAULT_CONFIG: Dict[str, Any] = {
     "service_name": "flowpilot-api",
@@ -358,12 +361,19 @@ def handle_get_workflow_items(
                 raise HTTPException(status_code=401, detail="Invalid token: missing sub claim")
             print(f"[handle_get_workflow_items] Using user_sub from token: {user_sub}", flush=True)
         
-        print(f"[handle_get_workflow_items] Token sub={token_claims.get('sub')}, user_sub param={user_sub}, persona={persona}", flush=True)
+        # If no persona provided and this is the agent service account, use configured AI agent persona
+        user_persona = persona
+        agent_sub = request.app.state.service._config.get("agent_sub")
+        if not user_persona and agent_sub and user_sub == agent_sub:
+            user_persona = AI_AGENT_PERSONA
+            print(f"[handle_get_workflow_items] Agent detected, using {AI_AGENT_PERSONA} persona", flush=True)
+        
+        print(f"[handle_get_workflow_items] Token sub={token_claims.get('sub')}, user_sub={user_sub}, persona={user_persona}", flush=True)
         
         service.check_read_authorization(
             workflow_id=workflow_id,
             user_sub=user_sub,
-            user_persona=persona,
+            user_persona=user_persona,
         )
         
         return service.get_workflow_items(workflow_id=workflow_id)
@@ -618,6 +628,12 @@ def main() -> int:
         return 2
 
     api = create_app(config=config)
+    
+    # Uvicorn server configuration (can be overridden via environment variables)
+    uvicorn_max_requests = int(os.environ.get("UVICORN_MAX_REQUESTS", "10000"))
+    uvicorn_max_concurrency = int(os.environ.get("UVICORN_MAX_CONCURRENCY", "100"))
+    uvicorn_keepalive_timeout = int(os.environ.get("UVICORN_KEEPALIVE_TIMEOUT", "5"))
+    
     uvicorn.run(
         api,
         host=str(args.host),
@@ -625,9 +641,9 @@ def main() -> int:
         reload=bool(args.reload),
         log_level=str(config.get("log_level", "info")),
         # Security: Limit request body size to prevent memory exhaustion
-        limit_max_requests=10000,  # Max requests before worker restart
-        limit_concurrency=100,  # Max concurrent connections
-        timeout_keep_alive=5,  # Keep-alive timeout
+        limit_max_requests=uvicorn_max_requests,  # Max requests before worker restart
+        limit_concurrency=uvicorn_max_concurrency,  # Max concurrent connections
+        timeout_keep_alive=uvicorn_keepalive_timeout,  # Keep-alive timeout
     )
     return 0
 

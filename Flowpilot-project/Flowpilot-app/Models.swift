@@ -140,6 +140,7 @@ struct CreateDelegationRequest: Codable {
     let principal_id: String
     let delegate_id: String
     let workflow_id: String?
+    let scope: [String]?
     let expires_in_days: Int
 }
 
@@ -147,6 +148,7 @@ struct DelegationResponse: Codable {
     let principal_id: String
     let delegate_id: String
     let workflow_id: String?
+    let scope: [String]?
     let expires_at: String
     let created_at: String
     let revoked_at: String?

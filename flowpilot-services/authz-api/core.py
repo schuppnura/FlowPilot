@@ -16,54 +16,43 @@
 
 from __future__ import annotations
 
-import copy
-import os
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import requests
-from utils import http_post_json, build_timeouts, coerce_int, coerce_dict, coerce_bool
+from utils import (
+    http_post_json,
+    build_timeouts,
+    coerce_int,
+    coerce_dict,
+    coerce_bool,
+    read_env_string,
+    read_env_int,
+    read_env_float,
+    read_env_bool,
+)
 
-# Import profile and security for fetching owner attributes and service tokens
-try:
-    import profile
-    import security
-except ImportError:
-    # Allow core.py to be imported without these if needed for testing
-    profile = None
-    security = None
+# Required imports for fetching owner attributes and service tokens
+import profile
+import security
 
 # ============================================================================
 # Configuration Constants
 # ============================================================================
 
 # Default values for autobook attributes when not present in Keycloak
-DEFAULT_AUTOBOOK_CONSENT = False  # No consent by default
-DEFAULT_AUTOBOOK_PRICE = 0  # Maximum cost in EUR
-DEFAULT_AUTOBOOK_LEADTIME = 10000  # Minimum days in advance
-DEFAULT_AUTOBOOK_RISKLEVEL = 0  # Maximum airline risk level
+# These can be overridden via environment variables
+DEFAULT_AUTOBOOK_CONSENT = read_env_bool("DEFAULT_AUTOBOOK_CONSENT", False)
+DEFAULT_AUTOBOOK_PRICE = read_env_int("DEFAULT_AUTOBOOK_PRICE", 0)
+DEFAULT_AUTOBOOK_LEADTIME = read_env_int("DEFAULT_AUTOBOOK_LEADTIME", 10000)
+DEFAULT_AUTOBOOK_RISKLEVEL = read_env_int("DEFAULT_AUTOBOOK_RISKLEVEL", 0)
 
 # Allowed action names (AuthZEN compliant)
-ALLOWED_ACTIONS = {"create", "read", "write", "delete", "execute"}
+# Can be overridden via ALLOWED_ACTIONS env var (comma-separated)
+_ALLOWED_ACTIONS_STR = read_env_string("ALLOWED_ACTIONS", "create,read,write,delete,execute")
+ALLOWED_ACTIONS = {action.strip() for action in _ALLOWED_ACTIONS_STR.split(",") if action.strip()}
 
 
-def _read_env_string(name: str, default_value: str) -> str:
-    # Read environment variable with default value.
-    value = os.getenv(name)
-    if value is None or value.strip() == "":
-        return default_value
-    return value.strip()
-
-
-def _read_env_float(name: str, default_value: float) -> float:
-    # Read float environment variable with default value.
-    value = os.getenv(name)
-    if value is None or value.strip() == "":
-        return default_value
-    try:
-        return float(value.strip())
-    except ValueError:
-        return default_value
 
 
 @dataclass(frozen=True)
@@ -116,8 +105,8 @@ class OpaClient:
 def _build_opa_client() -> OpaClient:
     # Build OPA client from environment variables.
     config = OpaConfig(
-        base_url=_read_env_string("OPA_URL", "http://opa:8181"),
-        package=_read_env_string("OPA_PACKAGE", "auto_book"),
+        base_url=read_env_string("OPA_URL", "http://opa:8181"),
+        package=read_env_string("OPA_PACKAGE", "auto_book"),
     )
     return OpaClient(config=config)
 
@@ -130,10 +119,10 @@ def _build_opa_client() -> OpaClient:
 _OPA_CLIENT = _build_opa_client()
 
 # Delegation API configuration
-_DELEGATION_API_BASE_URL = _read_env_string(
+_DELEGATION_API_BASE_URL = read_env_string(
     "DELEGATION_API_BASE_URL", "http://flowpilot-delegation-api:8000"
 )
-_DELEGATION_API_TIMEOUT_SECONDS = _read_env_float(
+_DELEGATION_API_TIMEOUT_SECONDS = read_env_float(
     "DELEGATION_API_TIMEOUT_SECONDS", 5.0
 )
 
@@ -148,38 +137,49 @@ class EvaluateResult:
 def build_opa_input(
     *,
     authzen_request: dict[str, Any],
-    delegations_data: Optional[List[Dict[str, Any]]] = None,
+    delegation_result: Optional[Dict[str, Any]] = None,
     owner_attributes: Optional[Dict[str, Any]] = None,
 ) -> dict[str, Any]:
     # Build OPA input document from AuthZEN request.
     #
     # Args:
     #     authzen_request: AuthZEN-compliant request body with context.principal containing claims
-    #     delegations_data: List of delegation dictionaries fetched from delegation-api (PIP data)
+    #     delegation_result: Computed delegation chain result from delegation-api (PIP data)
     #     owner_attributes: Optional owner's autobook attributes (always used if available, regardless of delegation)
+    
+    # Extract top-level AuthZEN elements
     request_context = authzen_request.get("context") or {}
     request_resource = authzen_request.get("resource") or {}
     request_action = authzen_request.get("action") or {}
-
     resource_properties = coerce_dict(request_resource.get("properties"))
-
-    # Extract principal from AuthZEN context.principal
+    
+    # ========================================================================
+    # SUBJECT: Extract principal (current user) information
+    # ========================================================================
     principal = request_context.get("principal") or {}
     principal_sub = principal.get("id", "")
-    # Extract selected persona from principal (the persona the current user is using)
+    
+    # Extract principal persona (the persona the current user is using)
     principal_persona = principal.get("persona") or ""
     if isinstance(principal_persona, list) and principal_persona:
         principal_persona = principal_persona[0]
     principal_persona = str(principal_persona) if principal_persona else ""
-
+    
+    subject = {
+        "type": "user",
+        "id": principal_sub,
+        "persona": principal_persona,
+    }
+    
+    # ========================================================================
+    # RESOURCE: Build resource with owner information and autobook settings
+    # ========================================================================
     # Extract owner from resource properties
     owner_props = coerce_dict(resource_properties.get("owner"))
     owner_id = owner_props.get("id") if owner_props else None
-    # Extract owner persona from resource properties (set by domain-services-api when workflow was created)
     owner_persona_from_resource = owner_props.get("persona") if owner_props else None
-
-    # Always use owner's autobook attributes - autobook settings are always based on owner's preferences
-    # Coerce with defaults (works whether owner_attributes is None or a dict)
+    
+    # Extract owner's autobook attributes (with defaults if not provided)
     owner_attrs = owner_attributes or {}
     autobook_consent = coerce_bool(
         owner_attrs.get("autobook_consent"), DEFAULT_AUTOBOOK_CONSENT
@@ -193,23 +193,17 @@ def build_opa_input(
     autobook_risklevel = coerce_int(
         owner_attrs.get("autobook_risklevel"), DEFAULT_AUTOBOOK_RISKLEVEL
     )
-
-    # Context should only contain minimal principal information (id and persona)
-    # Remove claims entirely - not needed in context.principal
-    # Identity is in context.principal.id, owner attributes are in resource.properties.owner
-    context_principal = dict(principal)  # Shallow copy of principal
     
-    # Remove claims field entirely from context.principal
-    if "claims" in context_principal:
-        del context_principal["claims"]
+    # Determine owner persona (prefer resource properties, fall back to owner attributes)
+    owner_persona = owner_persona_from_resource
+    if not owner_persona:
+        owner_persona = owner_attrs.get("persona", "")
+        if isinstance(owner_persona, list) and owner_persona:
+            owner_persona = owner_persona[0]
     
-    context = {"principal": context_principal}
-
-    # Build resource with properties including owner (id, persona, autobook settings)
-    # All owner information belongs in resource.properties.owner (as per AuthZEN spec)
-    # Get workflow_id from properties (for workflow_item) or resource.id (for workflow)
+    # Build resource base structure
     workflow_id_value = resource_properties.get("workflow_id") or request_resource.get("id")
-    resource_dict: Dict[str, Any] = {
+    resource = {
         "workflow_id": workflow_id_value,
         "planned_price": resource_properties.get("planned_price"),
         "departure_date": resource_properties.get("departure_date"),
@@ -217,169 +211,135 @@ def build_opa_input(
         "owner_id": owner_id,
     }
     
-    # Include owner in resource.properties with all owner information
+    # Augment resource.properties.owner with complete owner information
     if owner_id:
-        resource_properties_with_owner = dict(resource_properties)  # Copy to avoid mutating original
+        resource_properties_with_owner = dict(resource_properties)
         if "owner" not in resource_properties_with_owner:
             resource_properties_with_owner["owner"] = {}
         if not isinstance(resource_properties_with_owner["owner"], dict):
             resource_properties_with_owner["owner"] = {}
         
-        # Set owner id
+        # Consolidate all owner information in resource.properties.owner
         resource_properties_with_owner["owner"]["id"] = owner_id
-        
-        # Use persona from resource properties (set by domain-services-api) if available
-        # Otherwise fall back to persona from owner attributes
-        owner_persona = owner_persona_from_resource
-        if not owner_persona:
-            owner_persona = owner_attrs.get("persona", "")
-            if isinstance(owner_persona, list) and owner_persona:
-                owner_persona = owner_persona[0]
-        
         if owner_persona:
             resource_properties_with_owner["owner"]["persona"] = str(owner_persona)
-        
-        # Add autobook settings to owner
         resource_properties_with_owner["owner"]["autobook_consent"] = autobook_consent
         resource_properties_with_owner["owner"]["autobook_price"] = autobook_price
         resource_properties_with_owner["owner"]["autobook_leadtime"] = autobook_leadtime
         resource_properties_with_owner["owner"]["autobook_risklevel"] = autobook_risklevel
         
-        resource_dict["properties"] = resource_properties_with_owner
-
-    opa_input = {
-        "subject": {
-            "type": "agent",  # Subject is the agent (service) making the call
-            "id": principal_sub,  # the actual, current user (principal)
-            "persona": principal_persona,  # Selected persona of the current user
-        },
+        resource["properties"] = resource_properties_with_owner
+    
+    # ========================================================================
+    # CONTEXT: Minimal principal information (no claims)
+    # ========================================================================
+    context_principal = dict(principal)
+    if "claims" in context_principal:
+        del context_principal["claims"]
+    
+    context = {"principal": context_principal}
+    
+    # ========================================================================
+    # DELEGATION: Computed delegation chain result
+    # ========================================================================
+    if delegation_result is not None:
+        delegation = delegation_result
+    else:
+        delegation = {
+            "valid": False,
+            "has_action": False,
+            "delegation_chain": [],
+            "effective_actions": [],
+        }
+    
+    # ========================================================================
+    # Assemble final OPA input document
+    # ========================================================================
+    return {
+        "subject": subject,
         "action": request_action,
-        "resource": resource_dict,
+        "resource": resource,
         "context": context,
+        "delegation": delegation,
     }
 
-    # Add delegation data for OPA policy evaluation (PIP - Policy Information Point)
-    # OPA will evaluate delegations declaratively to determine if delegation chain exists
-    if delegations_data is not None:
-        opa_input["delegations"] = delegations_data
-    else:
-        opa_input["delegations"] = []
 
-    return opa_input
-
-
-def fetch_delegations_for_opa(
+def compute_delegation_chain(
     *,
     bearer_token: str,
     owner_id: str,
     principal_id: str,
     workflow_id: Optional[str],
-) -> List[Dict[str, Any]]:
-    # Fetch delegations from delegation-api to pass to OPA for policy evaluation.
-    # This acts as a PIP (Policy Information Point) - fetching data for OPA to evaluate.
+    requested_action: str,
+) -> Dict[str, Any]:
+    # Compute delegation chain by calling delegation-api's validate endpoint.
+    # Returns computed result indicating whether a valid delegation exists for the requested action.
+    #
+    # This replaces an approach of fetching all delegation edges and letting OPA
+    # try to traverse them, because this doesn't work for recursive chains in OPA.
     #
     # Args:
-    #     bearer_token: Service token for authenticating with delegation API (already validated by caller)
+    #     bearer_token: Service token for authenticating with delegation API
     #     owner_id: Owner ID (resource owner)
     #     principal_id: Principal ID (user attempting to act)
-    #     workflow_id: Optional workflow ID to scope the delegation fetch
+    #     workflow_id: Optional workflow ID to scope the delegation
+    #     requested_action: The action being requested ("read" or "execute")
     #
     # Returns:
-    #     List of delegation dictionaries for OPA to evaluate
-    #
-    # Raises:
-    #     RuntimeError: If delegation API returns an error
+    #     Dictionary with:
+    #       - valid: boolean (whether delegation exists)
+    #       - has_action: boolean (whether delegation chain permits the requested action)
+    #       - delegation_chain: list of user IDs in the chain
+    #       - effective_actions: list of actions available through this chain
     headers = {"Authorization": f"Bearer {bearer_token.strip()}"}
-    delegations: List[Dict[str, Any]] = []
-    seen_keys: set[tuple[str, str, Optional[str]]] = (
-        set()
-    )  # Track (principal_id, delegate_id, workflow_id) to deduplicate
-
-    # Fetch outgoing delegations from owner (filtered by workflow_id if provided)
-    # The delegation API returns both workflow-specific and general (workflow_id IS NULL) delegations
-    try:
-        params: Dict[str, str] = {"principal_id": owner_id, "include_expired": "false"}
-        if workflow_id:
-            params["workflow_id"] = workflow_id
-
-        response = requests.get(
-            f"{_DELEGATION_API_BASE_URL.rstrip('/')}/v1/delegations",
-            params=params,
-            headers=headers,
-            timeout=_DELEGATION_API_TIMEOUT_SECONDS,
-            verify=False,  # Allow self-signed certs for local dev
-        )
-
-        if response.status_code == 200:
-            data = response.json()
-            if isinstance(data, dict) and "delegations" in data:
-                for d in data.get("delegations", []):
-                    key = (
-                        d.get("principal_id"),
-                        d.get("delegate_id"),
-                        d.get("workflow_id"),
-                    )
-                    if key not in seen_keys:
-                        delegations.append(d)
-                        seen_keys.add(key)
-    except Exception as e:
-        print(f"[authz-api] Failed to fetch outgoing delegations: {e}", flush=True)
-
-    # Fetch incoming delegations to principal (filtered by workflow_id if provided)
-    # The delegation API returns both workflow-specific and general (workflow_id IS NULL) delegations
-    try:
-        params = {"delegate_id": principal_id, "include_expired": "false"}
-        if workflow_id:
-            params["workflow_id"] = workflow_id
-
-        response = requests.get(
-            f"{_DELEGATION_API_BASE_URL.rstrip('/')}/v1/delegations",
-            params=params,
-            headers=headers,
-            timeout=_DELEGATION_API_TIMEOUT_SECONDS,
-            verify=False,
-        )
-
-        if response.status_code == 200:
-            data = response.json()
-            if isinstance(data, dict) and "delegations" in data:
-                for d in data.get("delegations", []):
-                    key = (
-                        d.get("principal_id"),
-                        d.get("delegate_id"),
-                        d.get("workflow_id"),
-                    )
-                    if key not in seen_keys:
-                        delegations.append(d)
-                        seen_keys.add(key)
-    except Exception as e:
-        print(f"[authz-api] Failed to fetch incoming delegations: {e}", flush=True)
-
-    return delegations
+    
+    params: Dict[str, str] = {
+        "principal_id": owner_id,
+        "delegate_id": principal_id,
+    }
+    if workflow_id:
+        params["workflow_id"] = workflow_id
+    
+    response = requests.get(
+        f"{_DELEGATION_API_BASE_URL.rstrip('/')}/v1/delegations/validate",
+        params=params,
+        headers=headers,
+        timeout=_DELEGATION_API_TIMEOUT_SECONDS,
+        verify=False,  # Allow self-signed certs for local dev
+    )
+    response.raise_for_status()  # Raise HTTPError for bad responses
+    
+    data = response.json()
+    valid = data.get("valid", False)
+    delegation_chain = data.get("delegation_chain", [])
+    effective_actions = data.get("effective_actions", [])
+    
+    # Check if the requested action is in effective actions
+    has_action = requested_action in effective_actions
+    
+    return {
+        "valid": valid,
+        "has_action": has_action,
+        "delegation_chain": delegation_chain,
+        "effective_actions": effective_actions,
+    }
 
 
 def evaluate_request_with_opa(
     *,
     opa_client: OpaClient,
     authzen_request: dict[str, Any],
-    delegations_data: Optional[List[Dict[str, Any]]] = None,
+    delegation_result: Optional[Dict[str, Any]] = None,
     owner_attributes: Optional[Dict[str, Any]] = None,
 ) -> EvaluateResult:
     input_document = build_opa_input(
         authzen_request=authzen_request,
-        delegations_data=delegations_data,
+        delegation_result=delegation_result,
         owner_attributes=owner_attributes,
     )
 
-    try:
-        is_allowed = opa_client.evaluate_allow(input_document=input_document)
-    except Exception:
-        is_allowed = False
-
-    try:
-        reasons = opa_client.evaluate_reasons(input_document=input_document)
-    except Exception:
-        reasons = []
+    is_allowed = opa_client.evaluate_allow(input_document=input_document)
+    reasons = opa_client.evaluate_reasons(input_document=input_document)
 
     return EvaluateResult(
         decision="allow" if is_allowed else "deny",
@@ -388,19 +348,14 @@ def evaluate_request_with_opa(
     )
 
 
-def validate_authzen_request(authzen_request: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+def validate_authzen_request(authzen_request: dict[str, Any]) -> str:
     # Validate that a request is AuthZEN compliant.
     #
     # Args:
     #     authzen_request: The request body to validate
     #
     # Returns:
-    #     Tuple of (principal_id, validated_context) where:
-    #     - principal_id: The principal ID from context.principal.id
-    #     - validated_context: The context dict with principal
-    #
-    # Raises:
-    #     ValueError: If the request is not AuthZEN compliant
+    #     principal_id: The principal ID from context.principal.id
     context = authzen_request.get("context", {})
     principal = context.get("principal")
     if not principal or not isinstance(principal, dict):
@@ -424,15 +379,12 @@ def validate_authzen_request(authzen_request: dict[str, Any]) -> tuple[str, dict
         raise ValueError("Request must be AuthZEN compliant: action.name is required")
     
     # Sanitize and validate action name
-    if security:
-        action_name = security.sanitize_string(action_name.strip(), 255)
-    else:
-        action_name = action_name.strip()
+    action_name = security.sanitize_string(action_name.strip(), 255)
     
     if action_name not in ALLOWED_ACTIONS:
         raise ValueError(f"Invalid action name: {action_name}. Allowed actions: {', '.join(sorted(ALLOWED_ACTIONS))}")
 
-    return principal_id.strip(), context
+    return principal_id.strip()
 
 
 def _extract_owner_id(authzen_request: dict[str, Any]) -> tuple[Optional[str], Optional[str]]:
@@ -454,37 +406,6 @@ def _extract_owner_id(authzen_request: dict[str, Any]) -> tuple[Optional[str], O
     return (str(owner_id) if owner_id else None), (str(workflow_id) if workflow_id else None)
 
 
-def _fetch_delegations(owner_id: str, principal_id: str, workflow_id: Optional[str]) -> Optional[List[Dict[str, Any]]]:
-    # Fetch delegation data from delegation-api.
-    if not security:
-        return None
-    
-    service_token = security.get_service_token()
-    if not service_token:
-        return None
-    
-    try:
-        return fetch_delegations_for_opa(
-            bearer_token=service_token,
-            owner_id=owner_id,
-            principal_id=principal_id,
-            workflow_id=workflow_id,
-        )
-    except Exception as e:
-        print(f"[authz-api] Failed to fetch delegations: {e}", flush=True)
-        return None
-
-
-def _fetch_owner_attributes(owner_id: str) -> Optional[Dict[str, Any]]:
-    # Fetch owner's autobook attributes and persona from Keycloak.
-    if not profile:
-        return None
-    
-    try:
-        return profile.fetch_attributes(owner_id)
-    except Exception as e:
-        print(f"[authz-api] Failed to fetch owner attributes: {e}", flush=True)
-        return None
 
 
 def evaluate_authorization_request(
@@ -494,7 +415,7 @@ def evaluate_authorization_request(
     #
     # This function handles the complete authorization flow:
     # 1. Validates AuthZEN compliance
-    # 2. Fetches delegation data (if resource has owner)
+    # 2. Computes delegation chain (if resource has owner)
     # 3. Fetches owner attributes (if resource has owner)
     # 4. Evaluates the request with OPA
     #
@@ -507,24 +428,40 @@ def evaluate_authorization_request(
     # Raises:
     #     ValueError: If request is not AuthZEN compliant
     
-    principal_id, context = validate_authzen_request(authzen_request)
+    principal_id = validate_authzen_request(authzen_request)
     
-    # Extract owner and workflow information
+    # Extract owner, workflow, and action information
     owner_id, workflow_id = _extract_owner_id(authzen_request)
+    action = authzen_request.get("action", {})
+    action_name = action.get("name", "execute")  # Default to execute if not specified
     
-    # Fetch delegation data and owner attributes (PIP - Policy Information Point)
-    delegations_data = None
+    # Compute delegation chain and fetch owner attributes (PIP - Policy Information Point)
+    delegation_result = None
     owner_attributes = None
     
     if owner_id:
-        delegations_data = _fetch_delegations(owner_id, principal_id, workflow_id)
-        owner_attributes = _fetch_owner_attributes(owner_id)
+        # Get service token for delegation API calls
+        service_token = security.get_service_token()
+        if not service_token:
+            raise RuntimeError("Service token not available - cannot validate delegation")
+        
+        # Compute delegation chain from delegation-api
+        delegation_result = compute_delegation_chain(
+            bearer_token=service_token,
+            owner_id=owner_id,
+            principal_id=principal_id,
+            workflow_id=workflow_id,
+            requested_action=action_name,
+        )
+        
+        # Fetch owner's autobook attributes and persona from Keycloak
+        owner_attributes = profile.fetch_attributes(owner_id)
     
     # Evaluate request with OPA
     return evaluate_request_with_opa(
         opa_client=_OPA_CLIENT,
         authzen_request=authzen_request,
-        delegations_data=delegations_data,
+        delegation_result=delegation_result,
         owner_attributes=owner_attributes,
     )
 

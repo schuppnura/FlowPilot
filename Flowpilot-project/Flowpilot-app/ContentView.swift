@@ -705,16 +705,26 @@ struct ContentView: View {
                 
                 Spacer()
                 
-                Button(action: {
-                    Task { await state.runAgentDryRun() }
-                }) {
-                    Label("Check Authorization (Dry Run)", systemImage: "checkmark.shield.fill")
+                HStack(spacing: 12) {
+                    Button(action: {
+                        Task { await state.runAgentDryRun() }
+                    }) {
+                        Label("Dry Run", systemImage: "checkmark.shield.fill")
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+                    .disabled(state.principalSub == nil || state.workflowId == nil || personaRequired)
+                    
+                    Button(action: {
+                        Task { await state.bookTrip() }
+                    }) {
+                        Label("Book Trip", systemImage: "calendar.badge.checkmark")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .tint(Color(red: 0.85, green: 0.35, blue: 0.15))
+                    .disabled(state.principalSub == nil || state.workflowId == nil || personaRequired)
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .tint(Color(red: 0.85, green: 0.35, blue: 0.15))
-                .disabled(state.principalSub == nil || state.workflowId == nil || personaRequired)
-                .frame(width: 220)
             }
             
             if let run = state.lastAgentRun {

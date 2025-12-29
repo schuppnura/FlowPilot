@@ -193,13 +193,14 @@ class JWTValidator:
                 pass
 
             # Service account tokens (client credentials flow) may have different audience
-            # If this is a service account token (azp=flowpilot-agent), allow aud=flowpilot-agent
+            # If this is a service account token (matches AGENT_CLIENT_ID), allow that audience
+            agent_client_id = os.environ.get("AGENT_CLIENT_ID", "").strip()
             is_service_account = (
-                azp and isinstance(azp, str) and azp.strip() == "flowpilot-agent"
+                azp and isinstance(azp, str) and agent_client_id and azp.strip() == agent_client_id
             )
             if is_service_account:
-                # Check if token has flowpilot-agent audience (which is correct for service tokens)
-                if isinstance(token_aud, str) and token_aud == "flowpilot-agent":
+                # Check if token has service client audience (which is correct for service tokens)
+                if isinstance(token_aud, str) and token_aud == agent_client_id:
                     # Service account token with correct audience - re-validate with correct audience
                     try:
                         # Get signing key from JWKS (cached)
@@ -229,7 +230,7 @@ class JWTValidator:
                             },
                             leeway=10,
                             issuer=self.issuer,
-                            audience="flowpilot-agent",  # Service tokens must have this audience
+                            audience=agent_client_id,  # Service tokens must have client_id as audience
                         )
                         # Continue with other validations (subject, token type, etc.)
                         self._validate_token_type(decoded)
@@ -418,9 +419,9 @@ def get_service_token() -> Optional[str]:
     # Request new token using client credentials flow
     try:
         # For service-to-service tokens, use the client_id as the audience
-        # This ensures service tokens have aud=flowpilot-agent (not flowpilot-desktop)
+        # This ensures service tokens have aud matching the client_id (not the user audience)
         # The KEYCLOAK_AUDIENCE env var is for user tokens, not service tokens
-        service_audience = client_id  # Service tokens should have aud=flowpilot-agent
+        service_audience = client_id  # Service tokens should have aud matching their client_id
 
         # Disable SSL verification for local development with self-signed certs
         token_data = {

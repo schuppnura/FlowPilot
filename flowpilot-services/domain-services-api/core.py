@@ -20,14 +20,16 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 import requests
 
 import security
 from template_loader import load_workflow_templates_from_directory
-from utils import build_url, require_non_empty_string
+from utils import build_url, require_non_empty_string, read_env_string, coerce_timestamp
+
+# AI Agent persona configuration
+AI_AGENT_PERSONA = read_env_string("AI_AGENT_PERSONA", "ai-agent")
 
 
 class PolicyDeniedError(PermissionError):
@@ -38,13 +40,6 @@ class PolicyDeniedError(PermissionError):
         super().__init__(message)
         self.reason_codes = reason_codes
         self.advice = advice
-
-
-def get_utc_now_iso() -> str:
-    # Return a stable UTC timestamp string
-    # why: deterministic timestamps in responses
-    # side effect: reads system time.
-    return datetime.now(timezone.utc).isoformat()
 
 
 class FlowPilotService:
@@ -144,7 +139,7 @@ class FlowPilotService:
 
         template = self._templates[template_id]
         workflow_id = "w_" + uuid.uuid4().hex[:8]
-        created_at = get_utc_now_iso()
+        created_at = coerce_timestamp()
 
         items: List[Dict[str, Any]] = []
         raw_items = template.get("items", [])
@@ -211,7 +206,7 @@ class FlowPilotService:
         
         # Owner can always read their own workflows
         if user_sub == owner_sub:
-            print(f"[check_read_authorization] Owner match - allowing access", flush=True)
+            print("[check_read_authorization] Owner match - allowing access", flush=True)
             return
         
         # Non-owner must have authorization
@@ -344,13 +339,22 @@ class FlowPilotService:
             )
 
         if not dry_run:
-            item["status"] = "executed"
+            # Update status: planned -> booked, booked -> rebooked, anything else -> booked
+            current_status = str(item.get("status", "planned")).lower()
+            if current_status == "booked":
+                item["status"] = "rebooked"
+            else:
+                item["status"] = "booked"
+        
         item["last_decision"] = "allow"
         item["last_reason_codes"] = reason_codes
         item["last_advice"] = advice
+        
+        # For response, show current status
+        response_status = item["status"] if not dry_run else "simulated"
 
         return {
-            "status": "simulated" if dry_run else "executed",
+            "status": response_status,
             "decision": "allow",
             "workflow_id": workflow_id,
             "item_id": workflow_item_id,
@@ -472,7 +476,8 @@ class FlowPilotService:
         # Subject is always the agent (service) making the call to authz-api
         # This is a service-to-service call, so subject identifies the calling service (ai-agent-api)
         # The user information (with persona) goes in context.principal
-        subject: Dict[str, Any] = {"type": "agent", "id": service_id}
+        # Add AI agent persona to subject for authorization checks (configurable via AI_AGENT_PERSONA)
+        subject: Dict[str, Any] = {"type": "agent", "id": service_id, "persona": AI_AGENT_PERSONA}
 
         # Add owner to resource properties (with persona from workflow creation)
         owner_sub = str(workflow.get("owner_sub", ""))
@@ -555,7 +560,8 @@ class FlowPilotService:
             service_id = agent_sub
 
         # Subject is the service making the call
-        subject: Dict[str, Any] = {"type": "agent", "id": service_id}
+        # Add AI agent persona to subject for authorization checks (configurable via AI_AGENT_PERSONA)
+        subject: Dict[str, Any] = {"type": "agent", "id": service_id, "persona": AI_AGENT_PERSONA}
 
         # Add owner to resource properties
         owner_sub = str(workflow.get("owner_sub", ""))

@@ -217,13 +217,18 @@ if __name__ == "__main__":
     parser.add_argument("--port", type=int, default=8000, help="Bind port")
     args = parser.parse_args()
 
+    # Uvicorn server configuration (can be overridden via environment variables)
+    uvicorn_max_requests = int(os.environ.get("UVICORN_MAX_REQUESTS", "10000"))
+    uvicorn_max_concurrency = int(os.environ.get("UVICORN_MAX_CONCURRENCY", "100"))
+    uvicorn_keepalive_timeout = int(os.environ.get("UVICORN_KEEPALIVE_TIMEOUT", "5"))
+
     uvicorn.run(
         app,
         host=args.host,
         port=args.port,
         log_level="info",
         # Security: Limit request body size to prevent memory exhaustion
-        limit_max_requests=10000,
-        limit_concurrency=100,
-        timeout_keep_alive=5,
+        limit_max_requests=uvicorn_max_requests,
+        limit_concurrency=uvicorn_max_concurrency,
+        timeout_keep_alive=uvicorn_keepalive_timeout,
     )

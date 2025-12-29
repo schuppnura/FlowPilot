@@ -12,7 +12,10 @@ import json
 # Disable SSL warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-KEYCLOAK_URL = "https://localhost:8443"
+# Get Keycloak host/port from environment (for Docker compatibility)
+KEYCLOAK_HOST = os.getenv("KEYCLOAK_HOST", "localhost")
+KEYCLOAK_PORT = os.getenv("KEYCLOAK_PORT", "8443")
+KEYCLOAK_URL = f"https://{KEYCLOAK_HOST}:{KEYCLOAK_PORT}"
 REALM = "flowpilot"
 
 # Try to get admin credentials from environment or .env file

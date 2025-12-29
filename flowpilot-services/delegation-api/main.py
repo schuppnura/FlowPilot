@@ -127,7 +127,7 @@ from __future__ import annotations
 
 import argparse
 import os
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
@@ -152,6 +152,15 @@ from utils import (
 
 # Environment flag for detailed error messages (disable in production)
 INCLUDE_ERROR_DETAILS = os.environ.get("INCLUDE_ERROR_DETAILS", "1") == "1"
+
+# Delegation expiry configuration (can be overridden via environment variables)
+DELEGATION_DEFAULT_EXPIRY_DAYS = int(os.environ.get("DELEGATION_DEFAULT_EXPIRY_DAYS", "7"))
+DELEGATION_MIN_EXPIRY_DAYS = int(os.environ.get("DELEGATION_MIN_EXPIRY_DAYS", "1"))
+DELEGATION_MAX_EXPIRY_DAYS = int(os.environ.get("DELEGATION_MAX_EXPIRY_DAYS", "365"))
+
+# Delegation allowed actions (can be overridden via environment variables)
+_DELEGATION_ALLOWED_ACTIONS_STR = os.environ.get("DELEGATION_ALLOWED_ACTIONS", "read,execute")
+DELEGATION_ALLOWED_ACTIONS = {action.strip() for action in _DELEGATION_ALLOWED_ACTIONS_STR.split(",") if action.strip()}
 
 # Default configuration values
 DEFAULT_CONFIG: Dict[str, Any] = {
@@ -182,8 +191,14 @@ class CreateDelegationRequest(BaseModel):
     workflow_id: Optional[str] = Field(
         None, max_length=255, description="Optional workflow ID to scope delegation"
     )
+    scope: Optional[List[str]] = Field(
+        None, description='List of actions (e.g. ["read"] or ["read", "execute"]). Defaults to ["execute"]'
+    )
     expires_in_days: int = Field(
-        default=7, ge=1, le=365, description="Days until expiration (default: 7)"
+        default=DELEGATION_DEFAULT_EXPIRY_DAYS,
+        ge=DELEGATION_MIN_EXPIRY_DAYS,
+        le=DELEGATION_MAX_EXPIRY_DAYS,
+        description=f"Days until expiration (default: {DELEGATION_DEFAULT_EXPIRY_DAYS}, min: {DELEGATION_MIN_EXPIRY_DAYS}, max: {DELEGATION_MAX_EXPIRY_DAYS})"
     )
 
     @validator("principal_id")
@@ -199,6 +214,16 @@ class CreateDelegationRequest(BaseModel):
         if v is None:
             return None
         return security.sanitize_string(v, 255)
+    
+    @validator("scope")
+    def validate_scope(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+        if v is None:
+            return None
+        # Validate that scope contains only allowed actions
+        for action in v:
+            if action not in DELEGATION_ALLOWED_ACTIONS:
+                raise ValueError(f"Invalid action in scope: {action}. Allowed: {DELEGATION_ALLOWED_ACTIONS}")
+        return v
 
 
 class RevokeDelegationRequest(BaseModel):
@@ -269,11 +294,16 @@ def handle_post_delegations(
     try:
         api_logging.log_api_request("POST", "/v1/delegations", request_body=body.dict(), token_claims=token_claims, request=request)
 
+        # Extract delegator_id from JWT to validate they can only delegate what they have
+        delegator_id = token_claims.get("sub") if token_claims else None
+
         delegation = service.create_delegation(
             principal_id=body.principal_id,
             delegate_id=body.delegate_id,
             workflow_id=body.workflow_id,
             expires_in_days=body.expires_in_days,
+            scope=body.scope,
+            delegator_id=delegator_id,
         )
 
         api_logging.log_api_response("POST", "/v1/delegations", 200, response_body=delegation)
@@ -535,15 +565,21 @@ def main() -> int:
         return 2
 
     api = create_app(config=config)
+    
+    # Uvicorn server configuration (can be overridden via environment variables)
+    uvicorn_max_requests = int(os.environ.get("UVICORN_MAX_REQUESTS", "10000"))
+    uvicorn_max_concurrency = int(os.environ.get("UVICORN_MAX_CONCURRENCY", "100"))
+    uvicorn_keepalive_timeout = int(os.environ.get("UVICORN_KEEPALIVE_TIMEOUT", "5"))
+    
     uvicorn.run(
         api,
         host=str(args.host),
         port=int(args.port),
         reload=bool(args.reload),
         log_level=str(config.get("log_level", "info")),
-        limit_max_requests=10000,
-        limit_concurrency=100,
-        timeout_keep_alive=5,
+        limit_max_requests=uvicorn_max_requests,
+        limit_concurrency=uvicorn_max_concurrency,
+        timeout_keep_alive=uvicorn_keepalive_timeout,
     )
     return 0
 

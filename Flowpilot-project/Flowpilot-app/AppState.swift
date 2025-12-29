@@ -499,6 +499,7 @@ final class AppState: ObservableObject {
                 principalId: principalId,
                 delegateId: delegateId,
                 workflowId: workflowIdToDelegate,
+                scope: ["execute"],  // Travel agents can execute workflows
                 expiresInDays: delegationExpiresInDays
             )
             statusMessage = "Delegation created successfully for workflow \(workflowIdToDelegate). Expires in \(delegationExpiresInDays) days."
@@ -563,6 +564,7 @@ final class AppState: ObservableObject {
                 principalId: principalId,
                 delegateId: inviteeId,
                 workflowId: workflowIdToShare,
+                scope: ["read"],  // Invitations are read-only
                 expiresInDays: invitationExpiresInDays
             )
             statusMessage = "Invitation sent for workflow \(workflowIdToShare). Expires in \(invitationExpiresInDays) days."
@@ -576,6 +578,16 @@ final class AppState: ObservableObject {
     
     func runAgentDryRun() async {
         // Run the agent-runner in dry-run; why: demonstrate delegated authorization and deny/advice flows; side effect: network I/O.
+        await runAgent(dryRun: true)
+    }
+    
+    func bookTrip() async {
+        // Book the trip (execute without dry-run); why: actually book the workflow items; side effect: network I/O and status changes.
+        await runAgent(dryRun: false)
+    }
+    
+    private func runAgent(dryRun: Bool) async {
+        // Run the agent-runner; why: execute or simulate workflow execution; side effect: network I/O.
         clearError()
         guard let sub = principalSub else {
             setError("You must sign in first.")
@@ -600,19 +612,32 @@ final class AppState: ObservableObject {
             statusMessage = "Token refresh failed, continuing with existing token…"
         }
         
-        statusMessage = "Running agent (dry-run)…"
+        let actionLabel = dryRun ? "dry-run" : "booking"
+        statusMessage = "Running agent (\(actionLabel))…"
         do {
             // Agent-runner API still expects workflowId; we pass the workflow id and selected persona.
             // If only one persona exists, use it even if not explicitly selected
             let personaToSend = selectedPersona ?? (personas.count == 1 ? personas.first : nil)
             print("DEBUG: Sending persona to agent API: \(personaToSend ?? "nil") (selectedPersona: \(selectedPersona ?? "nil"), personas: \(personas))")
-            let run = try await agentRunnerClient.runAgent(workflowId: workflow, principalSub: sub, dryRun: true, persona: personaToSend)
+            let run = try await agentRunnerClient.runAgent(workflowId: workflow, principalSub: sub, dryRun: dryRun, persona: personaToSend)
             lastAgentRun = run
             missingProfileFieldsFromAdvice = AdviceUtils.extractMissingProfileFields(from: run)
             let allowedCount = run.results.filter { $0.decision.lowercased() == "allow" }.count
             let deniedCount = run.results.filter { $0.decision.lowercased() == "deny" }.count
             let errorCount = run.results.filter { $0.status.lowercased() == "error" }.count
-            statusMessage = "Agent run complete. Allowed=\(allowedCount), Denied=\(deniedCount), Errors=\(errorCount)."
+            
+            if dryRun {
+                statusMessage = "Dry run complete. Allowed=\(allowedCount), Denied=\(deniedCount), Errors=\(errorCount)."
+            } else {
+                statusMessage = "Booking complete. Booked=\(allowedCount), Denied=\(deniedCount), Errors=\(errorCount)."
+                // Refresh workflow items to show updated status (booked/rebooked)
+                if let workflowId = self.workflowId {
+                    let personaToSend = selectedPersona ?? (personas.count == 1 ? personas.first : nil)
+                    if let items = try? await workflowClient.fetchWorkflowItems(workflowId: workflowId, persona: personaToSend) {
+                        workflowItems = items
+                    }
+                }
+            }
             
             // Surface detailed denial/error information for visibility
             let denials = run.results.filter { $0.decision.lowercased() == "deny" || $0.status.lowercased() == "error" }

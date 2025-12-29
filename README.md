@@ -221,6 +221,24 @@ docker compose up -d --build
 docker compose ps
 ```
 
+### Automated Keycloak Setup
+
+The stack includes an automated Keycloak setup container (`keycloak-setup`) that runs on startup:
+
+1. **Waits for Keycloak** to be fully ready
+2. **Enables unmanaged attributes** for custom user attributes
+3. **Creates/verifies clients** (account-console, flowpilot-desktop, flowpilot-agent)
+4. **Configures scopes** and protocol mappers for autobook attributes
+5. **Grants service account permissions** to flowpilot-agent for user queries
+
+To see setup logs:
+
+```bash
+docker compose logs keycloak-setup
+```
+
+**Note:** Keycloak configuration persists across restarts via Docker volumes. The setup container will detect existing configuration and skip already-completed steps.
+
 To see OPA startup logs:
 
 ```bash
