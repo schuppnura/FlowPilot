@@ -30,6 +30,7 @@ from utils import (
     read_env_int,
     read_env_float,
     read_env_bool,
+    get_http_config,
 )
 
 # Required imports for fetching owner attributes and service tokens
@@ -120,7 +121,6 @@ _OPA_CLIENT = _build_opa_client()
 
 # Delegation API configuration (required environment variables)
 _DELEGATION_API_BASE_URL = read_env_string("DELEGATION_API_BASE_URL")
-_DELEGATION_API_TIMEOUT_SECONDS = read_env_float("DELEGATION_API_TIMEOUT_SECONDS")
 
 
 @dataclass(frozen=True)
@@ -300,8 +300,7 @@ def compute_delegation_chain(
         f"{_DELEGATION_API_BASE_URL.rstrip('/')}/v1/delegations/validate",
         params=params,
         headers=headers,
-        timeout=_DELEGATION_API_TIMEOUT_SECONDS,
-        verify=False,  # Allow self-signed certs for local dev
+        **get_http_config(),
     )
     response.raise_for_status()  # Raise HTTPError for bad responses
     

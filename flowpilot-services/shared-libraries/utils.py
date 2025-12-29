@@ -101,6 +101,29 @@ def read_env_bool(name: str, default_value: Optional[bool] = None) -> bool:
     raise ValueError(f"Invalid boolean value for {name}: {value} (expected true/false/yes/no/1/0)")
 
 
+# ============================================================================
+# HTTP Client Configuration
+# ============================================================================
+
+# Centralized HTTP client configuration (required environment variables)
+HTTP_DEFAULT_TIMEOUT = read_env_float("HTTP_DEFAULT_TIMEOUT")
+HTTP_VERIFY_TLS = read_env_bool("HTTP_VERIFY_TLS")
+
+
+def get_http_config() -> dict[str, Any]:
+    # Return HTTP configuration dict compatible with requests library.
+    # Usage: requests.get(url, **get_http_config())
+    return {
+        "timeout": HTTP_DEFAULT_TIMEOUT,
+        "verify": HTTP_VERIFY_TLS,
+    }
+
+
+# ============================================================================
+# Value Coercion Functions
+# ============================================================================
+
+
 def coerce_int(value: Any, default: int) -> int:
     # Convert a value to an integer, returning default if conversion fails or value is None.
     if value is None:
