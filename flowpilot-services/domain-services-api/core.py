@@ -26,7 +26,7 @@ import requests
 
 import security
 from template_loader import load_workflow_templates_from_directory
-from utils import build_url, require_non_empty_string, read_env_string, coerce_timestamp
+from utils import build_url, require_non_empty_string, read_env_string, coerce_timestamp, get_http_config
 
 # AI Agent persona configuration (required environment variable)
 AI_AGENT_PERSONA = read_env_string("AI_AGENT_PERSONA")
@@ -192,6 +192,48 @@ class FlowPilotService:
             "created_at": created_at,
             "item_count": len(items),
         }
+
+    def create_agent_delegation(
+        self,
+        workflow_id: str,
+        owner_sub: str,
+        agent_sub: str,
+        expires_in_days: int = 7,
+    ) -> None:
+        # Create a delegation for the AI agent to access the workflow
+        # side effect: network I/O to delegation-api.
+        workflow_id = require_non_empty_string(workflow_id, "workflow_id")
+        owner_sub = require_non_empty_string(owner_sub, "owner_sub")
+        agent_sub = require_non_empty_string(agent_sub, "agent_sub")
+        
+        delegation_api_base_url = str(self._config.get("delegation_api_base_url", ""))
+        if not delegation_api_base_url:
+            raise ValueError("delegation_api_base_url not configured")
+        
+        url = build_url(delegation_api_base_url, "/v1/delegations")
+        
+        # Get service token for authentication
+        token = security.get_service_token()
+        if not token:
+            raise RuntimeError("Service token not available - cannot call delegation-api")
+        
+        body = {
+            "principal_id": owner_sub,
+            "delegate_id": agent_sub,
+            "workflow_id": workflow_id,
+            "scope": ["read", "execute"],
+            "expires_in_days": expires_in_days,
+        }
+        
+        headers = {"Authorization": f"Bearer {token}"}
+        response = requests.post(
+            url, json=body, headers=headers, **get_http_config()
+        )
+        
+        if response.status_code not in (200, 201):
+            raise RuntimeError(
+                f"Delegation creation failed: HTTP {response.status_code}: {response.text}"
+            )
 
     def check_read_authorization(
         self, workflow_id: str, user_sub: str, user_persona: Optional[str] = None
@@ -502,7 +544,7 @@ class FlowPilotService:
 
         headers = {"Authorization": f"Bearer {token}"}
         response = requests.post(
-            url, json=body, timeout=timeout_seconds, headers=headers, verify=False
+            url, json=body, headers=headers, **get_http_config()
         )
         if response.status_code not in (200, 201):
             raise RuntimeError(
@@ -586,7 +628,7 @@ class FlowPilotService:
 
         headers = {"Authorization": f"Bearer {token}"}
         response = requests.post(
-            url, json=body, timeout=timeout_seconds, headers=headers, verify=False
+            url, json=body, headers=headers, **get_http_config()
         )
         if response.status_code not in (200, 201):
             raise RuntimeError(

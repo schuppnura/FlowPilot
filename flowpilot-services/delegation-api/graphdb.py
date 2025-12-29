@@ -92,34 +92,105 @@ class DelegationGraphDB:
         if scope is None:
             scope = ["execute"]
         scope_json = json.dumps(scope)
-        created_at = datetime.now(timezone.utc).isoformat()
 
         conn = self._get_connection()
         try:
-            conn.execute(
-                """
-                INSERT OR REPLACE INTO delegations 
-                (principal_id, delegate_id, workflow_id, scope, expires_at, created_at, revoked_at)
-                VALUES (?, ?, ?, ?, ?, ?, NULL)
-            """,
-                (principal_id, delegate_id, workflow_id, scope_json, expires_at, created_at),
-            )
-            conn.commit()
-
-            # Fetch the inserted row
+            # Check if delegation already exists
             cursor = conn.execute(
                 """
                 SELECT * FROM delegations
-                WHERE principal_id = ? AND delegate_id = ? AND (workflow_id = ? OR (workflow_id IS NULL AND ? IS NULL))
+                WHERE principal_id = ? AND delegate_id = ? 
+                AND (workflow_id = ? OR (workflow_id IS NULL AND ? IS NULL))
+                AND revoked_at IS NULL
             """,
                 (principal_id, delegate_id, workflow_id, workflow_id),
             )
-            row = cursor.fetchone()
+            existing_row = cursor.fetchone()
+            
+            if existing_row:
+                # Delegation already exists - check if it needs updating
+                existing_scope_json = existing_row["scope"]
+                try:
+                    existing_scope = json.loads(existing_scope_json) if existing_scope_json else ["execute"]
+                except (json.JSONDecodeError, TypeError):
+                    existing_scope = ["execute"]
+                
+                # Convert to sets for comparison
+                existing_scope_set = set(existing_scope)
+                new_scope_set = set(scope)
+                
+                # Only update if scope is being expanded or expiration extended
+                needs_update = (
+                    not new_scope_set.issubset(existing_scope_set) or  # Scope is expanding
+                    expires_at > existing_row["expires_at"]  # Expiration is being extended
+                )
+                
+                if not needs_update:
+                    # Return existing delegation unchanged
+                    return {
+                        "principal_id": existing_row["principal_id"],
+                        "delegate_id": existing_row["delegate_id"],
+                        "workflow_id": existing_row["workflow_id"],
+                        "scope": existing_scope,
+                        "expires_at": existing_row["expires_at"],
+                        "created_at": existing_row["created_at"],
+                        "revoked_at": existing_row["revoked_at"],
+                    }
+                
+                # Update existing delegation with expanded scope or extended expiration
+                merged_scope = sorted(list(existing_scope_set.union(new_scope_set)))
+                merged_scope_json = json.dumps(merged_scope)
+                new_expires_at = max(expires_at, existing_row["expires_at"])
+                
+                conn.execute(
+                    """
+                    UPDATE delegations
+                    SET scope = ?, expires_at = ?
+                    WHERE principal_id = ? AND delegate_id = ? 
+                    AND (workflow_id = ? OR (workflow_id IS NULL AND ? IS NULL))
+                    AND revoked_at IS NULL
+                """,
+                    (merged_scope_json, new_expires_at, principal_id, delegate_id, workflow_id, workflow_id),
+                )
+                conn.commit()
+                
+                # Fetch updated row
+                cursor = conn.execute(
+                    """
+                    SELECT * FROM delegations
+                    WHERE principal_id = ? AND delegate_id = ? 
+                    AND (workflow_id = ? OR (workflow_id IS NULL AND ? IS NULL))
+                """,
+                    (principal_id, delegate_id, workflow_id, workflow_id),
+                )
+                row = cursor.fetchone()
+            else:
+                # Insert new delegation
+                created_at = datetime.now(timezone.utc).isoformat()
+                conn.execute(
+                    """
+                    INSERT INTO delegations 
+                    (principal_id, delegate_id, workflow_id, scope, expires_at, created_at, revoked_at)
+                    VALUES (?, ?, ?, ?, ?, ?, NULL)
+                """,
+                    (principal_id, delegate_id, workflow_id, scope_json, expires_at, created_at),
+                )
+                conn.commit()
+                
+                # Fetch the inserted row
+                cursor = conn.execute(
+                    """
+                    SELECT * FROM delegations
+                    WHERE principal_id = ? AND delegate_id = ? 
+                    AND (workflow_id = ? OR (workflow_id IS NULL AND ? IS NULL))
+                """,
+                    (principal_id, delegate_id, workflow_id, workflow_id),
+                )
+                row = cursor.fetchone()
 
             if not row:
-                raise RuntimeError("Failed to retrieve inserted delegation")
+                raise RuntimeError("Failed to retrieve delegation")
             
-            import json
             scope_value = row["scope"]
             try:
                 scope_parsed = json.loads(scope_value) if scope_value else ["execute"]

@@ -177,6 +177,59 @@ def coerce_bool(value: Any, default: bool) -> bool:
     return bool(value)
 
 
+def coerce_float(value: Any, default: Optional[float] = None) -> Optional[float]:
+    # Convert a value to a float, returning default if conversion fails or value is None.
+    if value is None:
+        return default
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return default
+
+
+def coerce_str(value: Any, default: Optional[str] = None) -> Optional[str]:
+    # Convert a value to a string, returning default if value is None or empty.
+    if value is None:
+        return default
+    if isinstance(value, str):
+        stripped = value.strip()
+        return stripped if stripped else default
+    # Convert non-string types to string
+    return str(value)
+
+
+def normalize_departure_date(date_value: Any) -> Optional[str]:
+    # Normalize departure date to RFC3339 format for OPA consumption.
+    # Accepts:
+    #   - RFC3339 format (e.g., "2025-12-31T00:00:00Z")
+    #   - Date-only format (e.g., "2025-12-31") -> converted to midnight UTC
+    # Returns:
+    #   - RFC3339 string or None if invalid/missing
+    if date_value is None:
+        return None
+    
+    date_str = str(date_value).strip()
+    if not date_str:
+        return None
+    
+    # If already RFC3339 format (contains "T"), return as-is
+    if "T" in date_str:
+        return date_str
+    
+    # If date-only format (YYYY-MM-DD), convert to RFC3339 at midnight UTC
+    parts = date_str.split("-")
+    if len(parts) == 3:
+        try:
+            year = int(parts[0])
+            month = int(parts[1])
+            day = int(parts[2])
+            return f"{year:04d}-{month:02d}-{day:02d}T00:00:00Z"
+        except (ValueError, IndexError):
+            return None
+    
+    return None
+
+
 def coerce_positive_int(value: str, variable_name: str) -> int:
     # Parse and validate a positive integer from env/CLI to prevent silent misconfiguration.
     try:

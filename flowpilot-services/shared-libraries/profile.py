@@ -20,6 +20,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.ssl_ import create_urllib3_context
 
 import security
+import utils
 
 # ============================================================================
 # Configuration Constants
@@ -117,7 +118,7 @@ def _fetch_user_by_id(user_sub: str) -> Optional[Dict[str, Any]]:
             response = session.get(user_url, headers=headers, timeout=KEYCLOAK_USER_REQUEST_TIMEOUT)
         else:
             response = requests.get(
-                user_url, headers=headers, timeout=KEYCLOAK_USER_REQUEST_TIMEOUT, verify=False
+                user_url, headers=headers, timeout=KEYCLOAK_USER_REQUEST_TIMEOUT, **utils.get_http_config()
             )
         if response.status_code == 200:
             return response.json()
@@ -181,7 +182,7 @@ def _fetch_all_users() -> List[Dict[str, Any]]:
             response = session.get(users_url, headers=headers, timeout=KEYCLOAK_USERS_LIST_TIMEOUT)
         else:
             response = requests.get(
-                users_url, headers=headers, timeout=KEYCLOAK_USERS_LIST_TIMEOUT, verify=False
+                users_url, headers=headers, timeout=KEYCLOAK_USERS_LIST_TIMEOUT, **utils.get_http_config()
             )
         if response.status_code == 200:
             users = response.json()

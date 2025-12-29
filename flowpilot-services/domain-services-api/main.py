@@ -56,6 +56,8 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     # AuthZ integration
     "authz_base_url": "http://flowpilot-authz-api:8000",
     "agent_sub": "agent_flowpilot_1",
+    # Delegation integration
+    "delegation_api_base_url": "http://flowpilot-delegation-api:8000",
     # Operational
     "request_timeout_seconds": 10,
 }
@@ -146,6 +148,9 @@ def build_config(
         "AUTHZ_BASE_URL", str(config["authz_base_url"])
     )
     config["agent_sub"] = os.environ.get("AGENT_SUB", str(config["agent_sub"]))
+    config["delegation_api_base_url"] = os.environ.get(
+        "DELEGATION_API_BASE_URL", str(config["delegation_api_base_url"])
+    )
 
     config["request_timeout_seconds"] = coerce_positive_int(
         os.environ.get(
@@ -253,16 +258,34 @@ def handle_post_workflows(
 ) -> Dict[str, Any]:
     # Create a workflow from a template
     # assumptions: principal_sub is authenticated upstream
-    # side effect: stores workflow in memory.
+    # side effect: stores workflow in memory, creates delegation for AI agent.
     service: FlowPilotService = request.app.state.service
     try:
         # Already validated by Pydantic validators
-        return service.create_workflow_from_template(
+        result = service.create_workflow_from_template(
             template_id=body.template_id,
             owner_sub=body.principal_sub,
             start_date=body.start_date,
             persona=body.persona,
         )
+        
+        # Auto-create delegation for AI agent to access the workflow
+        workflow_id = result.get("workflow_id")
+        agent_sub = request.app.state.config.get("agent_sub")
+        
+        if workflow_id and agent_sub:
+            try:
+                service.create_agent_delegation(
+                    workflow_id=workflow_id,
+                    owner_sub=body.principal_sub,
+                    agent_sub=agent_sub,
+                )
+                print(f"[handle_post_workflows] Auto-created delegation for workflow {workflow_id} to agent {agent_sub}", flush=True)
+            except Exception as delegation_error:
+                # Log but don't fail workflow creation if delegation fails
+                print(f"[handle_post_workflows] WARNING: Failed to create agent delegation: {delegation_error}", flush=True)
+        
+        return result
     except security.InputValidationError as exception:
         raise HTTPException(
             status_code=400,

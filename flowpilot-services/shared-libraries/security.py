@@ -2,9 +2,10 @@
 from __future__ import annotations
 
 import json
-import os
 import re
+import os
 import ssl
+import utils
 import time
 from typing import Any, Callable, Optional
 
@@ -436,8 +437,7 @@ def get_service_token() -> Optional[str]:
         response = requests.post(
             token_url,
             data=token_data,
-            timeout=10,
-            verify=False,  # Disable SSL verification for local dev
+            **utils.get_http_config(),
         )
 
         if response.status_code != 200:

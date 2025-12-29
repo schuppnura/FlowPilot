@@ -295,7 +295,21 @@ def handle_post_delegations(
         api_logging.log_api_request("POST", "/v1/delegations", request_body=body.dict(), token_claims=token_claims, request=request)
 
         # Extract delegator_id from JWT to validate they can only delegate what they have
+        # Skip validation in these cases:
+        #   1. delegator_id matches principal_id (owner creating their own delegation)
+        #   2. Token is from a service account (azp=flowpilot-agent) acting on behalf of owner
+        #   3. No delegator_id provided
         delegator_id = token_claims.get("sub") if token_claims else None
+        azp = token_claims.get("azp") if token_claims else None
+        
+        # Check if this is a service account token (client credentials flow)
+        is_service_account = azp == "flowpilot-agent"
+        
+        # Only validate subdelegations (non-service-account, non-owner delegations)
+        effective_delegator_id = None
+        if delegator_id and delegator_id != body.principal_id and not is_service_account:
+            # This is a subdelegation - validate that delegator has permissions
+            effective_delegator_id = delegator_id
 
         delegation = service.create_delegation(
             principal_id=body.principal_id,
@@ -303,7 +317,7 @@ def handle_post_delegations(
             workflow_id=body.workflow_id,
             expires_in_days=body.expires_in_days,
             scope=body.scope,
-            delegator_id=delegator_id,
+            delegator_id=effective_delegator_id,
         )
 
         api_logging.log_api_response("POST", "/v1/delegations", 200, response_body=delegation)

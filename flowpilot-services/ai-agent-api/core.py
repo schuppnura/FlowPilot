@@ -22,7 +22,7 @@ from typing import Any, Dict, List
 import requests
 
 import security
-from utils import build_url, http_get_json, require_non_empty_string, build_timeouts
+from utils import build_url, http_get_json, require_non_empty_string, build_timeouts, get_http_config
 
 
 @dataclass(frozen=True)
@@ -184,7 +184,7 @@ def post_execute_workflow_item(
         headers["Authorization"] = f"Bearer {token}"
 
     response = requests.post(
-        url, json=payload, timeout=timeouts, headers=headers if headers else None
+        url, json=payload, headers=headers if headers else None, **get_http_config()
     )
     response_text = response.text or ""
 

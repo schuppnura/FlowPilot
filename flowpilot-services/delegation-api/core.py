@@ -60,6 +60,9 @@ class DelegationService:
             raise ValueError("expires_in_days must be positive")
         
         # Validate that delegator can only delegate permissions they have
+        # Skip validation if:
+        # 1. No delegator_id provided (system/service creating delegation on behalf of owner)
+        # 2. delegator_id == principal_id (owner creating their own delegation)
         if delegator_id and delegator_id != principal_id:
             # Delegator is not the resource owner - check what permissions they have
             delegator_validation = self.validate_delegation(

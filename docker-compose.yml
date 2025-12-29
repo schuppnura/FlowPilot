@@ -97,6 +97,9 @@ services:
       - INCLUDE_ERROR_DETAILS=1
       # API logging (set to 1 to enable JSON logging to stdout)
       - ENABLE_API_LOGGING=1
+      # HTTP client configuration
+      - HTTP_DEFAULT_TIMEOUT=10.0
+      - HTTP_VERIFY_TLS=false
     command: ["python", "main.py", "--host", "0.0.0.0", "--port", "8000"]
     ports:
       - "8002:8000"
@@ -135,6 +138,9 @@ services:
       ENABLE_PAYLOAD_SIGNATURE_SCAN: "0"
       # Error message detail (set to 0 in production)
       INCLUDE_ERROR_DETAILS: "1"
+      # HTTP client configuration
+      HTTP_DEFAULT_TIMEOUT: "10.0"
+      HTTP_VERIFY_TLS: "false"
     command: ["python", "main.py", "--host", "0.0.0.0", "--port", "8000"]
     ports:
       - "8004:8000"
@@ -148,6 +154,7 @@ services:
       dockerfile: flowpilot-services/domain-services-api/Dockerfile
     environment:
       AUTHZ_BASE_URL: "http://flowpilot-authz-api:8000"
+      DELEGATION_API_BASE_URL: "http://flowpilot-delegation-api:8000"
       AGENT_SUB: "febf7643-7b95-4201-959a-009dedb1c87e"  # Service account sub from flowpilot-agent
       AI_AGENT_PERSONA: "ai-agent"  # Persona used by AI agent for authorization checks
       DOMAIN: "flowpilot"
@@ -171,10 +178,14 @@ services:
       INCLUDE_ERROR_DETAILS: "1"
       # API logging (set to 1 to enable JSON logging to stdout)
       ENABLE_API_LOGGING: "1"
+      # HTTP client configuration
+      HTTP_DEFAULT_TIMEOUT: "10.0"
+      HTTP_VERIFY_TLS: "false"
     ports:
       - "8003:8000"
     depends_on:
       - flowpilot-authz-api
+      - flowpilot-delegation-api
     volumes:
       - ./data:/data:ro
 
@@ -202,6 +213,9 @@ services:
       - INCLUDE_ERROR_DETAILS=1
       # API logging (set to 1 to enable JSON logging to stdout)
       - ENABLE_API_LOGGING=1
+      # HTTP client configuration
+      - HTTP_DEFAULT_TIMEOUT=10.0
+      - HTTP_VERIFY_TLS=false
     command: ["python", "main.py", "--host", "0.0.0.0", "--port", "8000"]
     ports:
       - "8005:8000"
