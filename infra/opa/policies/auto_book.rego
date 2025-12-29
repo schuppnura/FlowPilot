@@ -140,7 +140,7 @@ reasons[code] if {
   owner_id := input.resource.owner_id
   principal_id != owner_id
   input.delegation.valid
-  input.delegation.has_action
+  input.action.name in input.delegation.effective_actions
   not read_persona_valid
   code := "read.persona_mismatch"
 }
@@ -177,14 +177,9 @@ has_valid_delegation_for_action if {
 #   - The principal must have one of the authorized agent personas: "travel-agent", "ai-agent", "secretary"
 # When a user executes their own workflow (principal == owner):
 #   - The principal must have selected the same persona as the owner's persona
-#
 # Configuration Note:
-# The valid agent personas are currently hardcoded here but should match the
-# DELEGATION_PERSONAS environment variable in the service configuration.
-# Future enhancement: Pass personas via input.config.delegation_personas
+#   - The valid agent personas are currently hardcoded here
 
-# Valid agent personas that can be delegated to execute workflows
-# These should match DELEGATION_PERSONAS env var: "ai-agent,travel-agent,secretary"
 valid_agent_personas := {"travel-agent", "ai-agent", "secretary"}
 
 persona_valid if {
