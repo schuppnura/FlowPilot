@@ -183,21 +183,29 @@ def count_results(results: List[Dict]) -> Tuple[int, int, int]:
     return allowed, denied, errors
 
 
-def show_deny_details(results: List[Dict]) -> None:
-    """Show detailed deny reasons for all denials"""
+def show_decision_details(results: List[Dict]) -> None:
+    """Show detailed reasons for all decisions"""
+    allowed_results = [r for r in results if r.get("decision", "").lower() == "allow"]
     denied_results = [r for r in results if r.get("decision", "").lower() == "deny"]
+    
+    if allowed_results:
+        print(f"    Allowed items:")
+        for idx, r in enumerate(allowed_results):
+            item_id = r.get("workflow_item_id", f"item-{idx}")
+            print(f"      • {item_id}:")
+            print(f"        → Access allowed")
+    
     if denied_results:
         print(f"    Deny details:")
         for idx, r in enumerate(denied_results):
             reasons = r.get("reason_codes", [])
             item_id = r.get("workflow_item_id", f"item-{idx}")
-            print(f"      • {item_id}: {', '.join(reasons) if reasons else 'no reason codes'}")
-            # Show advice if available
-            advice = r.get("advice", [])
-            for adv in advice:
-                advice_msg = adv.get("message", "")
-                if advice_msg:
-                    print(f"        → {advice_msg}")
+            if reasons:
+                print(f"      • {item_id}:")
+                for reason in reasons:
+                    print(f"        - {reason}")
+            else:
+                print(f"      • {item_id}: no reason codes")
 
 
 def assert_results(test_name: str, results: List[Dict], expected_allow: int, expected_deny: int, expected_error: int = 0) -> bool:
@@ -211,8 +219,8 @@ def assert_results(test_name: str, results: List[Dict], expected_allow: int, exp
     print(f"    Expected: Allow={expected_allow}, Deny={expected_deny}, Error={expected_error}")
     print(f"    Got:      Allow={allowed}, Deny={denied}, Error={errors}")
     
-    # Always show deny reasons when there are denials
-    show_deny_details(results)
+    # Show decision details for both allowed and denied items
+    show_decision_details(results)
     
     return passed
 
@@ -327,16 +335,16 @@ def run_regression_tests():
         if allowed > 0:
             print(f"  ✓ PASS: Yannick can execute with travel-agent persona")
             print(f"    Got: Allow={allowed}, Deny={denied}")
-            show_deny_details(result["results"])
+            show_decision_details(result["results"])
             passed_tests += 1
         else:
             print(f"  ✗ FAIL: Yannick should be able to execute")
             print(f"    Got: Allow={allowed}, Deny={denied}")
-            show_deny_details(result["results"])
+            show_decision_details(result["results"])
         
-        # Test 6: Persona mismatch - Martine creates trip with wrong persona
+        # Test 7: Persona mismatch - Martine creates trip with wrong persona
         print("\n" + "=" * 70)
-        print("Test 6: Persona Mismatch - Martine Business Traveler")
+        print("Test 7: Persona Mismatch - Martine Business Traveler")
         print("=" * 70)
         total_tests += 1
         
@@ -349,12 +357,12 @@ def run_regression_tests():
         allowed, denied, _ = count_results(result["results"])
         print(f"  ✓ PASS: Martine business-traveler can execute workflow")
         print(f"    Got: Allow={allowed}, Deny={denied}")
-        show_deny_details(result["results"])
+        show_decision_details(result["results"])
         passed_tests += 1
         
-        # Test 7: Persona mismatch - switch persona
+        # Test 8: Persona mismatch - switch persona
         print("\n" + "=" * 70)
-        print("Test 7: Persona Mismatch - Martine Switches to Traveler")
+        print("Test 8: Persona Mismatch - Martine Switches to Traveler")
         print("=" * 70)
         total_tests += 1
         
@@ -363,9 +371,9 @@ def run_regression_tests():
         if assert_results("Martine denied - persona mismatch", result["results"], 0, 3):
             passed_tests += 1
         
-        # Test 8: Read-only delegation (invitations)
+        # Test 9: Read-only delegation (invitations)
         print("\n" + "=" * 70)
-        print("Test 8: Read-Only Delegation (Invitations)")
+        print("Test 9: Read-Only Delegation (Invitations)")
         print("=" * 70)
         total_tests += 1
         
@@ -379,10 +387,10 @@ def run_regression_tests():
         if assert_results("Isabel denied - read-only delegation", result["results"], 0, 3):
             passed_tests += 1
         
-        # Test 9: Transitive delegation - Isabel → Peter → Sarah (if users exist)
+        # Test 10: Transitive delegation - Isabel → Peter → Sarah (if users exist)
         try:
             print("\n" + "=" * 70)
-            print("Test 9: Transitive Delegation - Isabel → Peter → Sarah")
+            print("Test 10: Transitive Delegation - Isabel → Peter → Sarah")
             print("=" * 70)
             total_tests += 1
             
@@ -408,19 +416,19 @@ def run_regression_tests():
             if allowed > 0:
                 print(f"  ✓ PASS: Sarah can execute via transitive delegation")
                 print(f"    Got: Allow={allowed}, Deny={denied}")
-                show_deny_details(result["results"])
+                show_decision_details(result["results"])
                 passed_tests += 1
             else:
                 print(f"  ✗ FAIL: Sarah should be able to execute via transitive delegation")
                 print(f"    Got: Allow={allowed}, Deny={denied}")
-                show_deny_details(result["results"])
+                show_decision_details(result["results"])
         except Exception as e:
             print(f"  ⊘ SKIP: Test skipped - {e}")
             total_tests -= 1
         
-        # Test 10: Multiple delegates - Yannick delegates to Martine
+        # Test 11: Multiple delegates - Yannick delegates to Martine
         print("\n" + "=" * 70)
-        print("Test 10: Multiple Delegates - Yannick and Martine both have access")
+        print("Test 11: Multiple Delegates - Yannick and Martine both have access")
         print("=" * 70)
         total_tests += 1
         
@@ -443,17 +451,17 @@ def run_regression_tests():
             print(f"  ✓ PASS: Both delegates can execute")
             print(f"    Yannick: Allow={yannick_allowed}, Deny={yannick_denied}")
             if yannick_denied > 0:
-                show_deny_details(yannick_result["results"])
+                show_decision_details(yannick_result["results"])
             print(f"    Martine: Allow={martine_allowed}, Deny={martine_denied}")
             if martine_denied > 0:
-                show_deny_details(martine_result["results"])
+                show_decision_details(martine_result["results"])
             passed_tests += 1
         else:
             print(f"  ✗ FAIL: Both delegates should be able to execute")
             print(f"    Yannick: Allow={yannick_allowed}, Deny={yannick_denied}")
-            show_deny_details(yannick_result["results"])
+            show_decision_details(yannick_result["results"])
             print(f"    Martine: Allow={martine_allowed}, Deny={martine_denied}")
-            show_deny_details(martine_result["results"])
+            show_decision_details(martine_result["results"])
         
     except Exception as e:
         print(f"\n✗ ERROR: Test suite failed with exception: {e}")

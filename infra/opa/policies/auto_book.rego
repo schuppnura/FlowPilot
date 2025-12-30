@@ -52,7 +52,7 @@ reasons[code] if {
   owner_id := input.resource.properties.owner.id
   principal_id != owner_id
   # No delegation exists at all
-  not input.delegation.valid
+  not input.context.delegation.valid
   code := "auto_book.principal_spoofing"
 }
 
@@ -62,8 +62,8 @@ reasons[code] if {
   owner_id := input.resource.properties.owner.id
   principal_id != owner_id
   # Delegation exists but doesn't have execute permission
-  input.delegation.valid == true
-  not input.action.name in input.delegation.effective_actions
+  input.context.delegation.valid == true
+  not input.action.name in input.context.delegation.effective_actions
   code := "auto_book.insufficient_delegation_permissions"
 }
 
@@ -114,7 +114,7 @@ reasons[code] if {
   owner_id := input.resource.properties.owner.id
   principal_id != owner_id
   # No delegation exists at all
-  not input.delegation.valid
+  not input.context.delegation.valid
   code := "read.no_delegation"
 }
 
@@ -124,8 +124,8 @@ reasons[code] if {
   owner_id := input.resource.properties.owner.id
   principal_id != owner_id
   # Delegation exists but doesn't have read permission
-  input.delegation.valid == true
-  not input.action.name in input.delegation.effective_actions
+  input.context.delegation.valid == true
+  not input.action.name in input.context.delegation.effective_actions
   code := "read.insufficient_delegation_permissions"
 }
 
@@ -135,8 +135,8 @@ reasons[code] if {
   principal_id := input.subject.id
   owner_id := input.resource.properties.owner.id
   principal_id != owner_id
-  input.delegation.valid
-  input.action.name in input.delegation.effective_actions
+  input.context.delegation.valid
+  input.action.name in input.context.delegation.effective_actions
   not read_persona_valid
   code := "read.persona_mismatch"
 }
@@ -164,8 +164,8 @@ authorized_principal if {
 # OPA makes the policy decision by checking if the requested action
 # is present in the effective_actions returned by delegation-api
 has_valid_delegation_for_action if {
-  input.delegation.valid == true
-  input.action.name in input.delegation.effective_actions
+  input.context.delegation.valid == true
+  input.action.name in input.context.delegation.effective_actions
 }
 
 # Persona validation
@@ -210,8 +210,8 @@ allow_read if {
   principal_id := input.subject.id
   owner_id := input.resource.properties.owner.id
   principal_id != owner_id
-  input.delegation.valid == true
-  input.action.name in input.delegation.effective_actions  # Delegation permits read
+  input.context.delegation.valid == true
+  input.action.name in input.context.delegation.effective_actions  # Delegation permits read
   read_persona_valid
 }
 

@@ -242,13 +242,20 @@ def build_opa_input(
         }
     
     # ========================================================================
+    # CONTEXT: Build AuthZEN-compliant context with delegation
+    # ========================================================================
+    context = {
+        "delegation": delegation,
+    }
+    
+    # ========================================================================
     # Assemble final OPA input document
     # ========================================================================
     return {
         "subject": subject,
         "action": request_action,
         "resource": resource,
-        "delegation": delegation,
+        "context": context,
     }
 
 
