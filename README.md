@@ -1,381 +1,770 @@
 # FlowPilot
 
-FlowPilot is a reference implementation of a small “agentic” workflow with a dedicated authorization service. The project includes:
-- A Swift demo client (traveller and travel agent personas)
-- Backend microservices (services API, AI agent API, authz API)
-- A local OIDC provider (Keycloak) for issuing bearer tokens
-- An OPA (Open Policy Agent) policy engine that evaluates Rego policies
+FlowPilot is a reference implementation and architectural exercise exploring modern authorization for agentic workflows.
 
-This repository previously experimented with ***REMOVED***, OCI policy bundles, and an HTTPS registry proxy. That approach has been removed from the default developer workflow in favor of a simpler, more transparent OPA server-mode setup.
+It demonstrates how to combine:
+1. AuthZEN as a clean, technology-agnostic interface between PEPs and PDPs
+2. OPA (Open Policy Agent) as a declarative policy language and decision engine
+3. ReBAC (Relationship-Based Access Control) using explicit delegation relationships
+4. Bearer access tokens with personas, not identity payloads, as the primary authorization input
+
+A second, equally important focus is infrastructure-level privacy and security:
+- no proliferation of PII
+- full validation of access tokens and request payloads at every boundary
+- deterministic, fail-closed authorization behavior
+
+The concrete domain used to ground the exercise is travel booking, but this is deliberately a metaphor for a generic “workflow execution” problem involving users, agents, and delegated authority.
+
+The reference implementation provides for Policy Enforcement Points (PEP) in the application server, a single Policy Decision Point (PDP) and multiple Policy Information Points (PIP) to supply information, about the user, the resource and the context given a certain action.
+
+---
+
+## What this project is (and is not)
+
+FlowPilot is:
+- a realistic, end-to-end authorization architecture
+- a working example of PEP ↔ PDP separation via AuthZEN
+- a demonstration of ABAC + ReBAC combined coherently
+- a foundation for agent-based systems that need strong authorization guarantees
+
+FlowPilot is not:
+- a production-ready travel platform
+- an IAM product
+- a UI-first demo
+- an AI showcase that would ignore security and privacy concerns
+
+---
+
+## Conceptual pillars
+
+### 1. AuthZEN as the PEP ↔ PDP contract
+
+FlowPilot treats AuthZEN as the interface, not the implementation.
+- PEPs submit AuthZEN-like requests:
+  - subject
+  - action
+  - resource
+  - context
+- The PDP (via flowpilot-authz-api) is free to:
+  - enrich the request
+  - consult PIPs
+  - evaluate policies using any engine
+
+This keeps:
+- application services simple
+- authorization logic centralized
+- the system evolvable without rewriting PEPs
+
+AuthZEN is used explicitly as a boundary, not as an all-encompassing framework.
+
+---
+
+### 2. OPA as a declarative policy engine (ABAC)
+
+OPA is used strictly for attribute-based policy decisions:
+- Policies are written in Rego
+- Policies are evaluated in OPA server mode
+- Policies are:
+  - declarative
+  - testable
+  - explainable
+
+OPA answers questions such as:
+- Is the user allowed and properly delegated to auto-execute a workflow?
+- Is consent for executing a workflow present?
+- Is the risk of executiong a workflow item below the configured threshold?
+
+OPA itself uses AuthZEN as input and does not need to manage identity, delegation graphs, or relationships.
+
+---
+
+### 3. ReBAC with explicit delegation relationships
+
+Delegation is modeled as a relationship graph, not as token bloat.
+
+The flowpilot-delegation-api acts as a ReBAC PIP:
+- Delegations are explicit:
+  - principal → delegate
+- Delegations can be:
+  - workflow-scoped or global
+  - time-bound
+  - revoked
+- Delegation chains are resolved transitively:
+  - A → B → C
+- Chain length is bounded to prevent privilege amplification
+
+Delegation is evaluated before ABAC:
+- if delegation fails, authorization fails immediately
+- OPA is never consulted
+
+This separation keeps:
+- policies simpler
+- delegation auditable
+- authorization explainable
+
+---
+
+### 4. Bearer tokens with personas, not identity payloads
+
+Access tokens intentionally carry minimal personal information:
+- sub (the stable, pseudonoymous UUID)
+- persona (business role)
+- technical claims required for validation about issuance, purpose, expiry and crypto
+
+They do not carry:
+- names
+- emails
+- personal preferences
+- consent details
+- any other PII of any kind
+
+This ensures:
+- tokens remain small and stable
+- privacy is preserved by design
+- authorization decisions pull data only when needed
+
+The token provides just enough information to identify the principal for AuthZEN and delegation.
+
+---
+
+## Travel booking as a workflow metaphor
+
+The travel domain is used as a concrete narrative, not a limitation.
+
+Conceptually:
+- a trip is a workflow
+- booking steps are workflow items
+- a human being doing a booking is a principal
+- travellers can delegate actions to other travelers, to travel agents and to an AI agent
+- delegated parties can further delegate to other parties
+- auto-execution preferences are used for policy-driven constraints
+
+This maps cleanly to other domains:
+- financial approvals
+- medical record handling
+- case management
+- enterprise automation
+- agent-based task execution
+
+The travel example exists to make the architecture tangible, not to constrain it.
+
+---
 
 ## Architecture at a glance
 
-1. **PDP**: OPA server for ABAC. It evaluates relationship-based delegation and permissions via an authorization graph.
+### Core components
+1. flowpilot-authz-api
+   - Authorization façade (PEP ↔ PDP integration)
+   - Validates AuthZEN requests
+   - Validates bearer tokens via JWKS
+   - Enforces delegation (ReBAC)
+   - Evaluates policies via OPA (ABAC)
+   - Returns allow/deny with reason codes
+2. flowpilot-delegation-api
+   - Manages delegation relationships
+   - Resolves delegation chains
+   - No policy logic
+   - No PII
+3. OPA
+   - Declarative policy engine
+   - Evaluates Rego policies
+   - Stateless
+4. Keycloak
+   - OIDC provider
+   - Issues bearer access tokens
+   - Personas mapped to roles
+   - Tokens validated locally by services
+5. PEP services
+   - Domain services
+   - AI agent service
+   - Always call authz-api before execution
 
-2. **AuthZ Integration Layer**: Acts as integration between PEP and PDP. It validates AuthZEN-compliant requests (subject/action/resource/context), fetches delegation data from delegation-api, retrieves owner attributes from Keycloak, and evaluates policies via OPA.
+---
 
-3. **PEP Services**: Domain backend (domain-services-api) and AI agent (ai-agent-api) that enforce authorization by calling authz-api. In the travel agent use case, autonomous booking is gated by attribute-based policy conditions (consent, cost, advance days, airline risk) after delegation is verified.
+## Privacy by design
 
-4. **Keycloak IdP**: OIDC provider with Authorization Code + PKCE for the desktop client and Client Credentials for service-to-service authentication. All services validate tokens locally using JWKS.
+Privacy is not an afterthought; it is structural.
+- No PII in tokens
+- No PII passed to AI agents
+- Delegation graph uses identifiers only
+- Profiles expose presence flags, not values
+- Authorization decisions are reproducible without identity data
 
-5. **Agentic AI Server**: Executes workflow items item-by-item on behalf of users, passing user UUID and persona to domain services for proper authorization.
+The result:
+- minimal data surface
+- lower breach impact
+- clearer compliance story
 
-6. **Delegation & Invitations**: Two types of access control:
-   - **Delegations** (execute): Travel agents can execute workflows on behalf of travelers
-   - **Invitations** (read): Users with matching personas can view workflows (read-only access)
+---
 
-## Security & Privacy
+## Security by architecture
 
-FlowPilot implements **defense-in-depth security** with multiple layers of protection:
+Security is enforced at multiple layers:
+- JWT validation (signature, issuer, audience, exp, nbf, iat, typ)
+- JWKS-based local validation (no network calls per request)
+- Strict AuthZEN request validation
+- Delegation enforcement before policy evaluation
+- Full payload sanitization
+- Fail-closed behavior everywhere
 
-### Key Security Features ✨
+The system assumes inputs are hostile by default.
 
-- **JWKS-based JWT validation** - Zero network calls per token validation, locally cached public keys
-- **Comprehensive input validation** - 4-layer validation: Pydantic models, path parameters, string sanitization, request size limits
-- **Injection attack prevention** - Automatic control character rejection, optional signature scanning for SQL/XSS/Command injection
-- **Security headers** - 6 protective HTTP headers on all API responses
-- **Production-safe error handling** - Sanitized error messages prevent information leakage
-- **Privacy by design** - Zero PII exposure to LLMs, minimal PII handling (UUID only)
+---
 
-### Privacy by Design
-- **Zero PII exposure to LLM**: No personally identifiable information is shared with AI agents
-- **Minimal PII handling**: Backend services only process `sub` (UUID) and `persona` from requests
-- **Authorization graph**: Delegation and permissions tracked by subject identifiers
-- **Service-to-service**: AI agent passes user UUID and persona as query parameters, not in token claims
+## Why this matters
 
-### Authentication & Token Validation
+Most “agentic” demos ignore authorization, privacy, and delegation until late.
 
-All API endpoints (except health checks) require bearer token authentication using **JWKS-based JWT validation** (no network calls per request).
+FlowPilot does the opposite:
+- authorization is central
+- delegation is explicit
+- policy is declarative
+- identity data is minimized
 
-#### JWT Validation Checks (Best Practices) ✓
+This repository is meant to be read, reasoned about, and adapted, not just run.
 
-1. **Signature verification** - Validates JWT signature using JWKS public keys (cached locally)
-2. **Expiration (exp)** - Required and verified, rejects expired tokens
-3. **Not Before (nbf)** - Verified, rejects tokens not yet valid
-4. **Issued At (iat)** - Required and checked for future-dated tokens
-5. **Issuer (iss)** - Required and verified against expected issuer
-6. **Audience (aud)** - Verified if configured
-7. **Subject (sub)** - Required and must be non-empty
-8. **Token Type (typ)** - Validates it's a proper Bearer/Access token
-9. **Clock skew tolerance** - 10 seconds leeway for time differences
-10. **Algorithm whitelist** - Only allows RS256/384/512 and ES256/384/512 (no HS algorithms)
+⸻
 
-**Protections:**
-- Expired tokens
-- Tokens used before their valid time
-- Tokens from wrong issuers
-- Tokens for wrong audiences
-- Missing required claims
-- Invalid signatures
-- Time manipulation attacks
-- Algorithm confusion attacks
+## Getting Started
 
-**Configuration:**
+### Prerequisites
+
+**Required:**
+- Docker Desktop 4.0+ with Docker Compose
+- Python 3.11+ (for running regression tests locally)
+- macOS (for Swift client)
+- Available ports: 8002-8005, 8080, 8181, 8443
+
+**Optional:**
+- Black, Ruff, mypy, pylint (for code quality checks)
+
+### Initial Setup
+
+1. **Clone and navigate to repository:**
+   ```bash
+   git clone <repo-url>
+   cd FlowPilot
+   ```
+
+2. **Create `.env` file** in the project root:
+   ```bash
+   KEYCLOAK_ADMIN_USERNAME=admin
+   KEYCLOAK_ADMIN_PASSWORD=<your-secure-password>
+   KEYCLOAK_CLIENT_SECRET=<your-client-secret>
+   AGENT_CLIENT_SECRET=<your-agent-secret>
+   ```
+   
+   **IMPORTANT:** Never commit `.env` to version control.
+
+3. **Start the entire stack:**
+   ```bash
+   make up
+   ```
+   
+   This single command:
+   - Builds all Docker containers
+   - Starts Keycloak, OPA, and all microservices
+   - Waits for Keycloak to be ready (can take 60+ seconds)
+   - Provisions users, clients, and delegations
+   - Configures OIDC settings
+
+4. **Verify services are running:**
+   ```bash
+   make status
+   ```
+   
+   All services should show as "healthy" or "running".
+
+5. **Check service health endpoints:**
+   ```bash
+   curl http://localhost:8002/health  # authz-api
+   curl http://localhost:8003/health  # domain-services-api
+   curl http://localhost:8004/health  # ai-agent-api
+   curl http://localhost:8005/health  # delegation-api
+   ```
+
+### Quick Commands
+
 ```bash
-# Required environment variables
-export KEYCLOAK_JWKS_URI="https://keycloak.example.com/realms/myrealm/protocol/openid-connect/certs"
-export KEYCLOAK_ISSUER="https://keycloak.example.com/realms/myrealm"
-export KEYCLOAK_AUDIENCE="account"  # Optional
+make up      # Start entire stack
+make down    # Stop all services
+make logs    # View all service logs
+make status  # Check service health
+make reset   # Complete reset (wipes volumes)
+make smoke   # Run smoke tests
 ```
 
-### Input Validation & Sanitization
+### Service Endpoints
 
-All API endpoints implement comprehensive input validation:
+| Service | Port | Purpose |
+|---------|------|----------|
+| flowpilot-authz-api | 8002 | Authorization decisions (PDP) |
+| flowpilot-domain-services-api | 8003 | Workflow management |
+| flowpilot-ai-agent-api | 8004 | AI agent execution |
+| flowpilot-delegation-api | 8005 | Delegation graph |
+| Keycloak | 8080 (HTTP), 8443 (HTTPS) | OIDC provider |
+| OPA | 8181 | Policy engine |
 
-#### 1. **Pydantic Model Validation**
-- Length constraints (1-255 characters for IDs)
-- Type validation (strings, booleans, dates)
-- Custom validators for IDs, UUIDs, and ISO dates
-- Automatic sanitization of all string inputs
+⸻
 
-#### 2. **Path Parameter Validation**
-- All URL path parameters validated before processing
-- ID format: alphanumeric, hyphens, underscores only
-- Maximum length enforcement (255 characters)
+## Architecture Deep Dive
 
-#### 3. **String Sanitization**
-- Control character rejection (prevents injection attacks)
-- Hard length limits (10,000 characters default)
-- Optional signature scanning for:
-  - SQL injection patterns
-  - XSS patterns
-  - Command injection patterns
-  - Path traversal patterns
+### Service Responsibilities
 
-#### 4. **Request Body Size Limits**
-- Default: 1MB per request
-- Configurable via `MAX_REQUEST_SIZE_MB` environment variable
-- Protects against memory exhaustion attacks
+**flowpilot-authz-api** (port 8002)
+- Acts as authorization façade (PEP/PDP integration point)
+- Accepts AuthZEN-compliant requests
+- Validates JWTs using JWKS (zero network calls per request)
+- Enforces delegation by calling delegation-api (ReBAC layer)
+- Evaluates ABAC policies via OPA
+- Returns structured decisions with reason codes
+- **Key file:** `flowpilot-services/authz-api/main.py`, `core.py`
 
-**Configuration:**
-```bash
-# Optional: Enable payload signature scanning (disabled by default)
-export ENABLE_PAYLOAD_SIGNATURE_SCAN=1
+**flowpilot-delegation-api** (port 8005)
+- Maintains authorization graph (principal → delegate relationships)
+- Validates delegation chains (direct and transitive)
+- SQLite-backed persistence
+- Supports workflow-scoped and global delegations
+- No policy evaluation, purely relationship management
+- **Key file:** `flowpilot-services/delegation-api/main.py`, `core.py`
 
-# Optional: Configure request size limits
-export MAX_REQUEST_SIZE_MB=1
-export MAX_STRING_LENGTH=10000
+**OPA** (port 8181)
+- Evaluates Rego policies in `infra/opa/policies/`
+- Primary policy: `auto_book.rego` for autonomous booking decisions
+- File-system mounted policies with hot reload capability
+- Stateless decision engine
 
-# Optional: Disable detailed error messages in production
-export INCLUDE_ERROR_DETAILS=0
+**Keycloak** (ports 8080/8443)
+- OIDC identity provider
+- Realm: `flowpilot`
+- Desktop client: `flowpilot-desktop` (Authorization Code + PKCE)
+- Service account: `flowpilot-agent` (Client Credentials)
+- Auto-provisioned via `scripts/setup_keycloak.sh`
+
+**flowpilot-domain-services-api** (port 8003)
+- System of record for workflows and workflow items (using 'travel' as use case)
+- Creates travel booking workflows from templates
+- Calls authz-api for all authorization checks
+- Auto-creates delegations when workflows are created
+- **Key file:** `flowpilot-services/domain-services-api/main.py`, `core.py`
+
+**flowpilot-ai-agent-api** (port 8004)
+- Executes workflow items on behalf of users (using 'travel' as use case)
+- Demonstrates agentic authorization patterns
+- Uses service-to-service authentication (client credentials)
+- **Key file:** `flowpilot-services/ai-agent-api/main.py`
+
+### Authorization Flow
+
+1. Request arrives at domain-services-api or ai-agent-api (PEP)
+2. PEP constructs AuthZEN request and calls authz-api
+3. Authz-api validates JWT and extracts `sub` claim
+4. If subject ≠ principal: authz-api queries delegation-api (ReBAC check)
+5. If delegation valid: authz-api builds OPA input and queries OPA (ABAC check)
+6. OPA evaluates Rego policy and returns decision
+7. Authz-api returns structured response (allow/deny + reason codes)
+8. PEP enforces decision and grants or refuses execution of a workflow item
+
+### Authentication Flows
+
+**Desktop Client → Services:**
+- Authorization Code + PKCE flow
+- User authenticates via Keycloak
+- Access token with `sub` and `persona` claims
+
+**Service → Service:**
+- Client Credentials flow
+- Service account: `flowpilot-agent`
+- Example pattern used throughout:
+  ```python
+  response = requests.post(
+      os.environ["KEYCLOAK_TOKEN_URL"],
+      data={
+          "grant_type": "client_credentials",
+          "client_id": os.environ["AGENT_CLIENT_ID"],
+          "client_secret": os.environ["AGENT_CLIENT_SECRET"],
+      },
+      verify=False  # Local dev only
+  )
+  token = response.json()["access_token"]
+  ```
+
+### Security Architecture
+
+**Defense-in-Depth Layers:**
+1. **JWT Validation:** JWKS-based, local validation (no network dependency)
+2. **Input Validation:** 4-layer approach
+   - Pydantic model validation
+   - Path parameter validation
+   - String sanitization (control character rejection)
+   - Request size limits (default 1MB)
+3. **Injection Prevention:** Optional signature scanning for attack patterns
+4. **Security Headers:** 6 protective headers on all responses
+5. **Error Handling:** Production-safe sanitized messages
+6. **PII Protection:** Zero PII exposure to LLMs or logs
+
+**Shared Security Library:**
+- Located: `flowpilot-services/shared-libraries/security.py`
+- Provides: JWT validation, input sanitization, security headers
+- **IMPORTANT:** Changes require container rebuild (shared files are copied at build time)
+
+⸻
+
+## Development Workflow
+
+### Project Structure
+
+```
+FlowPilot/
+├── flowpilot-services/       # Microservices
+│   ├── authz-api/
+│   ├── delegation-api/
+│   ├── domain-services-api/
+│   ├── ai-agent-api/
+│   └── shared-libraries/     # Common utilities (copied at build)
+├── infra/
+│   ├── opa/policies/         # Rego policies
+│   ├── keycloak/             # Realm config and certs
+│   └── certs/                # TLS certificates
+├── flowpilot-project/        # Swift macOS client
+├── flowpilot_openapi/        # OpenAPI specifications
+├── flowpilot_testing/        # Integration tests
+├── scripts/                  # Setup and provisioning
+├── bin/                      # Stack management scripts
+├── data/                     # Trip templates
+├── docs/                     # Architecture documentation
+└── docker-compose.yml        # Stack definition
 ```
 
-### Security Headers
+### Making Code Changes
 
-All API responses include security headers:
-- `X-Content-Type-Options: nosniff` - Prevents MIME sniffing
-- `X-Frame-Options: DENY` - Prevents clickjacking
-- `X-XSS-Protection: 1; mode=block` - XSS protection for older browsers
-- `Content-Security-Policy: default-src 'none'` - Restrictive CSP
-- `Referrer-Policy: no-referrer` - Prevents referrer leakage
-- `Permissions-Policy` - Disables geolocation, microphone, camera
-
-### Authorization Architecture
-
-- **`flowpilot-authz-api`** - Authorization façade for policy decisions
-  - Validates access tokens via JWKS (for service-to-service authentication)
-  - Validates AuthZEN-compliant requests (subject/action/resource/context)
-  - **Does NOT require claims in context.principal** - only id and persona
-  - Fetches owner attributes from Keycloak when needed for policy evaluation
-  - Fetches delegation data from delegation-api (Policy Information Point)
-  - Sanitizes all input payloads before processing
-  - Calls OPA to evaluate Rego policies
-  - Returns allow/deny decisions with reason codes and advice
-  - Stateless service with no in-memory storage
-
-- **`flowpilot-delegation-api`** - Delegation graph management
-  - Maintains authorization graph (who delegates to whom)
-  - Supports workflow-scoped and general delegations
-  - Two delegation types: execute (for travel agents) and read (for invitations)
-  - Tracks expiration and revocation
-  - SQLite-backed persistence
-
-- **`opa`** - Open Policy Agent in server mode
-  - Evaluates attribute-based access control (ABAC) policies
-  - Policies mounted from repository (`infra/opa/policies/`)
-  - Supports relationship-based delegation (ReBAC) via declarative rules
-  - Persona-based access control (user persona must match owner persona for read)
-  - Local policy editing with hot reload
-
-### Error Handling
-
-- **Production-safe error messages**: Internal details hidden when `INCLUDE_ERROR_DETAILS=0`
-- **Generic error responses**: Database, file system, network errors sanitized
-- **404 responses**: Generic "not found" messages (no enumeration)
-- **403 responses**: Generic "permission denied" (no detailed reasons)
-
-### Security Quick Reference
-
-**Authentication:**
-- All endpoints (except `/health`) require valid JWT bearer tokens
-- Tokens validated locally using JWKS (no network latency)
-- 10 JWT claims verified per best practices
-
-**Input Validation:**
-- All request bodies validated with Pydantic models
-- All path parameters sanitized and length-limited
-- All strings checked for control characters and length limits
-- Optional attack signature scanning (SQL, XSS, command injection, path traversal)
-
-**Defense in Depth:**
-- Request size limits (1MB default)
-- Security headers on all responses
-- Error message sanitization
-- No PII exposure to AI agents
-
-**Production Deployment:**
+**1. Python Service Changes:**
 ```bash
-export INCLUDE_ERROR_DETAILS=0              # Hide internal error details
-export ENABLE_PAYLOAD_SIGNATURE_SCAN=1      # Enable attack signature detection
-export MAX_REQUEST_SIZE_MB=1                # Limit request body size
-export MAX_STRING_LENGTH=10000              # Limit string field lengths
-```
+# Edit code in flowpilot-services/<service>/
+# Rebuild specific service
+docker compose up -d --build flowpilot-authz-api
 
-## Environment Configuration
-
-FlowPilot uses a `.env` file for environment-specific configuration. Create a `.env` file in the repository root with the following variables:
-
-```bash
-# Keycloak Admin Credentials
-# Default values for development - change in production!
-KEYCLOAK_ADMIN_USERNAME=admin
-KEYCLOAK_ADMIN_PASSWORD=<your-admin-password>
-
-# Keycloak Client Secret for flowpilot-agent service account
-# This secret is used by the agent and domain-services APIs for service-to-service authentication
-KEYCLOAK_CLIENT_SECRET=<your-client-secret>
-
-# Agent Client Secret (alias for KEYCLOAK_CLIENT_SECRET)
-# Used by services for client credentials flow authentication
-AGENT_CLIENT_SECRET=<your-client-secret>
-```
-
-**Note:** The `.env` file is gitignored and should not be committed. Use it for local development. In production, set these values through your deployment platform's environment variable configuration.
-
-## Quick start (Docker Compose)
-
-From the repo root:
-
-```bash
-docker compose up -d --build
-docker compose ps
-```
-
-### Automated Keycloak Setup
-
-The stack includes an automated Keycloak setup container (`keycloak-setup`) that runs on startup:
-
-1. **Waits for Keycloak** to be fully ready
-2. **Enables unmanaged attributes** for custom user attributes
-3. **Creates/verifies clients** (account-console, flowpilot-desktop, flowpilot-agent)
-4. **Configures scopes** and protocol mappers for autobook attributes
-5. **Grants service account permissions** to flowpilot-agent for user queries
-
-To see setup logs:
-
-```bash
-docker compose logs keycloak-setup
-```
-
-**Note:** Keycloak configuration persists across restarts via Docker volumes. The setup container will detect existing configuration and skip already-completed steps.
-
-To see OPA startup logs:
-
-```bash
-docker compose logs -f opa
-```
-
-To see authz API logs:
-
-```bash
+# View logs
 docker compose logs -f flowpilot-authz-api
 ```
 
-### Verify OPA is reachable (inside the compose network)
-
-This avoids host-port assumptions and is the most reliable check:
-
+**2. Shared Library Changes:**
 ```bash
-docker run --rm --network flowpilot_default curlimages/curl:8.5.0 -sS   http://opa:8181/health
+# Edit flowpilot-services/shared-libraries/*.py
+# MUST rebuild ALL services that use them
+docker compose up -d --build
 ```
 
-Expected output is JSON indicating healthy status (exact fields vary by OPA version).
-
-### Verify the policy is loaded
-
-Example: evaluate the `auto_book` policy directly in OPA (the repository includes `auto_book.rego` under the mounted policies directory).
-
+**3. Policy Changes:**
 ```bash
-docker run --rm --network flowpilot_default curlimages/curl:8.5.0 -sS   -H "Content-Type: application/json"   -d '{
-    "input": {
-      "user": {
-        "sub": "test-user-id",
-        "autobook_consent": true,
-        "autobook_price": 1500,
-        "autobook_leadtime": 7,
-        "autobook_risklevel": 2,
-        "claims": {}
-      },
-      "action": {"name": "book"},
-      "resource": {
-        "planned_price": 250,
-        "departure_date": "2026-01-16",
-        "airline_risk_score": 1
-      }
-    }
-  }'   http://opa:8181/v1/data/auto_book/allow
-```
-
-Expected result:
-
-```json
-{"result":true}
-```
-
-If you see `{"result":false}`, check the input payload against the policy conditions and/or query the policy reason:
-
-```bash
-docker run --rm --network flowpilot_default curlimages/curl:8.5.0 -sS   -H "Content-Type: application/json"   -d '{"input":{...}}'   http://opa:8181/v1/data/auto_book/reason
-```
-
-## Policy development workflow
-
-### Policy location
-
-The compose file mounts a policy directory into the OPA container. Recommended layout:
-
-- `infra/opa/policies/`
-  - `auto_book.rego`
-  - other policy modules
-- `infra/opa/data/` (optional)
-  - static data documents consumed by policy
-
-If you prefer to keep policies alongside the authz service, that also works as long as the OPA container mounts the correct path.
-
-### Validate and test policies locally
-
-Run tests inside the OPA container:
-
-```bash
-docker compose exec -T opa opa test /policies -v
-```
-
-(Adjust `/policies` if your compose mounts to a different path.)
-
-### Reload policies
-
-The simplest workflow is a container restart:
-
-```bash
+# Edit infra/opa/policies/*.rego
+# Restart OPA (has hot reload, but restart is more reliable)
 docker compose restart opa
+
+# Test policy directly
+curl -X POST http://localhost:8181/v1/data/auto_book/allow \
+  -H "Content-Type: application/json" \
+  -d '{"input": {<your-test-input>}}'
 ```
 
-If you want automatic reload on file changes, you can run OPA with `--watch` in the compose `command:` (see `docker-compose.yml`), but note that file watching behavior depends on the container filesystem and your Docker Desktop configuration.
+**4. Environment Variable Changes:**
+```bash
+# Edit docker-compose.yml environment section
+# Restart affected service
+docker compose up -d flowpilot-authz-api
+```
 
-## flowpilot-authz-api integration
+### Development Patterns
 
-`flowpilot-authz-api` talks to OPA over HTTP. In Compose, the correct way to refer to OPA is via the service name (`opa`), not `127.0.0.1`:
+**JWT Validation Pattern:**
+```python
+from fastapi import Depends
+import security
 
-- `OPA_URL=http://opa:8181`
-- Policy package/rule typically:
-  - package: `auto_book`
-  - decision rule: `allow` (boolean)
+def get_token_claims(
+    token_claims: dict = Depends(security.verify_token)
+) -> dict:
+    return token_claims
 
-If you expose authz-api to the host, call it using its published port (see `docker-compose.yml`). The OpenAPI specification is available in `flowpilot-authz.openapi.yaml`.
+@app.post("/endpoint")
+def handler(token_claims: dict = Depends(get_token_claims)):
+    user_sub = token_claims["sub"]
+    # Use validated claims
+```
+
+**AuthZEN Request Pattern:**
+```python
+authz_request = {
+    "subject": {"id": agent_sub},
+    "action": {"name": "execute"},
+    "resource": {
+        "type": "workflow_item",
+        "id": item_id,
+        "workflow_id": workflow_id,
+    },
+    "context": {
+        "principal": {
+            "id": owner_sub,
+            "claims": {...}
+        }
+    }
+}
+
+response = requests.post(
+    f"{AUTHZ_BASE_URL}/v1/evaluate",
+    json=authz_request,
+    headers={"Authorization": f"Bearer {token}"}
+)
+```
+
+**Input Sanitization Pattern:**
+```python
+import security
+
+try:
+    sanitized = security.sanitize_request_json_payload(request_body)
+except security.InputValidationError as e:
+    raise HTTPException(status_code=400, detail=str(e))
+```
+
+### Testing
+
+**Integration Tests:**
+```bash
+# Located in flowpilot_testing/
+python3 flowpilot_testing/regression_test.py
+```
+
+**Service Health Checks:**
+```bash
+for port in 8002 8003 8004 8005; do
+  curl -s http://localhost:$port/health | jq
+done
+```
+
+**Manual Authorization Test:**
+```bash
+# Get service token
+TOKEN=$(curl -s -X POST https://localhost:8443/realms/flowpilot/protocol/openid-connect/token \
+  -d grant_type=client_credentials \
+  -d client_id=flowpilot-agent \
+  -d client_secret=<secret> \
+  --insecure | jq -r .access_token)
+
+# Test authorization endpoint
+curl -X POST http://localhost:8002/v1/evaluate \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"subject": {...}, "action": {...}, "resource": {...}}'
+```
+
+### Code Quality
+
+The repository uses:
+- **Black:** Code formatting
+- **Ruff:** Fast linting
+- **mypy:** Type checking
+- **pylint:** Additional linting (config: `.pylintrc`)
+
+No automated make targets exist. Run manually:
+```bash
+black flowpilot-services/
+ruff check flowpilot-services/
+mypy flowpilot-services/
+pylint flowpilot-services/
+```
+
+### Swift Client (macOS App)
+
+```bash
+# Open in Xcode
+open flowpilot-project/flowpilot-project.xcodeproj
+
+# Or use reset script
+./flowpilot-project/reset-and-build.sh
+```
+
+Client expects services on localhost. Update URLs if running remotely.
+
+⸻
 
 ## Troubleshooting
 
-### OPA is running but requests fail
+### Keycloak Not Ready
+**Symptom:** Provisioning fails with 401 errors during `make up`
 
-- Confirm you are calling the correct network endpoint:
-  - Inside compose network: `http://opa:8181/...`
-  - From the host: only works if the OPA service publishes a host port.
+**Solution:**
+```bash
+# Keycloak takes 60+ seconds to start
+docker compose logs -f keycloak
+# Wait for: "Listening on: https://0.0.0.0:8443"
 
-### `MANIFEST_UNKNOWN`, registry, HTTPS proxy errors (legacy)
+# If setup failed, re-run manually
+docker compose up keycloak-setup
+```
 
-Those errors are typically caused by OCI/registry-based policy distribution attempts (OCI manifest types, Accept headers, TLS, namespace rewrite rules). The current default FlowPilot workflow does not require an OCI registry, nginx registry proxy, or ***REMOVED***.
+### Agent Permission Denied
+**Symptom:** "Allowed=0, Denied=3" in macOS app
 
-If you still have legacy services in your compose file (registry, registry-proxy, ***REMOVED***), remove or disable them so they cannot interfere with your network and ports.
+**Causes:**
+1. Delegations not created
+2. OPA policy not loaded
+3. Wrong agent identity
 
-### Authz API cannot reach OPA
+**Debug:**
+```bash
+# Check delegations exist
+curl http://localhost:8005/v1/delegations?delegate_id=agent-runner \
+  -H "Authorization: Bearer <token>"
 
-If you see connection errors in `flowpilot-authz-api` logs:
-- Ensure the `opa` service is running: `docker compose ps`
-- Ensure the authz container uses `OPA_URL=http://opa:8181` (service name routing), not `localhost`.
+# Test OPA directly
+curl -X POST http://localhost:8181/v1/data/auto_book/allow \
+  -d '{"input": {"principal": {...}}}'
 
-## Repository structure (selected)
+# Check authz-api logs
+docker compose logs flowpilot-authz-api | grep -i deny
+```
 
-- `services/flowpilot-authz-api/` authorization API
-- `services/flowpilot-domain-services-api/` travel domain APIs
-- `services/flowpilot-ai-agent-api/` AI agent API
-- `services/shared-libraries/` shared Python utilities
-- `infra/opa/` OPA policy and data (recommended)
-- `infra/keycloak/` Keycloak realm config and certs
+### Policy Changes Not Applied
+**Symptom:** Authorization decisions don't reflect Rego changes
 
-## Notes
+**Solution:**
+```bash
+docker compose restart opa
+# Verify policies loaded
+docker compose exec opa ls -la /policies
+```
 
-This repo is intended as a practical reference implementation. The design goal for policy loading is to keep the developer loop short and observable:
-- edit Rego locally
-- restart (or watch) OPA
-- call OPA directly to validate
-- call flowpilot-authz-api to validate end-to-end behavior
+### Service Cannot Reach Another Service
+**Symptom:** Connection refused between services
+
+**Causes:**
+1. Using `localhost` instead of service name in container
+2. Service not started or unhealthy
+
+**Debug:**
+```bash
+# Check all services running
+docker compose ps
+
+# Test connectivity from inside container
+docker compose exec flowpilot-authz-api curl http://opa:8181/health
+```
+
+### Container Build Fails
+**Symptom:** Services fail to start after code changes
+
+**Solution:**
+```bash
+# Force rebuild without cache
+docker compose up -d --build --no-cache flowpilot-authz-api
+
+# Or rebuild everything
+make reset
+make up
+```
+
+### Port Conflicts
+**Symptom:** "port is already allocated" error
+
+**Solution:**
+```bash
+# Find process using port
+lsof -i :8002
+
+# Kill process or stop conflicting service
+kill -9 <PID>
+```
+
+### Shared Library Changes Not Reflected
+**Symptom:** Code changes in `shared-libraries/` not working
+
+**Cause:** Libraries are copied at build time, not mounted
+
+**Solution:**
+```bash
+# MUST rebuild all services
+docker compose up -d --build
+```
+
+⸻
+
+## Environment Configuration
+
+### Key Environment Variables
+
+**Security (all services):**
+```bash
+KEYCLOAK_JWKS_URI=https://keycloak:8443/realms/flowpilot/protocol/openid-connect/certs
+KEYCLOAK_ISSUER=https://localhost:8443/realms/flowpilot
+KEYCLOAK_AUDIENCE=flowpilot-desktop
+ENABLE_PAYLOAD_SIGNATURE_SCAN=0  # 1 to enable attack signature detection
+MAX_REQUEST_SIZE_MB=1
+INCLUDE_ERROR_DETAILS=1  # Set to 0 in production
+```
+
+**Service Discovery:**
+```bash
+OPA_URL=http://opa:8181
+DELEGATION_API_BASE_URL=http://flowpilot-delegation-api:8000
+AUTHZ_BASE_URL=http://flowpilot-authz-api:8000
+WORKFLOW_BASE_URL=http://flowpilot-domain-services-api:8000
+```
+
+**Authentication:**
+```bash
+KEYCLOAK_TOKEN_URL=https://keycloak:8443/realms/flowpilot/protocol/openid-connect/token
+AGENT_CLIENT_ID=flowpilot-agent
+AGENT_CLIENT_SECRET=<from .env file>
+```
+
+**Local .env File (required, never commit):**
+```bash
+KEYCLOAK_ADMIN_USERNAME=admin
+KEYCLOAK_ADMIN_PASSWORD=<your-password>
+KEYCLOAK_CLIENT_SECRET=<your-secret>
+AGENT_CLIENT_SECRET=<your-secret>
+```
+
+⸻
+
+## API Documentation
+
+OpenAPI specifications available in `flowpilot_openapi/`:
+- `authz.openapi.yaml` - Authorization API
+- `delegation.openapi.yaml` - Delegation API
+- `domain-services.openapi.yaml` - Workflow API
+- `ai-agent.openapi.yaml` - AI Agent API
+
+View specs using Swagger Editor or similar tool.
+
+⸻
+
+## Important Notes
+
+- **Shared Libraries:** Changes to `flowpilot-services/shared-libraries/` require container rebuilds
+- **Policy Hot Reload:** OPA watches `/policies` but restart is more reliable
+- **TLS in Dev:** Services use `verify=False` for TLS; **NEVER deploy this way**
+- **PII Handling:** Only `sub` (UUID) is processed; never log or expose other PII
+- **Error Messages:** Set `INCLUDE_ERROR_DETAILS=0` in production
+- **Client Secret:** Never commit `.env` file
+- **Port Requirements:** Ensure 8002-8005, 8080, 8181, 8443 are available
+- **macOS App:** Expects services on localhost
+- **Container Platform:** Some services specify `platform: linux/amd64` for compatibility
+
+⸻
+
+## Additional Resources
+
+- **Architecture Documentation:** `docs/` directory
+- **Security Details:** `SECURITY.md`
+- **Startup Guide:** `STARTUP.md` (manual startup procedures)
+- **Development Guidelines:** `DEVELOPMENT_GUIDELINES.md`
+- **Testing Guide:** `flowpilot_testing/README.md`
+- **Project Rules:** `WARP.md` (AI assistant guidance)
+
+⸻
+
+## Contributing
+
+See `CONTRIBUTING.md` for contribution guidelines and `CODE_OF_CONDUCT.md` for community standards.

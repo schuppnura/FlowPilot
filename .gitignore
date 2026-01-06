@@ -165,7 +165,9 @@ DerivedData/
 .idea/
 
 # Project specific
-data/
+data/*
+!data/trip_templates/
+!data/trip_templates/*.json
 *.faiss
 *.index
 *.npz
