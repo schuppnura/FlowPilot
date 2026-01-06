@@ -14,7 +14,7 @@ We take the security of FlowPilot seriously. If you discover a security vulnerab
 
 **Please do NOT report security vulnerabilities through public GitHub issues.**
 
-Instead, please report them via email to: carlo.schupp@nura.pro
+Instead, please report them via email to: ciso@nura.pro
 
 Include the following information:
 - Type of vulnerability
@@ -147,7 +147,7 @@ We recommend:
 ## Security Contacts
 
 For security-related questions or concerns:
-- Email: carlo.schupp@nura.pro
+- Email: ciso@nura.pro
 - Response time: Within 48 hours
 
 ---
