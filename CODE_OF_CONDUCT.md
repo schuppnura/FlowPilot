@@ -3,4 +3,4 @@
 We follow the Contributor Covenant Code of Conduct version 2.1:
 https://www.contributor-covenant.org/version/2/1/code_of_conduct/
 
-Report unacceptable behavior to: carlo.schupp@nura.pro
+Report unacceptable behavior to: ciso@nura.pro
