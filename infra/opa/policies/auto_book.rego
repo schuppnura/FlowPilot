@@ -113,9 +113,17 @@ reasons[code] if {
   principal_id := input.subject.id
   owner_id := input.resource.properties.owner.id
   principal_id != owner_id
+  # Not agent-runner (would be caught by rule above)
+  not is_agent_runner
   # No delegation exists at all
   not input.context.delegation.valid
   code := "read.no_delegation"
+}
+
+# Helper: check if subject is agent-runner
+is_agent_runner if {
+  input.subject.type == "agent"
+  input.subject.id == "agent-runner"
 }
 
 reasons[code] if {
@@ -144,18 +152,48 @@ reasons[code] if {
 # Anti-spoofing and delegation check
 # The principal (subject making the request) must either:
 # 1. Be the owner of the resource, OR
-# 2. Have a valid delegation from the owner (computed by authz-api via delegation-api)
-# 3. Have sufficient permissions for the requested action
+# 2. Be agent-runner with autobook consent, OR
+# 3. Have a valid delegation from the owner (computed by authz-api via delegation-api)
+# 4. Have sufficient permissions for the requested action
 authorized_principal if {
   principal_id := input.subject.id
   owner_id := input.resource.properties.owner.id
   principal_id == owner_id
 }
 
+# Agent-runner with autobook consent in autonomous mode (no user delegation required)
+# This allows the agent to act autonomously when the owner has opted in
+# Only applies when there's no valid delegation (pure autobook mode)
+authorized_principal if {
+  input.subject.type == "agent"
+  input.subject.id == "agent-runner"
+  input.resource.properties.owner.autobook_consent == true
+  not input.context.delegation.valid
+}
+
+# Agent-runner activated by the owner themselves
+authorized_principal if {
+  input.subject.type == "agent"
+  input.subject.id == "agent-runner"
+  principal_id := input.context.principal.id
+  owner_id := input.resource.properties.owner.id
+  principal_id == owner_id
+}
+
+# Agent-runner activated by a delegated user (delegation mode)
+authorized_principal if {
+  input.subject.type == "agent"
+  input.subject.id == "agent-runner"
+  # Check if the user who activated the agent has delegation
+  has_valid_delegation_for_action
+}
+
+# Regular user with delegation (non-agent-runner)
 authorized_principal if {
   principal_id := input.subject.id
   owner_id := input.resource.properties.owner.id
   principal_id != owner_id
+  not is_agent_runner
   # Check computed delegation result (delegation chain already traversed)
   has_valid_delegation_for_action
 }
@@ -178,7 +216,35 @@ has_valid_delegation_for_action if {
 
 valid_agent_personas := {"travel-agent", "ai-agent", "office-manager", "booking-assistant"}
 
+# Agent-runner activated by delegated user: check context.principal has agent persona
 persona_valid if {
+  input.subject.type == "agent"
+  input.subject.id == "agent-runner"
+  principal_id := input.context.principal.id
+  owner_id := input.resource.properties.owner.id
+  principal_id != owner_id
+  principal_persona := input.context.principal.persona
+  principal_persona != ""
+  valid_agent_personas[principal_persona]
+}
+
+# Agent-runner activated by owner: check context.principal matches owner persona
+persona_valid if {
+  input.subject.type == "agent"
+  input.subject.id == "agent-runner"
+  principal_id := input.context.principal.id
+  owner_id := input.resource.properties.owner.id
+  principal_id == owner_id
+  owner_persona := input.resource.properties.owner.persona
+  principal_persona := input.context.principal.persona
+  principal_persona == owner_persona
+  owner_persona != ""
+  principal_persona != ""
+}
+
+# Regular user with delegation: check subject persona
+persona_valid if {
+  not is_agent_runner
   principal_id := input.subject.id
   owner_id := input.resource.properties.owner.id
   principal_id != owner_id
@@ -187,7 +253,9 @@ persona_valid if {
   valid_agent_personas[input.subject.persona]
 }
 
+# Owner executing their own workflow: must match owner persona
 persona_valid if {
+  not is_agent_runner
   principal_id := input.subject.id
   owner_id := input.resource.properties.owner.id
   principal_id == owner_id
@@ -203,6 +271,13 @@ allow_read if {
   principal_id := input.subject.id
   owner_id := input.resource.properties.owner.id
   principal_id == owner_id
+}
+
+# Allow read if subject is agent-runner (always, regardless of autobook consent)
+# Agent needs to read workflows to determine which items can be executed
+allow_read if {
+  input.subject.type == "agent"
+  input.subject.id == "agent-runner"
 }
 
 # Allow read if user has valid delegation (with read action) and matching persona

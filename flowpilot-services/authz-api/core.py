@@ -151,24 +151,26 @@ def build_opa_input(
     request_context = authzen_request.get("context") or {}
     request_resource = authzen_request.get("resource") or {}
     request_action = authzen_request.get("action") or {}
+    request_subject = authzen_request.get("subject") or {}
     resource_properties = coerce_dict(request_resource.get("properties"), "resource.properties")
     
     # ========================================================================
-    # SUBJECT: Extract principal (current user) information
+    # SUBJECT: Use the subject from the AuthZEN request (agent or user)
+    # OPA will decide if agent-runner with autobook_consent=true is allowed
     # ========================================================================
-    principal = request_context.get("principal") or {}
-    principal_sub = principal.get("id", "")
+    subject_id = request_subject.get("id", "")
+    subject_type = request_subject.get("type", "user")
     
-    # Extract principal persona (the persona the current user is using)
-    principal_persona = principal.get("persona") or ""
-    if isinstance(principal_persona, list) and principal_persona:
-        principal_persona = principal_persona[0]
-    principal_persona = str(principal_persona) if principal_persona else ""
+    # Extract subject persona
+    subject_persona = request_subject.get("persona") or ""
+    if isinstance(subject_persona, list) and subject_persona:
+        subject_persona = subject_persona[0]
+    subject_persona = str(subject_persona) if subject_persona else ""
     
     subject = {
-        "type": "user",
-        "id": principal_sub,
-        "persona": principal_persona,
+        "type": subject_type,
+        "id": subject_id,
+        "persona": subject_persona,
     }
     
     # ========================================================================
@@ -242,11 +244,16 @@ def build_opa_input(
         }
     
     # ========================================================================
-    # CONTEXT: Build AuthZEN-compliant context with delegation
+    # CONTEXT: Build AuthZEN-compliant context with delegation and principal
     # ========================================================================
     context = {
         "delegation": delegation,
     }
+    
+    # Preserve context.principal from the original request (for agent-runner scenarios)
+    # This contains the user who activated the agent
+    if "principal" in request_context:
+        context["principal"] = request_context["principal"]
     
     # ========================================================================
     # Assemble final OPA input document

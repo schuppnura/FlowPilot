@@ -55,7 +55,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "template_directory": "../data/trip_templates",
     # AuthZ integration
     "authz_base_url": "http://flowpilot-authz-api:8000",
-    "agent_sub": "agent_flowpilot_1",
+    "agent_sub": "agent-runner",
     # Delegation integration
     "delegation_api_base_url": "http://flowpilot-delegation-api:8000",
     # Operational

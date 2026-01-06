@@ -505,15 +505,9 @@ class FlowPilotService:
         if not token:
             raise RuntimeError("Service token not available - cannot call authz-api")
 
-        # Decode service token to get sub or azp for the agent subject
-        try:
-            service_claims = security.verify_token_string(token)
-            service_id = (
-                service_claims.get("sub") or service_claims.get("azp") or agent_sub
-            )
-        except Exception:
-            # Fallback to agent_sub if token decode fails
-            service_id = agent_sub
+        # Use stable agent_sub from config (not token sub which changes with Keycloak resets)
+        # The agent_sub (e.g., "agent-runner") is a stable identifier used for delegation
+        service_id = agent_sub
 
         # Subject is always the agent (service) making the call to authz-api
         # This is a service-to-service call, so subject identifies the calling service (ai-agent-api)
@@ -592,14 +586,9 @@ class FlowPilotService:
         if not token:
             raise RuntimeError("Service token not available - cannot call authz-api")
 
-        # Decode service token to get sub or azp for the subject
-        try:
-            service_claims = security.verify_token_string(token)
-            service_id = (
-                service_claims.get("sub") or service_claims.get("azp") or agent_sub
-            )
-        except Exception:
-            service_id = agent_sub
+        # Use stable agent_sub from config (not token sub which changes with Keycloak resets)
+        # The agent_sub (e.g., "agent-runner") is a stable identifier used for delegation
+        service_id = agent_sub
 
         # Subject is the service making the call
         # Add AI agent persona to subject for authorization checks (configurable via AI_AGENT_PERSONA)
