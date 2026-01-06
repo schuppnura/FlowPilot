@@ -1,5 +1,5 @@
 username;password;email;firstname;lastname;persona;autobook_consent;autobook_price;autobook_leadtime;autobook_risklevel
-carlo;qkr9AXM3wum8fjt*xnc;test1@example.com;Carlo;Schupp;traveler;Yes;10000;7;5
+alice;qkr9AXM3wum8fjt*xnc;test1@example.com;Alice;Smith;traveler;Yes;10000;7;5
 peter;qkr9AXM3wum8fjt*xnc;test2@example.com;Peter;Surnak;traveler;No;500;2;0
 yannick;qkr9AXM3wum8fjt*xnc;test3@example.com;Yannick;De Backer;travel-agent,business-traveler;Yes;1500;7;2
 isabel;qkr9AXM3wum8fjt*xnc;test4@examplee.com;Isabel;Cools;traveler;Yes;1500;7;2
