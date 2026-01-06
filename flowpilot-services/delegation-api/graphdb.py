@@ -375,22 +375,22 @@ class DelegationGraphDB:
         # Returns:
         #     Dictionary with:
         #       - path: List of IDs from principal to delegate
-        #       - effective_actions: List of actions available through this path
+        #       - delegated_actions: List of actions available through this path
         #         If any edge is read-only, the whole path is read-only
         #         If all edges have execute, the path has execute
         #     Returns None if no path found
         import json
         
         if principal_id == delegate_id:
-            return {"path": [principal_id], "effective_actions": ["read", "execute"]}
+            return {"path": [principal_id], "delegated_actions": ["read", "execute"]}
 
         now = datetime.now(timezone.utc).isoformat()
 
         conn = self._get_connection()
         try:
             # BFS search with action tracking
-            # Queue items: (current_id, path, effective_actions)
-            # effective_actions starts as all actions and gets restricted as we traverse
+            # Queue items: (current_id, path, delegated_actions)
+            # delegated_actions starts as all actions and gets restricted as we traverse
             queue: List[tuple[str, List[str], set[str]]] = [
                 (principal_id, [principal_id], {"read", "execute"})
             ]
@@ -434,7 +434,7 @@ class DelegationGraphDB:
                     if next_id == delegate_id:
                         valid_paths.append({
                             "path": path + [next_id],
-                            "effective_actions": sorted(list(new_path_actions))
+                            "delegated_actions": sorted(list(new_path_actions))
                         })
                         continue  # Found target, but keep searching for better paths
 
@@ -446,7 +446,7 @@ class DelegationGraphDB:
             if valid_paths:
                 # Sort by: (1) has execute, (2) path length
                 def path_strength(p: Dict[str, Any]) -> tuple[int, int]:
-                    has_execute = 1 if "execute" in p["effective_actions"] else 0
+                    has_execute = 1 if "execute" in p["delegated_actions"] else 0
                     return (has_execute, -len(p["path"]))  # Prefer execute, then shorter paths
                 
                 return max(valid_paths, key=path_strength)

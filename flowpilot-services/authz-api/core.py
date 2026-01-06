@@ -232,7 +232,7 @@ def build_opa_input(
     
     # ========================================================================
     # DELEGATION: Delegation data from delegation-api (PIP)
-    # OPA will check if effective_actions contains the requested action
+    # OPA will check if delegated_actions contains the requested action
     # ========================================================================
     if delegation_result is not None:
         delegation = delegation_result
@@ -240,7 +240,7 @@ def build_opa_input(
         delegation = {
             "valid": False,
             "delegation_chain": [],
-            "effective_actions": [],
+            "delegated_actions": [],
         }
     
     # ========================================================================
@@ -290,7 +290,7 @@ def compute_delegation_chain(
     #     Dictionary with:
     #       - valid: boolean (whether delegation path exists)
     #       - delegation_chain: list of user IDs in the chain
-    #       - effective_actions: list of actions available through delegation
+    #       - delegated_actions: list of actions available through delegation
     #
     # Raises:
     #     RuntimeError: If service token is not available
@@ -320,13 +320,13 @@ def compute_delegation_chain(
     data = response.json()
     valid = data.get("valid", False)
     delegation_chain = data.get("delegation_chain", [])
-    effective_actions = data.get("effective_actions", [])
+    delegated_actions = data.get("delegated_actions", [])
     
     # Return raw delegation data - let OPA decide if permissions are sufficient
     return {
         "valid": valid,
         "delegation_chain": delegation_chain,
-        "effective_actions": effective_actions,
+        "delegated_actions": delegated_actions,
     }
 
 

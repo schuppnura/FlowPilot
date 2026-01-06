@@ -74,7 +74,7 @@ class DelegationService:
             if not delegator_validation.get("valid"):
                 raise ValueError("You cannot delegate permissions you don't have")
             
-            delegator_actions = set(delegator_validation.get("effective_actions", []))
+            delegator_actions = set(delegator_validation.get("delegated_actions", []))
             requested_actions = set(scope) if scope else {"execute"}
             
             # Check if delegator is trying to delegate more than they have
@@ -180,7 +180,7 @@ class DelegationService:
         #     workflow_id: Optional workflow ID to scope the validation
         #
         # Returns:
-        #     Dictionary with validation result, delegation chain, and effective actions
+        #     Dictionary with validation result, delegation chain, and delegated actions
         principal_id = require_non_empty_string(principal_id, "principal_id")
         delegate_id = require_non_empty_string(delegate_id, "delegate_id")
 
@@ -189,7 +189,7 @@ class DelegationService:
             return {
                 "valid": True,
                 "delegation_chain": [principal_id],
-                "effective_actions": list(DELEGATION_ALLOWED_ACTIONS),
+                "delegated_actions": list(DELEGATION_ALLOWED_ACTIONS),
             }
 
         # Find delegation path with action computation
@@ -203,12 +203,12 @@ class DelegationService:
             return {
                 "valid": True,
                 "delegation_chain": path_result["path"],
-                "effective_actions": path_result["effective_actions"],
+                "delegated_actions": path_result["delegated_actions"],
             }
         else:
             return {
                 "valid": False,
                 "delegation_chain": [],
-                "effective_actions": [],
+                "delegated_actions": [],
             }
 
