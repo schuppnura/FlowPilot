@@ -150,27 +150,21 @@ reasons[code] if {
 }
 
 # Anti-spoofing and delegation check
-# The principal (subject making the request) must either:
-# 1. Be the owner of the resource, OR
-# 2. Be agent-runner with autobook consent, OR
-# 3. Have a valid delegation from the owner (computed by authz-api via delegation-api)
-# 4. Have sufficient permissions for the requested action
+# The principal must be authorized to perform the action:
+# 1. Regular user is the owner themselves, OR
+# 2. Agent-runner activated by owner, OR
+# 3. Agent-runner in autonomous mode (autobook_consent + no delegation), OR
+# 4. Valid delegation with required action permissions
+
+# Owner directly accessing their own resource (regular user, not agent-runner)
 authorized_principal if {
+  not is_agent_runner
   principal_id := input.subject.id
   owner_id := input.resource.properties.owner.id
   principal_id == owner_id
 }
 
-# Agent-runner with autobook consent in autonomous mode (no user delegation required)
-# This allows the agent to act autonomously when the owner has opted in
-# Only applies when there's no valid delegation (pure autobook mode)
-authorized_principal if {
-  is_agent_runner
-  input.resource.properties.owner.autobook_consent == true
-  not input.context.delegation.valid
-}
-
-# Agent-runner activated by the owner themselves
+# Agent-runner activated by the owner (owner using agent to execute)
 authorized_principal if {
   is_agent_runner
   principal_id := input.context.principal.id
@@ -178,20 +172,16 @@ authorized_principal if {
   principal_id == owner_id
 }
 
-# Agent-runner activated by a delegated user (delegation mode)
+# Agent-runner in autonomous mode: autobook_consent=true, no delegation chain
+# This is pure autobook: owner has opted in and agent acts autonomously
 authorized_principal if {
   is_agent_runner
-  # Check if the user who activated the agent has delegation
-  has_valid_delegation_for_action
+  input.resource.properties.owner.autobook_consent == true
+  not input.context.delegation.valid
 }
 
-# Regular user with delegation (non-agent-runner)
+# Valid delegation: any subject (regular user or agent-runner) with delegation
 authorized_principal if {
-  principal_id := input.subject.id
-  owner_id := input.resource.properties.owner.id
-  principal_id != owner_id
-  not is_agent_runner
-  # Check computed delegation result (delegation chain already traversed)
   has_valid_delegation_for_action
 }
 
