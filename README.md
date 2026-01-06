@@ -152,7 +152,7 @@ The travel example exists to make the architecture tangible, not to constrain it
 
 ## Architecture at a glance
 
-### Core components
+### Microservices architecture
 1. flowpilot-authz-api
    - Authorization façade (PEP ↔ PDP integration)
    - Validates AuthZEN requests
