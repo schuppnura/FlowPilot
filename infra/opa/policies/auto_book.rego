@@ -237,8 +237,8 @@ has_consent if {
 
 # Cost gate - autobook settings belong to the resource owner (in resource.properties.owner)
 within_cost_limit if {
-  planned_price := to_number(input.resource.properties.planned_price)
-  max_cost := to_number(input.resource.properties.owner.autobook_price)
+  planned_price := input.resource.properties.planned_price
+  max_cost := input.resource.properties.owner.autobook_price
   planned_price <= max_cost
 }
 
@@ -248,7 +248,7 @@ sufficient_advance if {
   departure_date_str := input.resource.properties.departure_date
   departure := time.parse_rfc3339_ns(departure_date_str)
   now := time.now_ns()
-  min_days := to_number(input.resource.properties.owner.autobook_leadtime)
+  min_days := input.resource.properties.owner.autobook_leadtime
   # Calculate days until departure
   delta_days := (departure - now) / 1000000000 / 60 / 60 / 24
   # Departure must be at least min_days in the future
@@ -261,7 +261,7 @@ acceptable_risk if {
 }
 
 acceptable_risk if {
-  risk := to_number(input.resource.properties.airline_risk_score)
-  max_risk := to_number(input.resource.properties.owner.autobook_risklevel)
+  risk := input.resource.properties.airline_risk_score
+  max_risk := input.resource.properties.owner.autobook_risklevel
   risk <= max_risk
 }
