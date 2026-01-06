@@ -165,16 +165,14 @@ authorized_principal if {
 # This allows the agent to act autonomously when the owner has opted in
 # Only applies when there's no valid delegation (pure autobook mode)
 authorized_principal if {
-  input.subject.type == "agent"
-  input.subject.id == "agent-runner"
+  is_agent_runner
   input.resource.properties.owner.autobook_consent == true
   not input.context.delegation.valid
 }
 
 # Agent-runner activated by the owner themselves
 authorized_principal if {
-  input.subject.type == "agent"
-  input.subject.id == "agent-runner"
+  is_agent_runner
   principal_id := input.context.principal.id
   owner_id := input.resource.properties.owner.id
   principal_id == owner_id
@@ -182,8 +180,7 @@ authorized_principal if {
 
 # Agent-runner activated by a delegated user (delegation mode)
 authorized_principal if {
-  input.subject.type == "agent"
-  input.subject.id == "agent-runner"
+  is_agent_runner
   # Check if the user who activated the agent has delegation
   has_valid_delegation_for_action
 }
@@ -218,8 +215,7 @@ valid_agent_personas := {"travel-agent", "ai-agent", "office-manager", "booking-
 
 # Agent-runner activated by delegated user: check context.principal has agent persona
 persona_valid if {
-  input.subject.type == "agent"
-  input.subject.id == "agent-runner"
+  is_agent_runner
   principal_id := input.context.principal.id
   owner_id := input.resource.properties.owner.id
   principal_id != owner_id
@@ -230,8 +226,7 @@ persona_valid if {
 
 # Agent-runner activated by owner: check context.principal matches owner persona
 persona_valid if {
-  input.subject.type == "agent"
-  input.subject.id == "agent-runner"
+  is_agent_runner
   principal_id := input.context.principal.id
   owner_id := input.resource.properties.owner.id
   principal_id == owner_id
@@ -276,8 +271,7 @@ allow_read if {
 # Allow read if subject is agent-runner (always, regardless of autobook consent)
 # Agent needs to read workflows to determine which items can be executed
 allow_read if {
-  input.subject.type == "agent"
-  input.subject.id == "agent-runner"
+  is_agent_runner
 }
 
 # Allow read if user has valid delegation (with read action) and matching persona
