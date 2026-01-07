@@ -101,7 +101,6 @@ from fastapi.responses import JSONResponse
 
 import security
 import api_logging
-import profile
 from core import evaluate_authorization_request
 
 # ============================================================================
@@ -180,8 +179,14 @@ def post_evaluate(
     request_body: dict[str, Any] = Body(...),
     token_claims: dict[str, Any] = Depends(get_token_claims),
 ) -> dict[str, Any]:
- 
-    api_logging.log_api_request("POST", "/v1/evaluate", request_body=request_body, token_claims=token_claims, request=request)
+
+    api_logging.log_api_request(
+        "POST",
+        "/v1/evaluate",
+        request_body=request_body,
+        token_claims=token_claims,
+        request=request,
+    )
 
     # Sanitize all input before processing
     try:
@@ -206,7 +211,9 @@ def post_evaluate(
         "advice": result.advice,
     }
 
-    api_logging.log_api_response("POST", "/v1/evaluate", 200, response_body=response_body)
+    api_logging.log_api_response(
+        "POST", "/v1/evaluate", 200, response_body=response_body
+    )
 
     return response_body
 

@@ -16,7 +16,11 @@ from utils import require_non_empty_string, read_env_string
 
 # Delegation allowed actions configuration (required environment variable, comma-separated)
 _DELEGATION_ALLOWED_ACTIONS_STR = read_env_string("DELEGATION_ALLOWED_ACTIONS")
-DELEGATION_ALLOWED_ACTIONS = {action.strip() for action in _DELEGATION_ALLOWED_ACTIONS_STR.split(",") if action.strip()}
+DELEGATION_ALLOWED_ACTIONS = {
+    action.strip()
+    for action in _DELEGATION_ALLOWED_ACTIONS_STR.split(",")
+    if action.strip()
+}
 
 
 class DelegationService:
@@ -36,7 +40,9 @@ class DelegationService:
         expires_in_days: int = 7,
         workflow_id: Optional[str] = None,
         scope: Optional[List[str]] = None,
-        delegator_id: Optional[str] = None,  # ID of the authenticated user creating this delegation
+        delegator_id: Optional[
+            str
+        ] = None,  # ID of the authenticated user creating this delegation
     ) -> Dict[str, Any]:
         # Create a delegation relationship.
         #
@@ -58,7 +64,7 @@ class DelegationService:
 
         if expires_in_days <= 0:
             raise ValueError("expires_in_days must be positive")
-        
+
         # Validate that delegator can only delegate permissions they have
         # Skip validation if:
         # 1. No delegator_id provided (system/service creating delegation on behalf of owner)
@@ -70,13 +76,13 @@ class DelegationService:
                 delegate_id=delegator_id,
                 workflow_id=workflow_id,
             )
-            
+
             if not delegator_validation.get("valid"):
                 raise ValueError("You cannot delegate permissions you don't have")
-            
+
             delegator_actions = set(delegator_validation.get("delegated_actions", []))
             requested_actions = set(scope) if scope else {"execute"}
-            
+
             # Check if delegator is trying to delegate more than they have
             if not requested_actions.issubset(delegator_actions):
                 raise ValueError(
@@ -211,4 +217,3 @@ class DelegationService:
                 "delegation_chain": [],
                 "delegated_actions": [],
             }
-

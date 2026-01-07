@@ -153,9 +153,9 @@ The travel example exists to make the architecture tangible, not to constrain it
 ## Architecture at a glance
 
 The following microservices are used in FlowPilot. Every microservice runs in its own docker container.
-Communication between the microservices is done through REST APIs, defined using OpenAPI with clear payloads.
-All APIs are protected using TLS and bearer access tokens, and the payload is sanitized before being processed.
-To optimise procesisng as a single back-end, the microservices can also be put in a common container, whereby the APIs can be bypassed and be replaced by direct function calls.
+Communication between the microservices is done through REST APIs, defined using OpenAPI.
+All APIs are protected using TLS and bearer access tokens, and the input is sanitized before being processed.
+To optimise processing as a single back-end, the microservices can also be put in a common container, whereby the API decorators can be bypassed and be replaced by direct function calls.
 
 ### Microservices architecture
 1. flowpilot-authz-api
@@ -209,12 +209,12 @@ Personas are conveyed via bearer access tokens and are intentionally limited to 
 
 ### Autonomous AI Booking Policy
 
-An `ai-agent` is allowed to book travel **autonomously** only when **all** of the following policy conditions are satisfied:
+An `ai-agent` is allowed to book travel autonomously only when **all** of the following policy conditions are satisfied:
 
-1. The user has explicitly provided **auto-book consent**
-2. The **total trip cost** is less than or equal to **€1,500**
-3. The **departure date** is at least **7 days in the future**
-4. The **airline risk score** is below the configured threshold
+1. The user has explicitly provided auto-book consent
+2. The total trip cost is less than or equal to €1,500
+3. The departure date is at least 7 days in the future
+4. The airline risk score is below the configured threshold
 
 These conditions are evaluated declaratively using OPA (ABAC) and are independent of delegation relationships.
 

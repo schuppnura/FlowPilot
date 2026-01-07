@@ -98,7 +98,9 @@ def read_env_bool(name: str, default_value: Optional[bool] = None) -> bool:
         return True
     if normalized in {"no", "n", "false", "f", "0", "off"}:
         return False
-    raise ValueError(f"Invalid boolean value for {name}: {value} (expected true/false/yes/no/1/0)")
+    raise ValueError(
+        f"Invalid boolean value for {name}: {value} (expected true/false/yes/no/1/0)"
+    )
 
 
 # ============================================================================
@@ -207,15 +209,15 @@ def normalize_departure_date(date_value: Any) -> Optional[str]:
     #   - RFC3339 string or None if invalid/missing
     if date_value is None:
         return None
-    
+
     date_str = str(date_value).strip()
     if not date_str:
         return None
-    
+
     # If already RFC3339 format (contains "T"), return as-is
     if "T" in date_str:
         return date_str
-    
+
     # If date-only format (YYYY-MM-DD), convert to RFC3339 at midnight UTC
     parts = date_str.split("-")
     if len(parts) == 3:
@@ -226,7 +228,7 @@ def normalize_departure_date(date_value: Any) -> Optional[str]:
             return f"{year:04d}-{month:02d}-{day:02d}T00:00:00Z"
         except (ValueError, IndexError):
             return None
-    
+
     return None
 
 

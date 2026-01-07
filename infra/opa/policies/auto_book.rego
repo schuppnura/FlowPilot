@@ -187,7 +187,7 @@ has_valid_delegation_for_action if {
 
 # Persona validation
 # When a user is delegated to execute a workflow (principal != owner):
-#   - The principal must have one of the authorized agent personas: "travel-agent", "ai-agent", "secretary"
+#   - The principal must have one of the authorized agent personas: "travel-agent", "ai-agent", "office-manager", "booking-assistant"
 # When a user executes their own workflow (principal == owner):
 #   - The principal must have selected the same persona as the owner's persona
 # Configuration Note:
@@ -225,7 +225,6 @@ persona_valid if {
   principal_id := input.subject.id
   owner_id := input.resource.properties.owner.id
   principal_id != owner_id
-  # Delegated case: must be one of the valid agent personas
   input.subject.persona != ""
   valid_agent_personas[input.subject.persona]
 }
@@ -236,7 +235,6 @@ persona_valid if {
   principal_id := input.subject.id
   owner_id := input.resource.properties.owner.id
   principal_id == owner_id
-  # Owner case: must match owner persona
   owner_persona := input.resource.properties.owner.persona
   input.subject.persona == owner_persona
   owner_persona != ""  # Owner persona must be set
@@ -272,8 +270,8 @@ read_persona_valid if {
   valid_agent_personas[input.subject.persona]
 }
 
+# User with matching owner persona can read
 read_persona_valid if {
-  # User with matching owner persona can read
   owner_persona := input.resource.properties.owner.persona
   input.subject.persona == owner_persona
   owner_persona != ""
@@ -294,14 +292,11 @@ within_cost_limit if {
 
 # Advance notice gate (checks if departure is at least autobook_leadtime days in the future)
 sufficient_advance if {
-  # Departure date is pre-normalized to RFC3339 format by authz-api
   departure_date_str := input.resource.properties.departure_date
   departure := time.parse_rfc3339_ns(departure_date_str)
   now := time.now_ns()
   min_days := input.resource.properties.owner.autobook_leadtime
-  # Calculate days until departure
   delta_days := (departure - now) / 1000000000 / 60 / 60 / 24
-  # Departure must be at least min_days in the future
   delta_days >= min_days
 }
 

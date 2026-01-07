@@ -22,7 +22,13 @@ from typing import Any, Dict, List
 import requests
 
 import security
-from utils import build_url, http_get_json, require_non_empty_string, build_timeouts, get_http_config
+from utils import (
+    build_url,
+    http_get_json,
+    require_non_empty_string,
+    build_timeouts,
+    get_http_config,
+)
 
 
 @dataclass(frozen=True)
@@ -40,7 +46,12 @@ def normalize_workflow_id(workflow_id: str) -> str:
     raise ValueError("Missing workflow_id")
 
 
-def list_workflow_items(config: Dict[str, Any], workflow_id: str, principal_user_id: str = None, principal_persona: str = None) -> List[WorkflowItem]:
+def list_workflow_items(
+    config: Dict[str, Any],
+    workflow_id: str,
+    principal_user_id: str = None,
+    principal_persona: str = None,
+) -> List[WorkflowItem]:
     # List workflow items from the workflow service
     # assumption: response contains an 'items' list of dicts.
     # principal_user_id: user's UUID for authorization (passed as query parameter)
@@ -63,7 +74,7 @@ def list_workflow_items(config: Dict[str, Any], workflow_id: str, principal_user
         query_params.append(f"user_sub={principal_user_id}")
     if principal_persona:
         query_params.append(f"persona={principal_persona}")
-    
+
     if query_params:
         separator = "&" if "?" in base_url_with_path else "?"
         url = f"{base_url_with_path}{separator}{'&'.join(query_params)}"
@@ -280,9 +291,9 @@ def execute_workflow_item(
             "status": "completed",
             "outcome": "deny",
             "reason_codes": reason_codes,
-            "advice": advice
-            if advice
-            else [{"type": "deny", "message": "Access denied"}],
+            "advice": (
+                advice if advice else [{"type": "deny", "message": "Access denied"}]
+            ),
             "response": response_json,
         }
 
@@ -324,10 +335,10 @@ def execute_workflow_run(
     # The agent has its own read delegation and can list items regardless of who requests execution
     # Authorization for execution is checked per-item below
     items = list_workflow_items(
-        config=config, 
-        workflow_id=workflow_id, 
+        config=config,
+        workflow_id=workflow_id,
         principal_user_id=None,
-        principal_persona=None
+        principal_persona=None,
     )
 
     results: List[Dict[str, Any]] = []

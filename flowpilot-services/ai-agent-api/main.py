@@ -346,9 +346,11 @@ def create_app(config: Dict[str, Any]) -> FastAPI:
         )
         return JSONResponse(
             status_code=exc.status_code,
-            content={"detail": exc.detail}
-            if hasattr(exc, "detail")
-            else {"detail": str(exc)},
+            content=(
+                {"detail": exc.detail}
+                if hasattr(exc, "detail")
+                else {"detail": str(exc)}
+            ),
         )
 
     # Health check - no auth required
@@ -403,12 +405,12 @@ def main() -> int:
         return 2
 
     api = create_app(config)
-    
+
     # Uvicorn server configuration (can be overridden via environment variables)
     uvicorn_max_requests = int(os.environ.get("UVICORN_MAX_REQUESTS", "10000"))
     uvicorn_max_concurrency = int(os.environ.get("UVICORN_MAX_CONCURRENCY", "100"))
     uvicorn_keepalive_timeout = int(os.environ.get("UVICORN_KEEPALIVE_TIMEOUT", "5"))
-    
+
     uvicorn.run(
         api,
         host=str(args.host),

@@ -197,7 +197,10 @@ class JWTValidator:
             # If this is a service account token (matches AGENT_CLIENT_ID), allow that audience
             agent_client_id = os.environ.get("AGENT_CLIENT_ID", "").strip()
             is_service_account = (
-                azp and isinstance(azp, str) and agent_client_id and azp.strip() == agent_client_id
+                azp
+                and isinstance(azp, str)
+                and agent_client_id
+                and azp.strip() == agent_client_id
             )
             if is_service_account:
                 # Check if token has service client audience (which is correct for service tokens)
@@ -422,7 +425,9 @@ def get_service_token() -> Optional[str]:
         # For service-to-service tokens, use the client_id as the audience
         # This ensures service tokens have aud matching the client_id (not the user audience)
         # The KEYCLOAK_AUDIENCE env var is for user tokens, not service tokens
-        service_audience = client_id  # Service tokens should have aud matching their client_id
+        service_audience = (
+            client_id  # Service tokens should have aud matching their client_id
+        )
 
         # Disable SSL verification for local development with self-signed certs
         token_data = {

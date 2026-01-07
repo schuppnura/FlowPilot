@@ -154,13 +154,21 @@ from utils import (
 INCLUDE_ERROR_DETAILS = os.environ.get("INCLUDE_ERROR_DETAILS", "1") == "1"
 
 # Delegation expiry configuration (can be overridden via environment variables)
-DELEGATION_DEFAULT_EXPIRY_DAYS = int(os.environ.get("DELEGATION_DEFAULT_EXPIRY_DAYS", "7"))
+DELEGATION_DEFAULT_EXPIRY_DAYS = int(
+    os.environ.get("DELEGATION_DEFAULT_EXPIRY_DAYS", "7")
+)
 DELEGATION_MIN_EXPIRY_DAYS = int(os.environ.get("DELEGATION_MIN_EXPIRY_DAYS", "1"))
 DELEGATION_MAX_EXPIRY_DAYS = int(os.environ.get("DELEGATION_MAX_EXPIRY_DAYS", "365"))
 
 # Delegation allowed actions (can be overridden via environment variables)
-_DELEGATION_ALLOWED_ACTIONS_STR = os.environ.get("DELEGATION_ALLOWED_ACTIONS", "read,execute")
-DELEGATION_ALLOWED_ACTIONS = {action.strip() for action in _DELEGATION_ALLOWED_ACTIONS_STR.split(",") if action.strip()}
+_DELEGATION_ALLOWED_ACTIONS_STR = os.environ.get(
+    "DELEGATION_ALLOWED_ACTIONS", "read,execute"
+)
+DELEGATION_ALLOWED_ACTIONS = {
+    action.strip()
+    for action in _DELEGATION_ALLOWED_ACTIONS_STR.split(",")
+    if action.strip()
+}
 
 # Default configuration values
 DEFAULT_CONFIG: Dict[str, Any] = {
@@ -192,13 +200,14 @@ class CreateDelegationRequest(BaseModel):
         None, max_length=255, description="Optional workflow ID to scope delegation"
     )
     scope: Optional[List[str]] = Field(
-        None, description='List of actions (e.g. ["read"] or ["read", "execute"]). Defaults to ["execute"]'
+        None,
+        description='List of actions (e.g. ["read"] or ["read", "execute"]). Defaults to ["execute"]',
     )
     expires_in_days: int = Field(
         default=DELEGATION_DEFAULT_EXPIRY_DAYS,
         ge=DELEGATION_MIN_EXPIRY_DAYS,
         le=DELEGATION_MAX_EXPIRY_DAYS,
-        description=f"Days until expiration (default: {DELEGATION_DEFAULT_EXPIRY_DAYS}, min: {DELEGATION_MIN_EXPIRY_DAYS}, max: {DELEGATION_MAX_EXPIRY_DAYS})"
+        description=f"Days until expiration (default: {DELEGATION_DEFAULT_EXPIRY_DAYS}, min: {DELEGATION_MIN_EXPIRY_DAYS}, max: {DELEGATION_MAX_EXPIRY_DAYS})",
     )
 
     @validator("principal_id")
@@ -214,7 +223,7 @@ class CreateDelegationRequest(BaseModel):
         if v is None:
             return None
         return security.sanitize_string(v, 255)
-    
+
     @validator("scope")
     def validate_scope(cls, v: Optional[List[str]]) -> Optional[List[str]]:
         if v is None:
@@ -222,7 +231,9 @@ class CreateDelegationRequest(BaseModel):
         # Validate that scope contains only allowed actions
         for action in v:
             if action not in DELEGATION_ALLOWED_ACTIONS:
-                raise ValueError(f"Invalid action in scope: {action}. Allowed: {DELEGATION_ALLOWED_ACTIONS}")
+                raise ValueError(
+                    f"Invalid action in scope: {action}. Allowed: {DELEGATION_ALLOWED_ACTIONS}"
+                )
         return v
 
 
@@ -292,7 +303,13 @@ def handle_post_delegations(
     service: DelegationService = request.app.state.service
 
     try:
-        api_logging.log_api_request("POST", "/v1/delegations", request_body=body.dict(), token_claims=token_claims, request=request)
+        api_logging.log_api_request(
+            "POST",
+            "/v1/delegations",
+            request_body=body.dict(),
+            token_claims=token_claims,
+            request=request,
+        )
 
         # Extract delegator_id from JWT to validate they can only delegate what they have
         # Skip validation in these cases:
@@ -301,13 +318,17 @@ def handle_post_delegations(
         #   3. No delegator_id provided
         delegator_id = token_claims.get("sub") if token_claims else None
         azp = token_claims.get("azp") if token_claims else None
-        
+
         # Check if this is a service account token (client credentials flow)
         is_service_account = azp == "flowpilot-agent"
-        
+
         # Only validate subdelegations (non-service-account, non-owner delegations)
         effective_delegator_id = None
-        if delegator_id and delegator_id != body.principal_id and not is_service_account:
+        if (
+            delegator_id
+            and delegator_id != body.principal_id
+            and not is_service_account
+        ):
             # This is a subdelegation - validate that delegator has permissions
             effective_delegator_id = delegator_id
 
@@ -320,7 +341,9 @@ def handle_post_delegations(
             delegator_id=effective_delegator_id,
         )
 
-        api_logging.log_api_response("POST", "/v1/delegations", 200, response_body=delegation)
+        api_logging.log_api_response(
+            "POST", "/v1/delegations", 200, response_body=delegation
+        )
 
         return delegation
     except ValueError as exception:
@@ -346,7 +369,13 @@ def handle_delete_delegations(
     service: DelegationService = request.app.state.service
 
     try:
-        api_logging.log_api_request("DELETE", "/v1/delegations", request_body=body.dict(), token_claims=token_claims, request=request)
+        api_logging.log_api_request(
+            "DELETE",
+            "/v1/delegations",
+            request_body=body.dict(),
+            token_claims=token_claims,
+            request=request,
+        )
 
         result = service.revoke_delegation(
             principal_id=body.principal_id,
@@ -354,20 +383,26 @@ def handle_delete_delegations(
             workflow_id=body.workflow_id,
         )
 
-        api_logging.log_api_response("DELETE", "/v1/delegations", 200, response_body=result)
+        api_logging.log_api_response(
+            "DELETE", "/v1/delegations", 200, response_body=result
+        )
 
         return result
     except ValueError as exception:
         error_detail = security.sanitize_error_message(
             str(exception), INCLUDE_ERROR_DETAILS
         )
-        api_logging.log_api_response("DELETE", "/v1/delegations", 400, error=error_detail)
+        api_logging.log_api_response(
+            "DELETE", "/v1/delegations", 400, error=error_detail
+        )
         raise HTTPException(status_code=400, detail=error_detail) from exception
     except Exception as exception:
         error_detail = security.sanitize_error_message(
             str(exception), INCLUDE_ERROR_DETAILS
         )
-        api_logging.log_api_response("DELETE", "/v1/delegations", 500, error=error_detail)
+        api_logging.log_api_response(
+            "DELETE", "/v1/delegations", 500, error=error_detail
+        )
         raise HTTPException(status_code=500, detail=error_detail) from exception
 
 
@@ -382,7 +417,17 @@ def handle_get_delegations_validate(
     service: DelegationService = request.app.state.service
 
     try:
-        api_logging.log_api_request("GET", "/v1/delegations/validate", token_claims=token_claims, request=request, path_params={"principal_id": principal_id, "delegate_id": delegate_id, "workflow_id": workflow_id})
+        api_logging.log_api_request(
+            "GET",
+            "/v1/delegations/validate",
+            token_claims=token_claims,
+            request=request,
+            path_params={
+                "principal_id": principal_id,
+                "delegate_id": delegate_id,
+                "workflow_id": workflow_id,
+            },
+        )
 
         result = service.validate_delegation(
             principal_id=principal_id,
@@ -390,19 +435,25 @@ def handle_get_delegations_validate(
             workflow_id=workflow_id,
         )
 
-        api_logging.log_api_response("GET", "/v1/delegations/validate", 200, response_body=result)
+        api_logging.log_api_response(
+            "GET", "/v1/delegations/validate", 200, response_body=result
+        )
         return result
     except ValueError as exception:
         error_detail = security.sanitize_error_message(
             str(exception), INCLUDE_ERROR_DETAILS
         )
-        api_logging.log_api_response("GET", "/v1/delegations/validate", 400, error=error_detail)
+        api_logging.log_api_response(
+            "GET", "/v1/delegations/validate", 400, error=error_detail
+        )
         raise HTTPException(status_code=400, detail=error_detail) from exception
     except Exception as exception:
         error_detail = security.sanitize_error_message(
             str(exception), INCLUDE_ERROR_DETAILS
         )
-        api_logging.log_api_response("GET", "/v1/delegations/validate", 500, error=error_detail)
+        api_logging.log_api_response(
+            "GET", "/v1/delegations/validate", 500, error=error_detail
+        )
         raise HTTPException(status_code=500, detail=error_detail) from exception
 
 
@@ -418,7 +469,9 @@ def handle_get_delegations(
     service: DelegationService = request.app.state.service
 
     try:
-        api_logging.log_api_request("GET", "/v1/delegations", token_claims=token_claims, request=request)
+        api_logging.log_api_request(
+            "GET", "/v1/delegations", token_claims=token_claims, request=request
+        )
 
         delegations = service.list_delegations(
             principal_id=principal_id,
@@ -428,7 +481,9 @@ def handle_get_delegations(
         )
         result = {"delegations": delegations}
 
-        api_logging.log_api_response("GET", "/v1/delegations", 200, response_body=result)
+        api_logging.log_api_response(
+            "GET", "/v1/delegations", 200, response_body=result
+        )
         return result
     except ValueError as exception:
         error_detail = security.sanitize_error_message(
@@ -453,11 +508,17 @@ def handle_get_delegation_candidates(
 ) -> Dict[str, Any]:
     # List users who have a specific persona (delegation candidates).
     try:
-        api_logging.log_api_request("GET", "/v1/users", token_claims=token_claims, request=request, path_params={"persona": persona})
+        api_logging.log_api_request(
+            "GET",
+            "/v1/users",
+            token_claims=token_claims,
+            request=request,
+            path_params={"persona": persona},
+        )
 
         users = profile.list_users_by_persona(persona)
         result = {"users": users}
-        
+
         api_logging.log_api_response("GET", "/v1/users", 200, response_body=result)
         return result
     except ValueError as exception:
@@ -579,12 +640,12 @@ def main() -> int:
         return 2
 
     api = create_app(config=config)
-    
+
     # Uvicorn server configuration (can be overridden via environment variables)
     uvicorn_max_requests = int(os.environ.get("UVICORN_MAX_REQUESTS", "10000"))
     uvicorn_max_concurrency = int(os.environ.get("UVICORN_MAX_CONCURRENCY", "100"))
     uvicorn_keepalive_timeout = int(os.environ.get("UVICORN_KEEPALIVE_TIMEOUT", "5"))
-    
+
     uvicorn.run(
         api,
         host=str(args.host),

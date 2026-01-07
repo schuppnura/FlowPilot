@@ -268,11 +268,11 @@ def handle_post_workflows(
             start_date=body.start_date,
             persona=body.persona,
         )
-        
+
         # Auto-create delegation for AI agent to access the workflow
         workflow_id = result.get("workflow_id")
         agent_sub = request.app.state.config.get("agent_sub")
-        
+
         if workflow_id and agent_sub:
             try:
                 service.create_agent_delegation(
@@ -280,11 +280,17 @@ def handle_post_workflows(
                     owner_sub=body.principal_sub,
                     agent_sub=agent_sub,
                 )
-                print(f"[handle_post_workflows] Auto-created delegation for workflow {workflow_id} to agent {agent_sub}", flush=True)
+                print(
+                    f"[handle_post_workflows] Auto-created delegation for workflow {workflow_id} to agent {agent_sub}",
+                    flush=True,
+                )
             except Exception as delegation_error:
                 # Log but don't fail workflow creation if delegation fails
-                print(f"[handle_post_workflows] WARNING: Failed to create agent delegation: {delegation_error}", flush=True)
-        
+                print(
+                    f"[handle_post_workflows] WARNING: Failed to create agent delegation: {delegation_error}",
+                    flush=True,
+                )
+
         return result
     except security.InputValidationError as exception:
         raise HTTPException(
@@ -315,18 +321,20 @@ def handle_get_workflow(
     try:
         # Validate path parameter
         workflow_id = security.validate_id(workflow_id, "workflow_id", max_length=255)
-        
+
         # Check authorization
         user_sub = token_claims.get("sub")
         if not user_sub:
-            raise HTTPException(status_code=401, detail="Invalid token: missing sub claim")
-        
+            raise HTTPException(
+                status_code=401, detail="Invalid token: missing sub claim"
+            )
+
         service.check_read_authorization(
             workflow_id=workflow_id,
             user_sub=user_sub,
             user_persona=persona,
         )
-        
+
         return service.get_workflow(workflow_id=workflow_id)
     except security.InputValidationError as exception:
         raise HTTPException(
@@ -369,36 +377,50 @@ def handle_get_workflow_items(
     try:
         # Validate path parameter
         workflow_id = security.validate_id(workflow_id, "workflow_id", max_length=255)
-        
+
         # Check authorization
         # If user_sub is provided as query parameter (service-to-service call), use that
         # Otherwise, extract from token (direct user call)
         if user_sub:
             # Service-to-service call: validate the query parameter
             user_sub = security.validate_id(user_sub, "user_sub", max_length=255)
-            print(f"[handle_get_workflow_items] Using user_sub from query param: {user_sub}", flush=True)
+            print(
+                f"[handle_get_workflow_items] Using user_sub from query param: {user_sub}",
+                flush=True,
+            )
         else:
             # Direct user call: extract from token
             user_sub = token_claims.get("sub")
             if not user_sub:
-                raise HTTPException(status_code=401, detail="Invalid token: missing sub claim")
-            print(f"[handle_get_workflow_items] Using user_sub from token: {user_sub}", flush=True)
-        
+                raise HTTPException(
+                    status_code=401, detail="Invalid token: missing sub claim"
+                )
+            print(
+                f"[handle_get_workflow_items] Using user_sub from token: {user_sub}",
+                flush=True,
+            )
+
         # If no persona provided and this is the agent service account, use configured AI agent persona
         user_persona = persona
         agent_sub = request.app.state.service._config.get("agent_sub")
         if not user_persona and agent_sub and user_sub == agent_sub:
             user_persona = AI_AGENT_PERSONA
-            print(f"[handle_get_workflow_items] Agent detected, using {AI_AGENT_PERSONA} persona", flush=True)
-        
-        print(f"[handle_get_workflow_items] Token sub={token_claims.get('sub')}, user_sub={user_sub}, persona={user_persona}", flush=True)
-        
+            print(
+                f"[handle_get_workflow_items] Agent detected, using {AI_AGENT_PERSONA} persona",
+                flush=True,
+            )
+
+        print(
+            f"[handle_get_workflow_items] Token sub={token_claims.get('sub')}, user_sub={user_sub}, persona={user_persona}",
+            flush=True,
+        )
+
         service.check_read_authorization(
             workflow_id=workflow_id,
             user_sub=user_sub,
             user_persona=user_persona,
         )
-        
+
         return service.get_workflow_items(workflow_id=workflow_id)
     except security.InputValidationError as exception:
         raise HTTPException(
@@ -651,12 +673,12 @@ def main() -> int:
         return 2
 
     api = create_app(config=config)
-    
+
     # Uvicorn server configuration (can be overridden via environment variables)
     uvicorn_max_requests = int(os.environ.get("UVICORN_MAX_REQUESTS", "10000"))
     uvicorn_max_concurrency = int(os.environ.get("UVICORN_MAX_CONCURRENCY", "100"))
     uvicorn_keepalive_timeout = int(os.environ.get("UVICORN_KEEPALIVE_TIMEOUT", "5"))
-    
+
     uvicorn.run(
         api,
         host=str(args.host),

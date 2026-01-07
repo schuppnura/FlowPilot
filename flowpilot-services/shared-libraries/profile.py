@@ -103,7 +103,7 @@ def _fetch_user_by_id(user_sub: str) -> Optional[Dict[str, Any]]:
             # Disable hostname checking for internal Docker services
             ssl_context.check_hostname = False
             ssl_context.verify_mode = ssl.CERT_REQUIRED
-            
+
             # Create a session with custom adapter that uses our SSL context
             session = requests.Session()
             adapter = HTTPAdapter()
@@ -112,13 +112,18 @@ def _fetch_user_by_id(user_sub: str) -> Optional[Dict[str, Any]]:
                 connections=HTTP_POOL_CONNECTIONS,
                 maxsize=HTTP_POOL_MAXSIZE,
                 ssl_context=ssl_context,
-                assert_hostname=False
+                assert_hostname=False,
             )
             session.mount("https://", adapter)
-            response = session.get(user_url, headers=headers, timeout=KEYCLOAK_USER_REQUEST_TIMEOUT)
+            response = session.get(
+                user_url, headers=headers, timeout=KEYCLOAK_USER_REQUEST_TIMEOUT
+            )
         else:
             response = requests.get(
-                user_url, headers=headers, timeout=KEYCLOAK_USER_REQUEST_TIMEOUT, **utils.get_http_config()
+                user_url,
+                headers=headers,
+                timeout=KEYCLOAK_USER_REQUEST_TIMEOUT,
+                **utils.get_http_config(),
             )
         if response.status_code == 200:
             return response.json()
@@ -167,7 +172,7 @@ def _fetch_all_users() -> List[Dict[str, Any]]:
             # Disable hostname checking for internal Docker services
             ssl_context.check_hostname = False
             ssl_context.verify_mode = ssl.CERT_REQUIRED
-            
+
             # Create a session with custom adapter that uses our SSL context
             session = requests.Session()
             adapter = HTTPAdapter()
@@ -176,13 +181,18 @@ def _fetch_all_users() -> List[Dict[str, Any]]:
                 connections=HTTP_POOL_CONNECTIONS,
                 maxsize=HTTP_POOL_MAXSIZE,
                 ssl_context=ssl_context,
-                assert_hostname=False
+                assert_hostname=False,
             )
             session.mount("https://", adapter)
-            response = session.get(users_url, headers=headers, timeout=KEYCLOAK_USERS_LIST_TIMEOUT)
+            response = session.get(
+                users_url, headers=headers, timeout=KEYCLOAK_USERS_LIST_TIMEOUT
+            )
         else:
             response = requests.get(
-                users_url, headers=headers, timeout=KEYCLOAK_USERS_LIST_TIMEOUT, **utils.get_http_config()
+                users_url,
+                headers=headers,
+                timeout=KEYCLOAK_USERS_LIST_TIMEOUT,
+                **utils.get_http_config(),
             )
         if response.status_code == 200:
             users = response.json()

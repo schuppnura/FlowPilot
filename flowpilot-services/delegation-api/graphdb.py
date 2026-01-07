@@ -35,7 +35,8 @@ class DelegationGraphDB:
         # Initialize the database schema.
         conn = self._get_connection()
         try:
-            conn.execute("""
+            conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS delegations (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     principal_id TEXT NOT NULL,
@@ -47,25 +48,36 @@ class DelegationGraphDB:
                     revoked_at TEXT,
                     UNIQUE(principal_id, delegate_id, workflow_id)
                 )
-            """)
+            """
+            )
             # Migration: Add scope column if it doesn't exist (for existing databases)
             try:
-                conn.execute("ALTER TABLE delegations ADD COLUMN scope TEXT NOT NULL DEFAULT '[\"execute\"]'")
+                conn.execute(
+                    "ALTER TABLE delegations ADD COLUMN scope TEXT NOT NULL DEFAULT '[\"execute\"]'"
+                )
                 conn.commit()
             except sqlite3.OperationalError:
                 pass  # Column already exists
-            conn.execute("""
+            conn.execute(
+                """
                 CREATE INDEX IF NOT EXISTS idx_principal_id ON delegations(principal_id)
-            """)
-            conn.execute("""
+            """
+            )
+            conn.execute(
+                """
                 CREATE INDEX IF NOT EXISTS idx_delegate_id ON delegations(delegate_id)
-            """)
-            conn.execute("""
+            """
+            )
+            conn.execute(
+                """
                 CREATE INDEX IF NOT EXISTS idx_workflow_id ON delegations(workflow_id)
-            """)
-            conn.execute("""
+            """
+            )
+            conn.execute(
+                """
                 CREATE INDEX IF NOT EXISTS idx_expires_at ON delegations(expires_at)
-            """)
+            """
+            )
             conn.commit()
         finally:
             conn.close()
@@ -88,7 +100,7 @@ class DelegationGraphDB:
         # Returns:
         #     Dictionary with delegation details including created_at
         import json
-        
+
         if scope is None:
             scope = ["execute"]
         scope_json = json.dumps(scope)
@@ -106,25 +118,30 @@ class DelegationGraphDB:
                 (principal_id, delegate_id, workflow_id, workflow_id),
             )
             existing_row = cursor.fetchone()
-            
+
             if existing_row:
                 # Delegation already exists - check if it needs updating
                 existing_scope_json = existing_row["scope"]
                 try:
-                    existing_scope = json.loads(existing_scope_json) if existing_scope_json else ["execute"]
+                    existing_scope = (
+                        json.loads(existing_scope_json)
+                        if existing_scope_json
+                        else ["execute"]
+                    )
                 except (json.JSONDecodeError, TypeError):
                     existing_scope = ["execute"]
-                
+
                 # Convert to sets for comparison
                 existing_scope_set = set(existing_scope)
                 new_scope_set = set(scope)
-                
+
                 # Only update if scope is being expanded or expiration extended
                 needs_update = (
-                    not new_scope_set.issubset(existing_scope_set) or  # Scope is expanding
-                    expires_at > existing_row["expires_at"]  # Expiration is being extended
+                    not new_scope_set.issubset(existing_scope_set)  # Scope is expanding
+                    or expires_at
+                    > existing_row["expires_at"]  # Expiration is being extended
                 )
-                
+
                 if not needs_update:
                     # Return existing delegation unchanged
                     return {
@@ -136,12 +153,12 @@ class DelegationGraphDB:
                         "created_at": existing_row["created_at"],
                         "revoked_at": existing_row["revoked_at"],
                     }
-                
+
                 # Update existing delegation with expanded scope or extended expiration
                 merged_scope = sorted(list(existing_scope_set.union(new_scope_set)))
                 merged_scope_json = json.dumps(merged_scope)
                 new_expires_at = max(expires_at, existing_row["expires_at"])
-                
+
                 conn.execute(
                     """
                     UPDATE delegations
@@ -150,10 +167,17 @@ class DelegationGraphDB:
                     AND (workflow_id = ? OR (workflow_id IS NULL AND ? IS NULL))
                     AND revoked_at IS NULL
                 """,
-                    (merged_scope_json, new_expires_at, principal_id, delegate_id, workflow_id, workflow_id),
+                    (
+                        merged_scope_json,
+                        new_expires_at,
+                        principal_id,
+                        delegate_id,
+                        workflow_id,
+                        workflow_id,
+                    ),
                 )
                 conn.commit()
-                
+
                 # Fetch updated row
                 cursor = conn.execute(
                     """
@@ -173,10 +197,17 @@ class DelegationGraphDB:
                     (principal_id, delegate_id, workflow_id, scope, expires_at, created_at, revoked_at)
                     VALUES (?, ?, ?, ?, ?, ?, NULL)
                 """,
-                    (principal_id, delegate_id, workflow_id, scope_json, expires_at, created_at),
+                    (
+                        principal_id,
+                        delegate_id,
+                        workflow_id,
+                        scope_json,
+                        expires_at,
+                        created_at,
+                    ),
                 )
                 conn.commit()
-                
+
                 # Fetch the inserted row
                 cursor = conn.execute(
                     """
@@ -190,7 +221,7 @@ class DelegationGraphDB:
 
             if not row:
                 raise RuntimeError("Failed to retrieve delegation")
-            
+
             scope_value = row["scope"]
             try:
                 scope_parsed = json.loads(scope_value) if scope_value else ["execute"]
@@ -276,26 +307,31 @@ class DelegationGraphDB:
 
             cursor = conn.execute(query, params)
             rows = cursor.fetchall()
-            
+
             import json
+
             result = []
             for row in rows:
                 scope_value = row["scope"]
                 try:
-                    scope_parsed = json.loads(scope_value) if scope_value else ["execute"]
+                    scope_parsed = (
+                        json.loads(scope_value) if scope_value else ["execute"]
+                    )
                 except (json.JSONDecodeError, TypeError):
                     scope_parsed = ["execute"]
-                
-                result.append({
-                    "principal_id": row["principal_id"],
-                    "delegate_id": row["delegate_id"],
-                    "workflow_id": row["workflow_id"],
-                    "scope": scope_parsed,
-                    "expires_at": row["expires_at"],
-                    "created_at": row["created_at"],
-                    "revoked_at": row["revoked_at"],
-                })
-            
+
+                result.append(
+                    {
+                        "principal_id": row["principal_id"],
+                        "delegate_id": row["delegate_id"],
+                        "workflow_id": row["workflow_id"],
+                        "scope": scope_parsed,
+                        "expires_at": row["expires_at"],
+                        "created_at": row["created_at"],
+                        "revoked_at": row["revoked_at"],
+                    }
+                )
+
             return result
         finally:
             conn.close()
@@ -335,26 +371,31 @@ class DelegationGraphDB:
 
             cursor = conn.execute(query, params)
             rows = cursor.fetchall()
-            
+
             import json
+
             result = []
             for row in rows:
                 scope_value = row["scope"]
                 try:
-                    scope_parsed = json.loads(scope_value) if scope_value else ["execute"]
+                    scope_parsed = (
+                        json.loads(scope_value) if scope_value else ["execute"]
+                    )
                 except (json.JSONDecodeError, TypeError):
                     scope_parsed = ["execute"]
-                
-                result.append({
-                    "principal_id": row["principal_id"],
-                    "delegate_id": row["delegate_id"],
-                    "workflow_id": row["workflow_id"],
-                    "scope": scope_parsed,
-                    "expires_at": row["expires_at"],
-                    "created_at": row["created_at"],
-                    "revoked_at": row["revoked_at"],
-                })
-            
+
+                result.append(
+                    {
+                        "principal_id": row["principal_id"],
+                        "delegate_id": row["delegate_id"],
+                        "workflow_id": row["workflow_id"],
+                        "scope": scope_parsed,
+                        "expires_at": row["expires_at"],
+                        "created_at": row["created_at"],
+                        "revoked_at": row["revoked_at"],
+                    }
+                )
+
             return result
         finally:
             conn.close()
@@ -380,7 +421,7 @@ class DelegationGraphDB:
         #         If all edges have execute, the path has execute
         #     Returns None if no path found
         import json
-        
+
         if principal_id == delegate_id:
             return {"path": [principal_id], "delegated_actions": ["read", "execute"]}
 
@@ -395,7 +436,7 @@ class DelegationGraphDB:
                 (principal_id, [principal_id], {"read", "execute"})
             ]
             visited: set[str] = {principal_id}
-            
+
             # Track all valid paths to choose the one with strongest permissions
             valid_paths: List[Dict[str, Any]] = []
 
@@ -419,38 +460,45 @@ class DelegationGraphDB:
                 for row in rows:
                     next_id = row["delegate_id"]
                     scope_value = row["scope"]
-                    
+
                     try:
-                        edge_actions = set(json.loads(scope_value)) if scope_value else {"execute"}
+                        edge_actions = (
+                            set(json.loads(scope_value)) if scope_value else {"execute"}
+                        )
                     except (json.JSONDecodeError, TypeError):
                         edge_actions = {"execute"}
-                    
+
                     # Effective actions = intersection of path actions and edge actions
                     new_path_actions = path_actions & edge_actions
-                    
+
                     if not new_path_actions:
                         continue  # No valid actions, skip this edge
 
                     if next_id == delegate_id:
-                        valid_paths.append({
-                            "path": path + [next_id],
-                            "delegated_actions": sorted(list(new_path_actions))
-                        })
+                        valid_paths.append(
+                            {
+                                "path": path + [next_id],
+                                "delegated_actions": sorted(list(new_path_actions)),
+                            }
+                        )
                         continue  # Found target, but keep searching for better paths
 
                     if next_id not in visited:
                         visited.add(next_id)
                         queue.append((next_id, path + [next_id], new_path_actions))
-            
+
             # Return path with strongest permissions (prefer execute over read-only)
             if valid_paths:
                 # Sort by: (1) has execute, (2) path length
                 def path_strength(p: Dict[str, Any]) -> tuple[int, int]:
                     has_execute = 1 if "execute" in p["delegated_actions"] else 0
-                    return (has_execute, -len(p["path"]))  # Prefer execute, then shorter paths
-                
+                    return (
+                        has_execute,
+                        -len(p["path"]),
+                    )  # Prefer execute, then shorter paths
+
                 return max(valid_paths, key=path_strength)
-            
+
             return None
         finally:
             conn.close()
