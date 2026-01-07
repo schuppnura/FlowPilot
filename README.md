@@ -342,18 +342,18 @@ At this stage, the system is asking:
 “May this AI agent execute this workflow item on behalf of this traveler?”
 
 Notably:
-	•	No delegation has yet been validated
-	•	No consent or policy thresholds are included
-	•	The request is portable across PDP implementations
+- No delegation has yet been validated
+- No consent or policy thresholds are included
+- The request is portable across PDP implementations
 
 
 ### Enriched AuthZEN Payload (AuthZ API → OPA PDP)
 
 Before calling OPA, the authz-api performs several steps:
-	1.	Validates and decodes the bearer access token
-	2.	Resolves delegation relationships from the graph database (ReBAC)
-	3.	Fetches and derives policy-relevant attributes
-	4.	Normalizes data types and formats for clean Rego evaluation
+1.	Validates and decodes the bearer access token
+2.	Resolves delegation relationships from the graph database (ReBAC)
+3.	Fetches and derives policy-relevant attributes
+4.	Normalizes data types and formats for clean Rego evaluation
 
 The resulting OPA input document may look as follows:
 
@@ -414,58 +414,58 @@ The resulting OPA input document may look as follows:
 ### How the Authz-API layer transformed AuthZEN
 
 #### 1. Delegation (ReBAC)
-	•	A context.delegation block is added
-	•	It captures:
-	•	whether delegation is valid
-	•	the resolved delegation chain
-	•	the actions granted by delegation
-	•	OPA does not resolve delegation itself; it consumes the result
+- A context.delegation block is added
+- It captures:
+- whether delegation is valid
+- the resolved delegation chain
+- the actions granted by delegation
+- OPA does not resolve delegation itself; it consumes the result
 
 This keeps delegation:
-	•	centralized
-	•	auditable
-	•	independent from policy logic
+- centralized
+- auditable
+- independent from policy logic
 
 #### 2. Policy Attributes (ABAC)
 
 Additional attributes are injected for policy evaluation:
-	•	autobook_consent
-	•	autobook_price
-	•	autobook_leadtime
-	•	autobook_risklevel
+- autobook_consent
+- autobook_price
+- autobook_leadtime
+- autobook_risklevel
 
 These values:
-	•	are derived from profiles or token-backed attributes
-	•	contain no PII
-	•	are normalized to types suitable for Rego evaluation
+- are derived from profiles or token-backed attributes
+- contain no PII
+- are normalized to types suitable for Rego evaluation
 
 #### 3. OPA can now evaluate conditions such as:
-	•	cost ceilings
-	•	advance notice requirements
-	•	airline risk thresholds
-	•	explicit consent flags
+- cost ceilings
+- advance notice requirements
+- airline risk thresholds
+- explicit consent flags
 
 #### 4. Normalization and Hardening
 
 The transformation layer ensures:
-	•	dates are converted to RFC 3339 timestamps
-	•	numeric values are coerced to numbers
-	•	optional fields are either present with correct types or absent
-	•	policy evaluation receives a deterministic, safe input document
+- dates are converted to RFC 3339 timestamps
+- numeric values are coerced to numbers
+- optional fields are either present with correct types or absent
+- policy evaluation receives a deterministic, safe input document
 
 Why This Separation Matters
-	•	AuthZEN payloads express intent and context
-	•	OPA input documents express decision-ready facts
-	•	The translation layer:
-	•	enforces security invariants
-	•	prevents PII leakage
-	•	shields policies from upstream variability
+- AuthZEN payloads express intent and context
+- OPA input documents express decision-ready facts
+- The translation layer:
+- enforces security invariants
+- prevents PII leakage
+- shields policies from upstream variability
 
 This design keeps:
-	•	PEPs simple
-	•	policies declarative
-	•	authorization explainable
-	•	the architecture evolvable as requirements grow
+- PEPs simple
+- policies declarative
+- authorization explainable
+- the architecture evolvable as requirements grow
 
 ---
 
