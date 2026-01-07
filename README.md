@@ -15,7 +15,7 @@ A second, equally important focus is infrastructure-level privacy and security:
 
 The concrete domain used to ground the exercise is travel booking, but this is deliberately a metaphor for a generic “workflow execution” problem involving users, agents, and delegated authority.
 
-The reference implementation provides for Policy Enforcement Points (PEP) in the application server, a single Policy Decision Point (PDP) and multiple Policy Information Points (PIP) to supply information, about the user, the resource and the context given a certain action.
+The reference implementation provides for any number of Policy Enforcement Points (PEP) in the application back-end, a single Policy Decision Point (PDP) and multiple Policy Information Points (PIP) to supply information, about the user, the resource, the relationships and the context given a certain action.
 
 ---
 
@@ -192,8 +192,8 @@ The `persona` attribute is therefore a **core authorization input**.
 The following persona values are currently supported:
 
 - `traveler`
-- `travel-agent`
 - `ai-agent`
+- `travel-agent`
 - `office-manager`
 - `booking-assistant`
 
@@ -215,14 +215,14 @@ If any condition fails, autonomous booking is denied.
 
 ### Delegation Model
 
-A `traveler` may delegate the execution of a booking workflow to one of the following personas:
+A user with persona `traveler` may delegate the execution of a booking workflow to users with one of the following personas:
 
 - `travel-agent`
 - `office-manager`
 - `booking-assistant`
 
 Delegation is **explicit**, **directional**, and **relationship-based** (ReBAC).  
-It is validated before any attribute-based policy evaluation takes place.
+The possible chain-of-delegation is determined. The chain is used by the attribute-based policy evaluation to take a decision.
 
 Delegation can also be done for read-only only, for example to invite co-travelers, both with the persona `traveler`.
 
