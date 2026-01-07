@@ -280,7 +280,7 @@ This section illustrates how an **AuthZEN-style authorization request** is submi
 
 The example uses a **travel booking workflow item** as a concrete metaphor, but the same transformation applies to any generic workflow or task execution domain.
 
-### AuthZEN Request Payload (PEP → AuthZ API)
+### AuthZEN Payload (PEP → AuthZ API)
 
 The following payload represents the authorization request as sent by a Policy Enforcement Point (PEP) to the `authz-api`, following AuthZEN principles.
 
@@ -347,7 +347,7 @@ Notably:
 	•	The request is portable across PDP implementations
 
 
-### Enriched OPA Input Document (AuthZ API → OPA)
+### Enriched AuthZEN Payload (AuthZ API → OPA PDP)
 
 Before calling OPA, the authz-api performs several steps:
 	1.	Validates and decodes the bearer access token
@@ -411,9 +411,9 @@ The resulting OPA input document may look as follows:
 }
 ```
 
-### How the Authz-API layer transfromed AuthZEN
+### How the Authz-API layer transformed AuthZEN
 
-1. Delegation (ReBAC)
+#### 1. Delegation (ReBAC)
 	•	A context.delegation block is added
 	•	It captures:
 	•	whether delegation is valid
@@ -426,7 +426,7 @@ This keeps delegation:
 	•	auditable
 	•	independent from policy logic
 
-2. Policy Attributes (ABAC)
+#### 2. Policy Attributes (ABAC)
 
 Additional attributes are injected for policy evaluation:
 	•	autobook_consent
@@ -439,13 +439,13 @@ These values:
 	•	contain no PII
 	•	are normalized to types suitable for Rego evaluation
 
-3. OPA can now evaluate conditions such as:
+#### 3. OPA can now evaluate conditions such as:
 	•	cost ceilings
 	•	advance notice requirements
 	•	airline risk thresholds
 	•	explicit consent flags
 
-4. Normalization and Hardening
+#### 4. Normalization and Hardening
 
 The transformation layer ensures:
 	•	dates are converted to RFC 3339 timestamps
@@ -453,7 +453,7 @@ The transformation layer ensures:
 	•	optional fields are either present with correct types or absent
 	•	policy evaluation receives a deterministic, safe input document
 
-### Why This Separation Matters
+Why This Separation Matters
 	•	AuthZEN payloads express intent and context
 	•	OPA input documents express decision-ready facts
 	•	The translation layer:
