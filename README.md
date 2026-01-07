@@ -413,7 +413,7 @@ The resulting OPA input document may look as follows:
 
 ### How the Authz-API layer transformed AuthZEN
 
-#### 1. Delegation (ReBAC)
+#### 1. Delegation (PIP for ReBAC)
 - A context.delegation block is added
 - It captures:
 - whether delegation is valid
@@ -426,7 +426,7 @@ This keeps delegation:
 - auditable
 - independent from policy logic
 
-#### 2. Policy Attributes (ABAC)
+#### 2. Policy Attributes (PIP for ABAC)
 
 Additional attributes are injected for policy evaluation:
 - autobook_consent
@@ -439,17 +439,17 @@ These values:
 - contain no PII
 - are normalized to types suitable for Rego evaluation
 
-#### 3. OPA can now evaluate conditions such as:
+OPA can now evaluate conditions such as:
 - cost ceilings
 - advance notice requirements
 - airline risk thresholds
 - explicit consent flags
 
-#### 4. Normalization and Hardening
+#### 3. Normalization and Hardening
 
 The transformation layer ensures:
 - dates are converted to RFC 3339 timestamps
-- numeric values are coerced to numbers
+- numeric values and strings are coerced to numbers
 - optional fields are either present with correct types or absent
 - policy evaluation receives a deterministic, safe input document
 
@@ -464,9 +464,9 @@ The transformation layer ensures:
 
 This design keeps:
 - PEPs simple
-- policies declarative
-- authorization explainable
-- the architecture evolvable as requirements grow
+- policies declarative with a distinct review, approval and release cycle
+- privacy preserved
+- authorization explainable and auditable
 
 ---
 
