@@ -272,6 +272,199 @@ Together, these mechanisms ensure that authorization decisions are:
 
 ---
 
+## From AuthZEN Request to OPA Input  
+### Translating Intent into Decision-Ready Authorization Facts
+
+This section illustrates how an **AuthZEN-style authorization request** is submitted to the `authz-api`, and how it is subsequently **validated, enriched, and translated** into an input document suitable for evaluation by **OPA**.
+
+The example uses a **travel booking workflow item** as a concrete metaphor, but the same transformation applies to any generic workflow or task execution domain.
+
+## AuthZEN Request Payload (PEP → AuthZ API)
+
+The following payload represents the authorization request as sent by a Policy Enforcement Point (PEP) to the `authz-api`, following AuthZEN principles.
+
+Key characteristics of this payload:
+
+- The **subject** is an `agent` assuming the persona `ai-agent`
+- The **principal** (in `context`) is the human traveler on whose behalf the agent may act
+- The payload is intentionally **lightweight**:
+  - no PII
+  - no policy parameters
+  - no derived or inferred attributes
+- The payload expresses **intent and context**, not policy
+
+```json
+{
+  "subject": {
+    "type": "agent",
+    "id": "agent-runner",
+    "persona": "ai-agent"
+  },
+  "action": {
+    "name": "execute"
+  },
+  "resource": {
+    "type": "workflow_item",
+    "id": "i_bc722d96",
+    "properties": {
+      "domain": "flowpilot",
+      "workflow_id": "w_771ab24f",
+      "workflow_item_id": "i_bc722d96",
+      "workflow_item_kind": "travel",
+      "planned_price": 500.0,
+      "departure_date": "2026-01-30",
+      "airline_risk_score": 7,
+      "owner": {
+        "type": "user",
+        "id": "d91fb602-29f2-43d0-8878-4d646f442967",
+        "persona": "traveler"
+      }
+    }
+  },
+  "context": {
+    "principal": {
+      "type": "user",
+      "id": "d91fb602-29f2-43d0-8878-4d646f442967",
+      "persona": "traveler"
+    },
+    "options": {
+      "dry_run": true,
+      "explain": true,
+      "metrics": true
+    }
+  }
+}
+
+At this stage, the system is asking:
+
+“May this AI agent execute this workflow item on behalf of this traveler?”
+
+Notably:
+	•	No delegation has yet been validated
+	•	No consent or policy thresholds are included
+	•	The request is portable across PDP implementations
+
+
+## Enriched OPA Input Document (AuthZ API → OPA)
+
+Before calling OPA, the authz-api performs several steps:
+	1.	Validates and decodes the bearer access token
+	2.	Resolves delegation relationships (ReBAC)
+	3.	Fetches or derives policy-relevant attributes
+	4.	Normalizes data types and formats for Rego evaluation
+
+The resulting OPA input document may look as follows:
+
+{
+  "subject": {
+    "type": "agent",
+    "id": "agent-runner",
+    "persona": "ai-agent"
+  },
+  "action": {
+    "name": "execute"
+  },
+  "resource": {
+    "type": "workflow_item",
+    "id": "i_bc722d96",
+    "properties": {
+      "domain": "flowpilot",
+      "workflow_id": "w_771ab24f",
+      "workflow_item_id": "i_bc722d96",
+      "workflow_item_kind": "travel",
+      "planned_price": 500.0,
+      "departure_date": "2026-01-30T00:00:00Z",
+      "airline_risk_score": 7.0,
+      "owner": {
+        "type": "user",
+        "id": "d91fb602-29f2-43d0-8878-4d646f442967",
+        "persona": "traveler",
+        "autobook_consent": true,
+        "autobook_price": 10000,
+        "autobook_leadtime": 7,
+        "autobook_risklevel": 5
+      }
+    }
+  },
+  "context": {
+    "delegation": {
+      "valid": true,
+      "delegation_chain": [
+        "d91fb602-29f2-43d0-8878-4d646f442967",
+        "30dc31a0-2061-43c7-aa2a-7f7760936fc9",
+        "89eb5366-bab3-46e4-b8e1-abc5f2ea4631"
+      ],
+      "delegated_actions": [
+        "read",
+        "execute"
+      ]
+    },
+    "principal": {
+      "type": "user",
+      "id": "d91fb602-29f2-43d0-8878-4d646f442967",
+      "persona": "traveler"
+    }
+  }
+}
+
+## How the Authz-API layer transfromed AuthZEN
+
+### Delegation (ReBAC)
+	•	A context.delegation block is added
+	•	It captures:
+	•	whether delegation is valid
+	•	the resolved delegation chain
+	•	the actions granted by delegation
+	•	OPA does not resolve delegation itself; it consumes the result
+
+This keeps delegation:
+	•	centralized
+	•	auditable
+	•	independent from policy logic
+
+### Policy Attributes (ABAC)
+
+Additional attributes are injected for policy evaluation:
+	•	autobook_consent
+	•	autobook_price
+	•	autobook_leadtime
+	•	autobook_risklevel
+
+These values:
+	•	are derived from profiles or token-backed attributes
+	•	contain no PII
+	•	are normalized to types suitable for Rego evaluation
+
+### OPA can now evaluate conditions such as:
+	•	cost ceilings
+	•	advance notice requirements
+	•	airline risk thresholds
+	•	explicit consent flags
+
+### Normalization and Hardening
+
+The transformation layer ensures:
+	•	dates are converted to RFC 3339 timestamps
+	•	numeric values are coerced to numbers
+	•	optional fields are either present with correct types or absent
+	•	policy evaluation receives a deterministic, safe input document
+
+### Why This Separation Matters
+	•	AuthZEN payloads express intent and context
+	•	OPA input documents express decision-ready facts
+	•	The translation layer:
+	•	enforces security invariants
+	•	prevents PII leakage
+	•	shields policies from upstream variability
+
+This design keeps:
+	•	PEPs simple
+	•	policies declarative
+	•	authorization explainable
+	•	the architecture evolvable as requirements grow
+
+---
+
 ## Privacy by design
 
 Privacy is not an afterthought; it is structural.
