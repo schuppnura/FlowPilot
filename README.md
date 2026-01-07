@@ -155,7 +155,7 @@ The travel example exists to make the architecture tangible, not to constrain it
 The following microservices are used in FlowPilot. Every microservice runs in its own docker container.
 Communication between the microservices is done through REST APIs, defined using OpenAPI.
 All APIs are protected using TLS and bearer access tokens, and the input is sanitized before being processed.
-To optimise processing as a single back-end, the microservices can also be put in a common container, whereby the API decorators can be bypassed and be replaced by direct function calls.
+To optimise processing as a single back-end, the microservices can also be put in a common container, whereby the API decorators (in `main.py`) can be bypassed and be replaced by direct function calls (in `core.py`).
 
 ### Microservices architecture
 1. flowpilot-authz-api
@@ -205,7 +205,8 @@ The following persona values are currently supported:
 - `office-manager`
 - `booking-assistant`
 
-Personas are conveyed via bearer access tokens and are intentionally limited to business semantics; they do not expose identity or personal information.
+Personas are conveyed via bearer access tokens and AuthZEN packages.
+Personas are intentionally limited to business semantics; they do not expose identity or personal information.
 
 ### Autonomous AI Booking Policy
 
