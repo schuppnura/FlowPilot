@@ -152,6 +152,11 @@ The travel example exists to make the architecture tangible, not to constrain it
 
 ## Architecture at a glance
 
+The following microservices are used in FlowPilot. Every microservice runs in its own docker container.
+Communication between the microservices is done through REST APIs, defined using OpenAPI with clear payloads.
+All APIs are protected using TLS and bearer access tokens, and the payload is sanitized before being processed.
+To optimise procesisng as a single back-end, the microservices can also be put in a common container, whereby the APIs can be bypassed and be replaced by direct function calls.
+
 ### Microservices architecture
 1. flowpilot-authz-api
    - Authorization façade (PEP ↔ PDP integration)
@@ -178,6 +183,95 @@ The travel example exists to make the architecture tangible, not to constrain it
    - Domain services
    - AI agent service
    - Always call authz-api before execution
+
+---
+
+## Authorization architecture
+
+Authorization decisions in FlowPilot are **persona-driven**, not identity-driven.
+
+A **persona** represents the **business role** a subject assumes in a given context.  
+A single person (principal) may have **one or more personas**, but each authorization request is evaluated against **exactly one active persona**.
+
+The `persona` attribute is therefore a **core authorization input**.
+
+### Supported personas
+
+The following persona values are currently supported:
+
+- `traveler`
+- `travel-agent`
+- `ai-agent`
+- `office-manager`
+- `booking-assistant`
+
+Personas are conveyed via bearer access tokens and are intentionally limited to business semantics; they do not expose identity or personal information.
+
+### Autonomous AI Booking Policy
+
+An `ai-agent` is allowed to book travel **autonomously** only when **all** of the following policy conditions are satisfied:
+
+1. The user has explicitly provided **auto-book consent**
+2. The **total trip cost** is less than or equal to **€1,500**
+3. The **departure date** is at least **7 days in the future**
+4. The **airline risk score** is below the configured threshold
+
+These conditions are evaluated declaratively using OPA (ABAC) and are independent of delegation relationships.
+
+If any condition fails, autonomous booking is denied.
+
+### Delegation Model
+
+A `traveler` may delegate the execution of a booking workflow to one of the following personas:
+
+- `travel-agent`
+- `office-manager`
+- `booking-assistant`
+
+Delegation is **explicit**, **directional**, and **relationship-based** (ReBAC).  
+It is validated before any attribute-based policy evaluation takes place.
+
+### Authorization Scenarios
+
+The authorization layer distinguishes between the following scenarios when evaluating a booking request.
+
+1. Owner acting directly (regular user)
+
+- Subject is **not** an agent-runner
+- `subject == owner`
+
+2. Owner acting via an agent-runner
+
+- Subject **is** an agent-runner (human or AI)
+- `context.principal == owner`
+
+3. Autonomous AI agent
+
+- Subject **is** an agent-runner
+- Auto-book consent is present
+- No delegation relationship exists
+
+4. Delegated execution
+
+- A valid delegation exists between the principal user and the subject
+- Delegation includes the required action (e.g. `execute`, `book`)
+- Works for both:
+  - regular users
+  - agent-runners
+
+### Summary
+
+- **Personas** define *what role* a subject plays
+- **Delegation** defines *who may act for whom*
+- **OPA policies** define *under which conditions actions are allowed*
+- **Autonomous AI execution** is strictly gated and opt-in
+
+Together, these mechanisms ensure that authorization decisions are:
+
+- explicit
+- explainable
+- privacy-preserving
+- safe for agent-based execution
 
 ---
 
