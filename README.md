@@ -380,7 +380,7 @@ The resulting OPA input document may look as follows:
       "airline_risk_score": 7.0,
       "owner": {
         "type": "user",
-        "id": "d91fb602-29f2-43d0-8878-4d646f442967",
+        "id": "89eb5366-bab3-46e4-b8e1-abc5f2ea4631",
         "persona": "traveler",
         "autobook_consent": true,
         "autobook_price": 10000,
