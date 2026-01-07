@@ -234,6 +234,7 @@ This repository is meant to be read, reasoned about, and adapted, not just run.
 - Python 3.11+ (for running regression tests locally)
 - macOS (for Swift client)
 - Available ports: 8002-8005, 8080, 8181, 8443
+- **mkcert** for local TLS certificate management (install via `brew install mkcert`)
 
 **Optional:**
 - Black, Ruff, mypy, pylint (for code quality checks)
@@ -246,7 +247,21 @@ This repository is meant to be read, reasoned about, and adapted, not just run.
    cd FlowPilot
    ```
 
-2. **Create `.env` file** in the project root:
+2. **Install and configure mkcert:**
+   ```bash
+   # Install mkcert (macOS)
+   brew install mkcert
+   
+   # Install the local CA in the system trust store
+   mkcert -install
+   
+   # Copy the mkcert root CA to the project
+   cp "$(mkcert -CAROOT)/rootCA.pem" infra/certs/mkcert-rootCA.pem
+   ```
+   
+   This certificate is required for Docker containers to trust the Keycloak HTTPS endpoint.
+
+3. **Create `.env` file** in the project root:
    ```bash
    KEYCLOAK_ADMIN_USERNAME=admin
    KEYCLOAK_ADMIN_PASSWORD=<your-secure-password>
@@ -256,7 +271,7 @@ This repository is meant to be read, reasoned about, and adapted, not just run.
    
    **IMPORTANT:** Never commit `.env` to version control.
 
-3. **Start the entire stack:**
+4. **Start the entire stack:**
    ```bash
    make up
    ```
@@ -268,14 +283,14 @@ This repository is meant to be read, reasoned about, and adapted, not just run.
    - Provisions users, clients, and delegations
    - Configures OIDC settings
 
-4. **Verify services are running:**
+5. **Verify services are running:**
    ```bash
    make status
    ```
    
    All services should show as "healthy" or "running".
 
-5. **Check service health endpoints:**
+6. **Check service health endpoints:**
    ```bash
    curl http://localhost:8002/health  # authz-api
    curl http://localhost:8003/health  # domain-services-api

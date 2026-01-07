@@ -120,6 +120,8 @@ venv.bak/
 *.pem
 !infra/keycloak/certs/*.pem
 !infra/***REMOVED***/certs/*.pem
+# Explicitly ignore mkcert root CA (should be copied from local mkcert installation)
+infra/certs/mkcert-rootCA.pem
 secrets/
 .secrets/
 infra/keycloak/realm-flowpilot.json

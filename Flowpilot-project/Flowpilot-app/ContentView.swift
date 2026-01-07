@@ -815,11 +815,11 @@ struct ContentView: View {
             icon = "xmark.circle.fill"
         } else if decision.lowercased() == "deny" {
             color = .orange
-            text = "DENIED"
+            text = "NO AUTOBOOKING"
             icon = "xmark.shield.fill"
         } else if decision.lowercased() == "allow" {
             color = .green
-            text = "ALLOWED"
+            text = "AUTOBOOK READY"
             icon = "checkmark.shield.fill"
         } else {
             color = .gray

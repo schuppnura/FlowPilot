@@ -113,17 +113,9 @@ reasons[code] if {
   principal_id := input.subject.id
   owner_id := input.resource.properties.owner.id
   principal_id != owner_id
-  # Not agent-runner (would be caught by rule above)
-  not is_agent_runner
-  # No delegation exists at all
+  input.subject.persona != "ai-agent"
   not input.context.delegation.valid
   code := "read.no_delegation"
-}
-
-# Helper: check if subject is agent-runner
-is_agent_runner if {
-  input.subject.type == "agent"
-  input.subject.id == "agent-runner"
 }
 
 reasons[code] if {
@@ -158,7 +150,7 @@ reasons[code] if {
 
 # Owner directly accessing their own resource (regular user, not agent-runner)
 authorized_principal if {
-  not is_agent_runner
+  input.subject.persona != "ai-agent"
   principal_id := input.subject.id
   owner_id := input.resource.properties.owner.id
   principal_id == owner_id
@@ -166,7 +158,7 @@ authorized_principal if {
 
 # Agent-runner activated by the owner (owner using agent to execute)
 authorized_principal if {
-  is_agent_runner
+  input.subject.persona == "ai-agent"
   principal_id := input.context.principal.id
   owner_id := input.resource.properties.owner.id
   principal_id == owner_id
@@ -175,7 +167,7 @@ authorized_principal if {
 # Agent-runner in autonomous mode: autobook_consent=true, no delegation chain
 # This is pure autobook: owner has opted in and agent acts autonomously
 authorized_principal if {
-  is_agent_runner
+  input.subject.persona == "ai-agent"
   input.resource.properties.owner.autobook_consent == true
   not input.context.delegation.valid
 }
@@ -203,9 +195,9 @@ has_valid_delegation_for_action if {
 
 valid_agent_personas := {"travel-agent", "ai-agent", "office-manager", "booking-assistant"}
 
-# Agent-runner activated by delegated user: check context.principal has agent persona
+# AI-agent activated by delegated user: check context.principal has agent persona
 persona_valid if {
-  is_agent_runner
+  input.subject.persona == "ai-agent"
   principal_id := input.context.principal.id
   owner_id := input.resource.properties.owner.id
   principal_id != owner_id
@@ -214,9 +206,9 @@ persona_valid if {
   valid_agent_personas[principal_persona]
 }
 
-# Agent-runner activated by owner: check context.principal matches owner persona
+# AI-agent activated by owner: check context.principal matches owner persona
 persona_valid if {
-  is_agent_runner
+  input.subject.persona == "ai-agent"
   principal_id := input.context.principal.id
   owner_id := input.resource.properties.owner.id
   principal_id == owner_id
@@ -227,9 +219,9 @@ persona_valid if {
   principal_persona != ""
 }
 
-# Regular user with delegation: check subject persona
+# Human user with delegation: check subject persona
 persona_valid if {
-  not is_agent_runner
+  input.subject.persona != "ai-agent"
   principal_id := input.subject.id
   owner_id := input.resource.properties.owner.id
   principal_id != owner_id
@@ -238,9 +230,9 @@ persona_valid if {
   valid_agent_personas[input.subject.persona]
 }
 
-# Owner executing their own workflow: must match owner persona
+# Owner executing their own workflow directly: must match owner persona
 persona_valid if {
-  not is_agent_runner
+  input.subject.persona != "ai-agent"
   principal_id := input.subject.id
   owner_id := input.resource.properties.owner.id
   principal_id == owner_id
@@ -258,10 +250,9 @@ allow_read if {
   principal_id == owner_id
 }
 
-# Allow read if subject is agent-runner (always, regardless of autobook consent)
-# Agent needs to read workflows to determine which items can be executed
+# AI-Agent needs to read workflows to determine which items can be executed
 allow_read if {
-  is_agent_runner
+  input.subject.persona == "ai-agent"
 }
 
 # Allow read if user has valid delegation (with read action) and matching persona
