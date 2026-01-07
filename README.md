@@ -326,7 +326,7 @@ Key characteristics of this payload:
     "principal": {
       "type": "user",
       "id": "d91fb602-29f2-43d0-8878-4d646f442967",
-      "persona": "traveler"
+      "persona": "travel-agent"
     },
     "options": {
       "dry_run": true,
@@ -405,7 +405,7 @@ The resulting OPA input document may look as follows:
     "principal": {
       "type": "user",
       "id": "d91fb602-29f2-43d0-8878-4d646f442967",
-      "persona": "traveler"
+      "persona": "travel-agent"
     }
   }
 }
