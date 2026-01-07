@@ -273,13 +273,14 @@ Together, these mechanisms ensure that authorization decisions are:
 ---
 
 ## From AuthZEN Request to OPA Input  
-### Translating Intent into Decision-Ready Authorization Facts
+
+The Authz-API translates Intent into Decision-Ready authorization claims
 
 This section illustrates how an **AuthZEN-style authorization request** is submitted to the `authz-api`, and how it is subsequently **validated, enriched, and translated** into an input document suitable for evaluation by **OPA**.
 
 The example uses a **travel booking workflow item** as a concrete metaphor, but the same transformation applies to any generic workflow or task execution domain.
 
-## AuthZEN Request Payload (PEP → AuthZ API)
+### AuthZEN Request Payload (PEP → AuthZ API)
 
 The following payload represents the authorization request as sent by a Policy Enforcement Point (PEP) to the `authz-api`, following AuthZEN principles.
 
@@ -334,6 +335,7 @@ Key characteristics of this payload:
     }
   }
 }
+```
 
 At this stage, the system is asking:
 
@@ -345,7 +347,7 @@ Notably:
 	•	The request is portable across PDP implementations
 
 
-## Enriched OPA Input Document (AuthZ API → OPA)
+### Enriched OPA Input Document (AuthZ API → OPA)
 
 Before calling OPA, the authz-api performs several steps:
 	1.	Validates and decodes the bearer access token
@@ -355,6 +357,7 @@ Before calling OPA, the authz-api performs several steps:
 
 The resulting OPA input document may look as follows:
 
+```json
 {
   "subject": {
     "type": "agent",
@@ -406,10 +409,11 @@ The resulting OPA input document may look as follows:
     }
   }
 }
+```
 
-## How the Authz-API layer transfromed AuthZEN
+### How the Authz-API layer transfromed AuthZEN
 
-### Delegation (ReBAC)
+1. Delegation (ReBAC)
 	•	A context.delegation block is added
 	•	It captures:
 	•	whether delegation is valid
@@ -422,7 +426,7 @@ This keeps delegation:
 	•	auditable
 	•	independent from policy logic
 
-### Policy Attributes (ABAC)
+2. Policy Attributes (ABAC)
 
 Additional attributes are injected for policy evaluation:
 	•	autobook_consent
@@ -435,13 +439,13 @@ These values:
 	•	contain no PII
 	•	are normalized to types suitable for Rego evaluation
 
-### OPA can now evaluate conditions such as:
+3. OPA can now evaluate conditions such as:
 	•	cost ceilings
 	•	advance notice requirements
 	•	airline risk thresholds
 	•	explicit consent flags
 
-### Normalization and Hardening
+4. Normalization and Hardening
 
 The transformation layer ensures:
 	•	dates are converted to RFC 3339 timestamps
