@@ -223,7 +223,8 @@ A `traveler` may delegate the execution of a booking workflow to one of the foll
 
 Delegation is **explicit**, **directional**, and **relationship-based** (ReBAC).  
 It is validated before any attribute-based policy evaluation takes place.
-Delegation can also be done in a read-only way, for example to cater for co-travelers, both with the persona `traveler`.
+
+Delegation can also be done for read-only only, for example to invite co-travelers, both with the persona `traveler`.
 
 ### Authorization Scenarios
 
