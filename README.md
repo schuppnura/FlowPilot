@@ -59,7 +59,24 @@ AuthZEN is used explicitly as a boundary, not as an all-encompassing framework.
 
 ---
 
-### 2. OPA as a declarative policy engine (ABAC)
+### 2. ReBAC with explicit delegation relationships
+
+Delegation is modeled as a relationship graph, not as token bloat.
+
+The flowpilot-delegation-api acts as a ReBAC PIP:
+- Delegations are explicit:
+  - principal → delegate
+- Delegations can be:
+  - workflow-scoped or global
+  - time-bound
+  - revoked
+- Delegation chains are resolved transitively:
+  - A → B → C → D
+- Chain length is bounded to prevent privilege amplification
+
+---
+
+### 3. OPA as a declarative policy engine (ABAC)
 
 OPA is used strictly for attribute-based policy decisions:
 - Policies are written in Rego
@@ -75,32 +92,6 @@ OPA answers questions such as:
 - Is the risk of executiong a workflow item below the configured threshold?
 
 OPA itself uses AuthZEN as input and does not need to manage identity, delegation graphs, or relationships.
-
----
-
-### 3. ReBAC with explicit delegation relationships
-
-Delegation is modeled as a relationship graph, not as token bloat.
-
-The flowpilot-delegation-api acts as a ReBAC PIP:
-- Delegations are explicit:
-  - principal → delegate
-- Delegations can be:
-  - workflow-scoped or global
-  - time-bound
-  - revoked
-- Delegation chains are resolved transitively:
-  - A → B → C
-- Chain length is bounded to prevent privilege amplification
-
-Delegation is evaluated before ABAC:
-- if delegation fails, authorization fails immediately
-- OPA is never consulted
-
-This separation keeps:
-- policies simpler
-- delegation auditable
-- authorization explainable
 
 ---
 
@@ -170,6 +161,7 @@ To optimise processing as a single back-end, the microservices can also be put i
    - Resolves delegation chains
    - No policy logic
    - No PII
+   - Implements a directional graph
 3. OPA
    - Declarative policy engine
    - Evaluates Rego policies
