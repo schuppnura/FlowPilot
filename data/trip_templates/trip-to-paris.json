@@ -1,7 +1,7 @@
 {
   "template_id": "trip-to-paris",
   "domain": "flowpilot",
-  "name": "Trip to Paris",
+  "name": "Trip from NY to Paris",
   "departure_date": "2025-12-20",
   "items": [
     { 

@@ -255,7 +255,7 @@ The authorization layer distinguishes between the following scenarios when evalu
 4. Delegated execution
 
 - A valid delegation exists between the principal user and the subject
-- Delegation includes the required action (e.g. `execute`, `book`)
+- Delegation includes the required action (e.g. `execute`, `read`)
 
 ### Summary
 
@@ -513,7 +513,7 @@ FlowPilot does the opposite:
 
 This repository is meant to be read, reasoned about, and adapted, not just run.
 
-⸻
+---
 
 ## Getting Started
 
@@ -553,7 +553,7 @@ This repository is meant to be read, reasoned about, and adapted, not just run.
 
 3. **Create `.env` file** in the project root:
    ```bash
-   KEYCLOAK_ADMIN_USERNAME=admin
+   KEYCLOAK_ADMIN_USERNAME=<your-account-id>
    KEYCLOAK_ADMIN_PASSWORD=<your-secure-password>
    KEYCLOAK_CLIENT_SECRET=<your-client-secret>
    AGENT_CLIENT_SECRET=<your-agent-secret>
@@ -1041,7 +1041,7 @@ OpenAPI specifications available in `flowpilot_openapi/`:
 - `domain-services.openapi.yaml` - Workflow API
 - `ai-agent.openapi.yaml` - AI Agent API
 
-View specs using Swagger Editor or similar tool.
+View specs using Swagger Editor, Postman or similar tool.
 
 ⸻
 
@@ -1049,7 +1049,7 @@ View specs using Swagger Editor or similar tool.
 
 - **Shared Libraries:** Changes to `flowpilot-services/shared-libraries/` require container rebuilds
 - **Policy Hot Reload:** OPA watches `/policies` but restart is more reliable
-- **TLS in Dev:** Services use `verify=False` for TLS; **NEVER deploy this way**
+- **TLS in Dev:** Services can use `verify=False` for TLS; **but NEVER deploy this way**
 - **PII Handling:** Only `sub` (UUID) is processed; never log or expose other PII
 - **Error Messages:** Set `INCLUDE_ERROR_DETAILS=0` in production
 - **Client Secret:** Never commit `.env` file
