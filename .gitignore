@@ -118,9 +118,7 @@ venv.bak/
 *.secret
 *.key
 *.pem
-!infra/keycloak/certs/*.pem
-!infra/***REMOVED***/certs/*.pem
-# Explicitly ignore mkcert root CA (should be copied from local mkcert installation)
+infra/keycloak/certs/key.pem
 infra/certs/mkcert-rootCA.pem
 secrets/
 .secrets/
@@ -129,7 +127,6 @@ infra/keycloak/realm-flowpilot.json
 # HTTPS Bundle Server
 /tmp/https-bundle-server.log
 /tmp/https-bundle-server.pid
-infra/***REMOVED***/cfg/bundle/flowpilot-policy.tar.gz
 
 # Spyder project settings
 .spyderproject

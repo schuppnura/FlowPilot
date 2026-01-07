@@ -453,7 +453,8 @@ The transformation layer ensures:
 - optional fields are either present with correct types or absent
 - policy evaluation receives a deterministic, safe input document
 
-Why This Separation Matters
+#### Why This Separation Matters
+
 - AuthZEN payloads express intent and context
 - OPA input documents express decision-ready facts
 - The translation layer:
