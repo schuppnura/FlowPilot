@@ -286,8 +286,8 @@ The following payload represents the authorization request as sent by a Policy E
 
 Key characteristics of this payload:
 
-- The **subject** is an `agent` assuming the persona `ai-agent`
-- The **principal** (in `context`) is the human traveler on whose behalf the agent may act
+- The **subject** is an `agentic workflow` assuming the persona `ai-agent`
+- The **principal** (in `context`) is the human `travel-agent` acting on behalf of the `owner`
 - The payload is intentionally **lightweight**:
   - no PII
   - no policy parameters
@@ -351,9 +351,9 @@ Notably:
 
 Before calling OPA, the authz-api performs several steps:
 	1.	Validates and decodes the bearer access token
-	2.	Resolves delegation relationships (ReBAC)
-	3.	Fetches or derives policy-relevant attributes
-	4.	Normalizes data types and formats for Rego evaluation
+	2.	Resolves delegation relationships from the graph database (ReBAC)
+	3.	Fetches and derives policy-relevant attributes
+	4.	Normalizes data types and formats for clean Rego evaluation
 
 The resulting OPA input document may look as follows:
 
