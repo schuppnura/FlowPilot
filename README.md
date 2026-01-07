@@ -237,17 +237,17 @@ The authorization layer distinguishes between the following scenarios when evalu
 
 1. Owner acting directly (regular user)
 
-- Subject is **not** an agent-runner
+- Subject is **not** an ai-agent
 - `subject == owner`
 
 2. Owner acting via an agent-runner
 
-- Subject **is** an agent-runner (human or AI)
+- Subject **is** an ai-agent
 - `context.principal == owner`
 
 3. Autonomous AI agent
 
-- Subject **is** an agent-runner
+- Subject **is** an ai-agent
 - Auto-book consent is present
 - No delegation relationship exists
 
@@ -255,9 +255,6 @@ The authorization layer distinguishes between the following scenarios when evalu
 
 - A valid delegation exists between the principal user and the subject
 - Delegation includes the required action (e.g. `execute`, `book`)
-- Works for both:
-  - regular users
-  - agent-runners
 
 ### Summary
 
