@@ -137,7 +137,7 @@ from pydantic import BaseModel, Field, validator
 import security
 import api_logging
 import profile
-from core import DelegationService
+from delegation_core import DelegationService
 from graphdb import DelegationGraphDB
 from utils import (
     load_json_object,

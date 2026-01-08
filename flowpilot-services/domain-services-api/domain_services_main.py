@@ -32,7 +32,7 @@ from pydantic import BaseModel, Field, validator
 
 import security
 import api_logging
-from core import FlowPilotService, PolicyDeniedError
+from domain_services_core import FlowPilotService, PolicyDeniedError
 from utils import (
     load_json_object,
     merge_config,

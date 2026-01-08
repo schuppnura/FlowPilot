@@ -33,8 +33,8 @@ COPY flowpilot-services/shared-libraries/api_logging.py /app/api_logging.py
 COPY flowpilot-services/shared-libraries/profile.py /app/profile.py
 
 # App code
-COPY flowpilot-services/authz-api/main.py /app/main.py
-COPY flowpilot-services/authz-api/core.py /app/core.py
+COPY flowpilot-services/authz-api/authz_main.py /app/authz_main.py
+COPY flowpilot-services/authz-api/authz_core.py /app/authz_core.py
 
 ENTRYPOINT ["tini", "--"]
-CMD ["python", "main.py", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "authz_main.py", "--host", "0.0.0.0", "--port", "8000"]

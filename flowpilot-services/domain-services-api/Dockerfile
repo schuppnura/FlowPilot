@@ -30,11 +30,11 @@ EOF
 COPY flowpilot-services/shared-libraries/utils.py /app/utils.py
 COPY flowpilot-services/shared-libraries/security.py /app/security.py
 COPY flowpilot-services/shared-libraries/api_logging.py /app/api_logging.py
-COPY flowpilot-services/domain-services-api/main.py /app/main.py
-COPY flowpilot-services/domain-services-api/core.py /app/core.py
+COPY flowpilot-services/domain-services-api/domain_services_main.py /app/domain_services_main.py
+COPY flowpilot-services/domain-services-api/domain_services_core.py /app/domain_services_core.py
 COPY flowpilot-services/domain-services-api/template_loader.py /app/template_loader.py
 
 # Internal container port (compose maps host 8003 -> container 8000)
 EXPOSE 8000
 
-CMD ["python", "main.py", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "domain_services_main.py", "--host", "0.0.0.0", "--port", "8000"]

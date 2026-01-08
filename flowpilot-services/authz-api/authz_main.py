@@ -101,7 +101,7 @@ from fastapi.responses import JSONResponse
 
 import security
 import api_logging
-from core import evaluate_authorization_request
+from authz_core import evaluate_authorization_request
 
 # ============================================================================
 # Configuration Constants

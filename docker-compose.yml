@@ -100,7 +100,8 @@ services:
       # HTTP client configuration
       - HTTP_DEFAULT_TIMEOUT=10.0
       - HTTP_VERIFY_TLS=false
-    command: ["python", "main.py", "--host", "0.0.0.0", "--port", "8000"]
+      - VERIFY_TLS=false
+    command: ["python", "authz_main.py", "--host", "0.0.0.0", "--port", "8000"]
     ports:
       - "8002:8000"
     depends_on:
@@ -141,7 +142,7 @@ services:
       # HTTP client configuration
       HTTP_DEFAULT_TIMEOUT: "10.0"
       HTTP_VERIFY_TLS: "false"
-    command: ["python", "main.py", "--host", "0.0.0.0", "--port", "8000"]
+    command: ["python", "ai_agent_main.py", "--host", "0.0.0.0", "--port", "8000"]
     ports:
       - "8004:8000"
     depends_on:
@@ -216,7 +217,7 @@ services:
       # HTTP client configuration
       - HTTP_DEFAULT_TIMEOUT=10.0
       - HTTP_VERIFY_TLS=false
-    command: ["python", "main.py", "--host", "0.0.0.0", "--port", "8000"]
+    command: ["python", "delegation_main.py", "--host", "0.0.0.0", "--port", "8000"]
     ports:
       - "8005:8000"
     depends_on:

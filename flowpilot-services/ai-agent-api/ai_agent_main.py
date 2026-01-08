@@ -15,17 +15,17 @@ from __future__ import annotations
 
 import argparse
 import os
-from typing import Any, Dict, Optional
+from typing import Dict, Any, Optional
 
 import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, Request
-from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, Field, validator
 
 import security
 import api_logging
-from core import (
+from ai_agent_core import (
     execute_workflow_run,
     normalize_workflow_id,
     check_workflow_execution_authorization,
