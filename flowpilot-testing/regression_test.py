@@ -91,7 +91,8 @@ class TestContext:
                 "grant_type": "password",
                 "client_id": KEYCLOAK_CLIENT_ID,
                 "username": user["username"],
-                "password": user["password"]
+                "password": user["password"],
+                "scope": "openid autobook"
             },
             verify=False
         )

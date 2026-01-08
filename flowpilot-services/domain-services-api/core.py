@@ -229,6 +229,15 @@ class FlowPilotService:
                 "Service token not available - cannot call delegation-api"
             )
 
+        # Extract actual agent sub from the service token
+        # This must succeed - we cannot proceed without a valid agent identity
+        token_claims = security.verify_token_string(token)
+        agent_sub = token_claims.get("sub")
+        if not agent_sub:
+            raise RuntimeError(
+                "Service token does not contain 'sub' claim - cannot identify agent"
+            )
+
         body = {
             "principal_id": owner_sub,
             "delegate_id": agent_sub,
@@ -477,9 +486,7 @@ class FlowPilotService:
         authz_base_url = require_non_empty_string(
             str(self._config.get("authz_base_url", "")), "authz_base_url"
         )
-        agent_sub = require_non_empty_string(
-            str(self._config.get("agent_sub", "")), "agent_sub"
-        )
+        # Note: agent_sub is no longer loaded from config - extracted from service token
         domain = require_non_empty_string(str(self._config.get("domain", "")), "domain")
 
         workflow_id = str(workflow.get("workflow_id", ""))
@@ -521,9 +528,15 @@ class FlowPilotService:
         if not token:
             raise RuntimeError("Service token not available - cannot call authz-api")
 
-        # Use stable agent_sub from config (not token sub which changes with Keycloak resets)
-        # The agent_sub (e.g., "agent-runner") is a stable identifier used for delegation
-        service_id = agent_sub
+        # Extract agent sub from service token
+        # The agent is identified by: sub=<UUID>, type="agent", persona="ai-agent"
+        # This must succeed - we cannot proceed without a valid agent identity
+        token_claims = security.verify_token_string(token)
+        service_id = token_claims.get("sub")
+        if not service_id:
+            raise RuntimeError(
+                "Service token does not contain 'sub' claim - cannot identify agent"
+            )
 
         # Subject is always the agent (service) making the call to authz-api
         # This is a service-to-service call, so subject identifies the calling service (ai-agent-api)
@@ -575,9 +588,7 @@ class FlowPilotService:
         authz_base_url = require_non_empty_string(
             str(self._config.get("authz_base_url", "")), "authz_base_url"
         )
-        agent_sub = require_non_empty_string(
-            str(self._config.get("agent_sub", "")), "agent_sub"
-        )
+        # Note: agent_sub is no longer loaded from config - extracted from service token
         domain = require_non_empty_string(str(self._config.get("domain", "")), "domain")
 
         workflow_id = str(workflow.get("workflow_id", ""))
@@ -603,9 +614,15 @@ class FlowPilotService:
         if not token:
             raise RuntimeError("Service token not available - cannot call authz-api")
 
-        # Use stable agent_sub from config (not token sub which changes with Keycloak resets)
-        # The agent_sub (e.g., "agent-runner") is a stable identifier used for delegation
-        service_id = agent_sub
+        # Extract agent sub from service token
+        # The agent is identified by: sub=<UUID>, type="agent", persona="ai-agent"
+        # This must succeed - we cannot proceed without a valid agent identity
+        token_claims = security.verify_token_string(token)
+        service_id = token_claims.get("sub")
+        if not service_id:
+            raise RuntimeError(
+                "Service token does not contain 'sub' claim - cannot identify agent"
+            )
 
         # Subject is the service making the call
         # Add AI agent persona to subject for authorization checks (configurable via AI_AGENT_PERSONA)

@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """
-Assign client scopes to the flowpilot-desktop client.
-This ensures the autobook scope is available for the OAuth flow.
+Remove the 'profile' scope from flowpilot-desktop client to prevent PII leakage.
+
+The profile scope includes PII claims like name, preferred_username, given_name, family_name.
+We only want: sub, persona, and autobook attributes in access tokens.
 """
 import requests
 import sys
@@ -50,7 +52,6 @@ def get_admin_token():
     )
     if resp.status_code != 200:
         print(f"✗ Authentication failed: {resp.status_code}")
-        print(f"   Response: {resp.text[:200]}")
         raise RuntimeError(f"Failed to authenticate: {resp.status_code}")
     
     token_data = resp.json()
@@ -98,11 +99,11 @@ def get_client_default_scopes(headers, client_uuid):
         timeout=10
     )
     resp.raise_for_status()
-    return [s['id'] for s in resp.json()]
+    return resp.json()
 
-def assign_default_scope(headers, client_uuid, scope_id):
-    """Assign a scope as default for a client"""
-    resp = requests.put(
+def remove_default_scope(headers, client_uuid, scope_id):
+    """Remove a scope from client's default scopes"""
+    resp = requests.delete(
         f'{KEYCLOAK_URL}/admin/realms/{REALM}/clients/{client_uuid}/default-client-scopes/{scope_id}',
         headers=headers,
         verify=False,
@@ -116,7 +117,7 @@ def assign_default_scope(headers, client_uuid, scope_id):
     return True
 
 def main():
-    print("Assigning client scopes to flowpilot-desktop client...")
+    print("Removing 'profile' scope from flowpilot-desktop client to prevent PII leakage...")
     
     try:
         token = get_admin_token()
@@ -132,49 +133,47 @@ def main():
             return 1
         print(f"✓ Found flowpilot-desktop client (id={client_uuid})")
         
-        # Get all required scopes
-        # NOTE: 'profile' scope is explicitly excluded to prevent PII leakage
-        # The profile scope includes name, preferred_username, given_name, family_name
-        # We only want: sub, persona, and autobook attributes in access tokens
-        required_scope_names = ["autobook", "web-origins", "acr", "roles"]
-        
         # Check current default scopes
         current_scopes = get_client_default_scopes(headers, client_uuid)
-        current_scope_names = []
-        for scope_id in current_scopes:
-            scope_resp = requests.get(
-                f'{KEYCLOAK_URL}/admin/realms/{REALM}/client-scopes/{scope_id}',
-                headers=headers,
-                verify=False,
-                timeout=10
-            )
-            if scope_resp.status_code == 200:
-                current_scope_names.append(scope_resp.json()['name'])
+        current_scope_names = [(s['id'], s['name']) for s in current_scopes]
         
-        print(f"Current client scopes: {', '.join(current_scope_names)}")
+        print(f"\nCurrent default client scopes:")
+        for scope_id, scope_name in current_scope_names:
+            print(f"  - {scope_name}")
         
-        # Assign all required scopes
-        assigned_count = 0
-        for scope_name in required_scope_names:
-            scope_id = get_client_scope_id(headers, scope_name)
-            if not scope_id:
-                print(f"⚠ {scope_name} scope not found (may be built-in)")
-                continue
-            
-            if scope_id in current_scopes:
-                print(f"✓ {scope_name} already assigned")
+        # Find and remove profile scope
+        profile_scope_id = None
+        for scope_id, scope_name in current_scope_names:
+            if scope_name == 'profile':
+                profile_scope_id = scope_id
+                break
+        
+        if profile_scope_id:
+            print(f"\n✓ Found 'profile' scope, removing...")
+            if remove_default_scope(headers, client_uuid, profile_scope_id):
+                print("✓ Successfully removed 'profile' scope")
             else:
-                print(f"Assigning {scope_name} as default...")
-                if assign_default_scope(headers, client_uuid, scope_id):
-                    print(f"✓ {scope_name} assigned")
-                    assigned_count += 1
-                else:
-                    print(f"✗ Failed to assign {scope_name}")
-        
-        if assigned_count > 0:
-            print(f"\n✓ Assigned {assigned_count} new scope(s) to client")
+                print("✗ Failed to remove 'profile' scope")
+                return 1
         else:
-            print("\n✓ All required scopes are already assigned")
+            print("\n✓ 'profile' scope is not assigned (already removed)")
+        
+        # Verify final state
+        final_scopes = get_client_default_scopes(headers, client_uuid)
+        final_scope_names = [s['name'] for s in final_scopes]
+        
+        print(f"\nFinal default client scopes:")
+        for scope_name in final_scope_names:
+            print(f"  - {scope_name}")
+        
+        # Verify profile is not present
+        if 'profile' in final_scope_names:
+            print("\n✗ ERROR: 'profile' scope is still present!")
+            return 1
+        
+        print("\n✓ SUCCESS: Access tokens will no longer contain PII from profile scope")
+        print("  Tokens will only contain: sub, persona, autobook attributes")
+        print("  Users must log in again to get new tokens without PII")
         
         return 0
         
@@ -186,4 +185,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-

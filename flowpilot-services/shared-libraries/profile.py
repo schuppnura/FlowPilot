@@ -119,10 +119,10 @@ def _fetch_user_by_id(user_sub: str) -> Optional[Dict[str, Any]]:
                 user_url, headers=headers, timeout=KEYCLOAK_USER_REQUEST_TIMEOUT
             )
         else:
+            # Use get_http_config() which includes timeout and verify settings
             response = requests.get(
                 user_url,
                 headers=headers,
-                timeout=KEYCLOAK_USER_REQUEST_TIMEOUT,
                 **utils.get_http_config(),
             )
         if response.status_code == 200:
@@ -188,10 +188,10 @@ def _fetch_all_users() -> List[Dict[str, Any]]:
                 users_url, headers=headers, timeout=KEYCLOAK_USERS_LIST_TIMEOUT
             )
         else:
+            # Use get_http_config() which includes timeout and verify settings
             response = requests.get(
                 users_url,
                 headers=headers,
-                timeout=KEYCLOAK_USERS_LIST_TIMEOUT,
                 **utils.get_http_config(),
             )
         if response.status_code == 200:

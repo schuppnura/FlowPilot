@@ -48,7 +48,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "workflow_base_url": "http://flowpilot-api:8003",
     # AuthZ API base URL for authorization checks
     "authz_base_url": "http://flowpilot-authz-api:8000",
-    "agent_sub": "agent-runner",
+    # Note: agent_sub is no longer configured - it's extracted from service token at runtime
     # Workflow item listing and execution endpoints. These are domain-agnostic and work with any workflow backend.
     "workflow_items_path_template": "/v1/workflows/{workflow_id}/items",
     "workflow_item_execute_path_template": "/v1/workflows/{workflow_id}/items/{workflow_item_id}/execute",
@@ -100,7 +100,7 @@ def build_config(config_path: Optional[str]) -> Dict[str, Any]:
     config["authz_base_url"] = os.environ.get(
         "AUTHZ_BASE_URL", str(config["authz_base_url"])
     )
-    config["agent_sub"] = os.environ.get("AGENT_SUB", str(config["agent_sub"]))
+    # Note: AGENT_SUB env var is deprecated - agent identity is extracted from service token
     config["workflow_items_path_template"] = os.environ.get(
         "WORKFLOW_ITEMS_PATH_TEMPLATE", str(config["workflow_items_path_template"])
     )
@@ -120,7 +120,7 @@ def build_config(config_path: Optional[str]) -> Dict[str, Any]:
         str(config.get("workflow_base_url", "")), "workflow_base_url"
     )
     require_non_empty_string(str(config.get("authz_base_url", "")), "authz_base_url")
-    require_non_empty_string(str(config.get("agent_sub", "")), "agent_sub")
+    # Note: agent_sub is no longer a config parameter - extracted from service token at runtime
     require_non_empty_string(
         str(config.get("workflow_items_path_template", "")),
         "workflow_items_path_template",
@@ -208,12 +208,28 @@ def handle_post_workflow_runs(
 
         workflow_id = normalize_workflow_id(workflow_id=body.workflow_id)
 
+        # Get agent sub from service token
+        # This must succeed - we cannot proceed without a valid agent identity
+        service_token = security.get_service_token()
+        if not service_token:
+            raise HTTPException(
+                status_code=500,
+                detail="Service token not available - cannot identify agent",
+            )
+        service_claims = security.verify_token_string(service_token)
+        agent_sub = service_claims.get("sub")
+        if not agent_sub:
+            raise HTTPException(
+                status_code=500,
+                detail="Service token does not contain 'sub' claim - cannot identify agent",
+            )
+
         # AuthZEN: Check authorization before starting workflow execution (anti-spoofing)
         authz_result = check_workflow_execution_authorization(
             config=config,
             workflow_id=workflow_id,
             principal_user=principal_user,
-            agent_sub=config.get("agent_sub", "agent-runner"),
+            agent_sub=agent_sub,
         )
 
         if authz_result.get("decision") != "allow":
