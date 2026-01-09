@@ -1,0 +1,310 @@
+openapi: 3.0.3
+info:
+  title: FlowPilot User Profile API
+  version: "1.0.0"
+  description: >
+    User profile management service providing abstraction over Firebase/Firestore.
+    
+    **Responsibilities:**
+    - Get user profile (authenticated user's own profile)
+    - Update user profile (personas and autobook preferences)
+    - List users by persona (for delegation candidate discovery)
+    
+    **Security:** All endpoints (except /health) require bearer token authentication.
+servers:
+  - url: http://127.0.0.1:8006
+    description: Local development access
+  - url: http://flowpilot-user-profile-api:8000
+    description: Docker network (internal)
+  - url: https://flowpilot-user-profile-api-737191827545.us-central1.run.app
+    description: GCP Cloud Run (production)
+security:
+  - BearerAuth: []
+paths:
+  /health:
+    get:
+      summary: Health check
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /v1/profile:
+    get:
+      summary: Get user profile
+      description: >
+        Returns the authenticated user's profile including personas and autobook preferences.
+        The user is identified by the JWT sub claim.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileResponse"
+              examples:
+                traveler:
+                  value:
+                    sub: df3438a6-7523-4a59-8339-41e073be3148
+                    personas: ["traveler"]
+                    autobook_consent: true
+                    autobook_price: 500
+                    autobook_leadtime: 30
+                    autobook_risklevel: 50
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    put:
+      summary: Update user profile
+      description: >
+        Update the authenticated user's profile. Partial update - only provided fields are updated.
+        The user is identified by the JWT sub claim.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileRequest"
+            examples:
+              updatePersonas:
+                value:
+                  personas: ["traveler", "travel-agent"]
+              updatePreferences:
+                value:
+                  autobook_consent: true
+                  autobook_price: 1000
+                  autobook_leadtime: 60
+                  autobook_risklevel: 75
+              updateAll:
+                value:
+                  personas: ["traveler"]
+                  autobook_consent: true
+                  autobook_price: 500
+                  autobook_leadtime: 30
+                  autobook_risklevel: 50
+      responses:
+        "200":
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/users:
+    get:
+      summary: List users by persona
+      description: >
+        Returns a list of users who have a specific persona.
+        This is useful for finding potential delegation candidates (e.g., all travel agents).
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: persona
+          in: query
+          required: true
+          description: "Persona to filter by (e.g., 'travel-agent', 'traveler')"
+          schema:
+            type: string
+            example: travel-agent
+      responses:
+        "200":
+          description: List of users with the specified persona
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListUsersResponse"
+              examples:
+                travelAgents:
+                  value:
+                    users:
+                      - sub: bcadc299-f463-4f7d-bab5-2221761387f4
+                        email: agent@example.com
+                        persona: travel-agent
+                      - sub: ef456789-abcd-1234-5678-9abcdef01234
+                        email: agent2@example.com
+                        persona: travel-agent
+        "400":
+          description: Bad request (invalid persona)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+        service:
+          type: string
+          example: flowpilot-user-profile-api
+      required:
+        - status
+
+    ProfileResponse:
+      type: object
+      description: User profile data
+      properties:
+        sub:
+          type: string
+          description: User subject UUID
+          example: df3438a6-7523-4a59-8339-41e073be3148
+        personas:
+          type: array
+          items:
+            type: string
+          description: List of user personas
+          example: ["traveler", "travel-agent"]
+        autobook_consent:
+          type: boolean
+          description: Consent for AI agent auto-booking
+          example: true
+        autobook_price:
+          type: integer
+          description: Maximum price agent can auto-book
+          example: 500
+        autobook_leadtime:
+          type: integer
+          description: Maximum days in advance agent can auto-book
+          example: 30
+        autobook_risklevel:
+          type: integer
+          description: Risk tolerance (0-100)
+          example: 50
+      required:
+        - sub
+        - personas
+        - autobook_consent
+        - autobook_price
+        - autobook_leadtime
+        - autobook_risklevel
+
+    UpdateProfileRequest:
+      type: object
+      description: Request body for updating user profile (partial update)
+      properties:
+        personas:
+          type: array
+          items:
+            type: string
+          description: List of personas to set
+          example: ["traveler", "travel-agent"]
+        autobook_consent:
+          type: boolean
+          description: Consent for AI agent auto-booking
+          example: true
+        autobook_price:
+          type: integer
+          minimum: 0
+          description: Maximum price agent can auto-book
+          example: 500
+        autobook_leadtime:
+          type: integer
+          minimum: 0
+          description: Maximum days in advance agent can auto-book
+          example: 30
+        autobook_risklevel:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Risk tolerance (0-100)
+          example: 50
+
+    UserInfo:
+      type: object
+      description: User information for delegation candidates
+      properties:
+        sub:
+          type: string
+          description: User subject UUID
+          example: bcadc299-f463-4f7d-bab5-2221761387f4
+        email:
+          type: string
+          nullable: true
+          description: User email address
+          example: agent@example.com
+        persona:
+          type: string
+          description: User persona
+          example: travel-agent
+      required:
+        - sub
+        - persona
+
+    ListUsersResponse:
+      type: object
+      description: List of users matching the persona filter
+      properties:
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserInfo"
+      required:
+        - users
+
+    ErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+          description: Error message
+          example: "Profile not found for user"
+      required:
+        - detail
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        JWT bearer token for authentication.
+        
+        **Local Development (Docker Compose):**
+        - JWT from Keycloak OIDC provider
+        - Service-to-service calls use client credentials grant
+        
+        **GCP Cloud Run:**
+        - User tokens: Firebase ID tokens (RS256)
+        - Service tokens: HS256 JWTs with shared secret
+        
+        Example: `Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...`
