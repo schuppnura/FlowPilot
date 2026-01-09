@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#authorization" class="md-skip">
+        <a href="#authorization-architecture" class="md-skip">
           Skip to content
         </a>
       
@@ -702,6 +702,24 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authorization Model
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -718,6 +736,296 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#supported-personas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported Personas
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#authorization-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authorization Flow
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Authorization Flow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-request-arrives-at-pep" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Request Arrives at PEP
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-pep-constructs-authzen-request" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. PEP Constructs AuthZEN Request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-authz-api-validates-jwt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. AuthZ-API Validates JWT
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-delegation-check-rebac" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Delegation Check (ReBAC)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-policy-enrichment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Policy Enrichment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-opa-policy-evaluation-abac" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. OPA Policy Evaluation (ABAC)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-decision-returned-to-pep" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Decision Returned to PEP
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#8-pep-enforces-decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. PEP Enforces Decision
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#autonomous-ai-booking-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Autonomous AI Booking Policy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#delegation-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Delegation Model
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#authorization-scenarios" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authorization Scenarios
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Authorization Scenarios">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-owner-acting-directly-regular-user" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Owner Acting Directly (Regular User)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-owner-acting-via-an-agent-runner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Owner Acting via an Agent-Runner
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-autonomous-ai-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Autonomous AI Agent
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-delegated-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Delegated Execution
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#from-authzen-request-to-opa-input" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        From AuthZEN Request to OPA Input
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="From AuthZEN Request to OPA Input">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#authzen-payload-pep-authz-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AuthZEN Payload (PEP → AuthZ API)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#enriched-opa-input-authz-api-opa" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enriched OPA Input (AuthZ API → OPA)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#enrichment-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enrichment Steps
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-this-separation-matters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why This Separation Matters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1672,8 +1980,272 @@
   
 
 
-<h1 id="authorization">Authorization</h1>
-<p>Documentation coming soon.</p>
+<h1 id="authorization-architecture">Authorization Architecture</h1>
+<p>Authorization decisions in FlowPilot are <strong>persona-driven</strong>, not identity-driven.</p>
+<p>A <strong>persona</strong> represents the <strong>business role</strong> a subject assumes in a given context. A single person (principal) may have <strong>one or more personas</strong>, but each authorization request is evaluated against <strong>exactly one active persona</strong>.</p>
+<p>The <code>persona</code> attribute is therefore a <strong>core authorization input</strong>.</p>
+<h2 id="supported-personas">Supported Personas</h2>
+<p>The following persona values are currently supported:</p>
+<ul>
+<li><code>traveler</code> - End users who book travel</li>
+<li><code>ai-agent</code> - Autonomous AI agents</li>
+<li><code>travel-agent</code> - Human travel agents</li>
+<li><code>office-manager</code> - Office administrators</li>
+<li><code>booking-assistant</code> - Booking support staff</li>
+</ul>
+<p>Personas are conveyed via bearer access tokens and AuthZEN packages. Personas are intentionally limited to business semantics; they do not expose identity or personal information.</p>
+<h2 id="authorization-flow">Authorization Flow</h2>
+<p>The complete authorization flow follows these steps:</p>
+<h3 id="1-request-arrives-at-pep">1. Request Arrives at PEP</h3>
+<p>A request arrives at a Policy Enforcement Point (domain-services-api or ai-agent-api).</p>
+<h3 id="2-pep-constructs-authzen-request">2. PEP Constructs AuthZEN Request</h3>
+<p>The PEP constructs an AuthZEN-compliant authorization request:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;agent-runner&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="nt">&quot;persona&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ai-agent&quot;</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="p">},</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="nt">&quot;action&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span><span class="p">},</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">  </span><span class="nt">&quot;resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;workflow_item&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;i_abc123&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">    </span><span class="nt">&quot;workflow_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;w_xyz789&quot;</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">  </span><span class="p">},</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">  </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">    </span><span class="nt">&quot;principal&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">      </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user-uuid&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">      </span><span class="nt">&quot;persona&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;traveler&quot;</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="p">}</span>
+</code></pre></div>
+<h3 id="3-authz-api-validates-jwt">3. AuthZ-API Validates JWT</h3>
+<p>The authz-api validates the bearer token:</p>
+<ul>
+<li>Verifies signature using JWKS</li>
+<li>Checks issuer, audience, expiry</li>
+<li>Extracts <code>sub</code> claim</li>
+</ul>
+<h3 id="4-delegation-check-rebac">4. Delegation Check (ReBAC)</h3>
+<p>If <code>subject.id ≠ context.principal.id</code>, authz-api queries the delegation-api:</p>
+<ul>
+<li>Checks if a valid delegation exists</li>
+<li>Resolves delegation chains (transitive)</li>
+<li>Validates delegation scope and actions</li>
+</ul>
+<h3 id="5-policy-enrichment">5. Policy Enrichment</h3>
+<p>Authz-api enriches the request with policy-relevant attributes:</p>
+<ul>
+<li>User consent flags</li>
+<li>Auto-booking preferences</li>
+<li>Risk thresholds</li>
+<li>Resource properties</li>
+</ul>
+<h3 id="6-opa-policy-evaluation-abac">6. OPA Policy Evaluation (ABAC)</h3>
+<p>Enriched input is sent to OPA:</p>
+<ul>
+<li>OPA evaluates Rego policies</li>
+<li>Returns decision (allow/deny)</li>
+<li>Provides reason codes</li>
+</ul>
+<h3 id="7-decision-returned-to-pep">7. Decision Returned to PEP</h3>
+<p>Authz-api returns structured response:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">&quot;decision&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">&quot;reason&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Delegation valid and policy satisfied&quot;</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="p">}</span>
+</code></pre></div>
+<h3 id="8-pep-enforces-decision">8. PEP Enforces Decision</h3>
+<p>The PEP grants or denies the requested action based on the decision.</p>
+<h2 id="autonomous-ai-booking-policy">Autonomous AI Booking Policy</h2>
+<p>An <code>ai-agent</code> is allowed to book travel autonomously only when <strong>all</strong> of the following policy conditions are satisfied:</p>
+<ol>
+<li><strong>The user has explicitly provided auto-book consent</strong></li>
+<li><strong>The total trip cost is less than or equal to the configured threshold</strong> (e.g., €1,500)</li>
+<li><strong>The departure date is at least the configured lead time in the future</strong> (e.g., 7 days)</li>
+<li><strong>The airline risk score is below the configured threshold</strong></li>
+</ol>
+<p>These conditions are evaluated declaratively using OPA (ABAC) and are independent of delegation relationships.</p>
+<p>If any condition fails, autonomous booking is denied.</p>
+<h2 id="delegation-model">Delegation Model</h2>
+<p>A user with persona <code>traveler</code> may delegate the execution of a booking workflow to users with one of the following personas:</p>
+<ul>
+<li><code>travel-agent</code></li>
+<li><code>office-manager</code></li>
+<li><code>booking-assistant</code></li>
+</ul>
+<p>Delegation is <strong>explicit</strong>, <strong>directional</strong>, and <strong>relationship-based</strong> (ReBAC).</p>
+<p>The delegation chain is validated and used by the attribute-based policy evaluation to make a decision.</p>
+<p>Delegation can also be done for read-only access, for example to invite co-travelers (both with the persona <code>traveler</code>).</p>
+<h2 id="authorization-scenarios">Authorization Scenarios</h2>
+<p>The authorization layer distinguishes between the following scenarios:</p>
+<h3 id="1-owner-acting-directly-regular-user">1. Owner Acting Directly (Regular User)</h3>
+<ul>
+<li>Subject is <strong>not</strong> an ai-agent</li>
+<li><code>subject.id == resource.owner.id</code></li>
+<li>No delegation needed</li>
+</ul>
+<h3 id="2-owner-acting-via-an-agent-runner">2. Owner Acting via an Agent-Runner</h3>
+<ul>
+<li>Subject <strong>is</strong> an ai-agent</li>
+<li><code>context.principal.id == resource.owner.id</code></li>
+<li>Agent acts on direct behalf of user</li>
+</ul>
+<h3 id="3-autonomous-ai-agent">3. Autonomous AI Agent</h3>
+<ul>
+<li>Subject <strong>is</strong> an ai-agent</li>
+<li>Auto-book consent is present</li>
+<li>Policy conditions satisfied</li>
+<li>No delegation relationship required</li>
+</ul>
+<h3 id="4-delegated-execution">4. Delegated Execution</h3>
+<ul>
+<li>A valid delegation exists between principal and subject</li>
+<li>Delegation includes the required action (e.g., <code>execute</code>, <code>read</code>)</li>
+<li>May involve transitive delegation chains</li>
+</ul>
+<h2 id="from-authzen-request-to-opa-input">From AuthZEN Request to OPA Input</h2>
+<p>The authz-api translates intent into decision-ready authorization claims.</p>
+<h3 id="authzen-payload-pep-authz-api">AuthZEN Payload (PEP → AuthZ API)</h3>
+<p>The PEP sends a lightweight, portable request:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;agent&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;agent-runner&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="nt">&quot;persona&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ai-agent&quot;</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span><span class="p">},</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span><span class="nt">&quot;action&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span><span class="p">},</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span><span class="nt">&quot;resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;workflow_item&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;i_bc722d96&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">    </span><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">      </span><span class="nt">&quot;workflow_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;w_771ab24f&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="w">      </span><span class="nt">&quot;planned_price&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">500.0</span><span class="p">,</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="w">      </span><span class="nt">&quot;departure_date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-01-30&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="w">      </span><span class="nt">&quot;airline_risk_score&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="w">      </span><span class="nt">&quot;owner&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="w">        </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user-uuid&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="w">        </span><span class="nt">&quot;persona&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;traveler&quot;</span>
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="w">      </span><span class="p">}</span>
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="w">  </span><span class="p">},</span>
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="w">  </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="w">    </span><span class="nt">&quot;principal&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a><span class="w">      </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;agent-uuid&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a><span class="w">      </span><span class="nt">&quot;persona&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;travel-agent&quot;</span>
+<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a><span class="p">}</span>
+</code></pre></div>
+<p>Key characteristics:</p>
+<ul>
+<li>Lightweight - no PII, no policy parameters</li>
+<li>Portable - works across PDP implementations</li>
+<li>Expresses intent and context, not policy</li>
+</ul>
+<h3 id="enriched-opa-input-authz-api-opa">Enriched OPA Input (AuthZ API → OPA)</h3>
+<p>Before calling OPA, authz-api enriches the request:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">{</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;agent&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;agent-runner&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">    </span><span class="nt">&quot;persona&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ai-agent&quot;</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span><span class="p">},</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span><span class="nt">&quot;action&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span><span class="p">},</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">  </span><span class="nt">&quot;resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;workflow_item&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;i_bc722d96&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">    </span><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">      </span><span class="nt">&quot;workflow_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;w_771ab24f&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">      </span><span class="nt">&quot;planned_price&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">500.0</span><span class="p">,</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="w">      </span><span class="nt">&quot;departure_date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-01-30T00:00:00Z&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="w">      </span><span class="nt">&quot;airline_risk_score&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">7.0</span><span class="p">,</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="w">      </span><span class="nt">&quot;owner&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="w">        </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user-uuid&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="w">        </span><span class="nt">&quot;persona&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;traveler&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="w">        </span><span class="nt">&quot;autobook_consent&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="w">        </span><span class="nt">&quot;autobook_price&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10000</span><span class="p">,</span>
+<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a><span class="w">        </span><span class="nt">&quot;autobook_leadtime&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span>
+<a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a><span class="w">        </span><span class="nt">&quot;autobook_risklevel&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span>
+<a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a><span class="w">      </span><span class="p">}</span>
+<a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a><span class="w">  </span><span class="p">},</span>
+<a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a><span class="w">  </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a><span class="w">    </span><span class="nt">&quot;delegation&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a><span class="w">      </span><span class="nt">&quot;valid&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-3-29" name="__codelineno-3-29" href="#__codelineno-3-29"></a><span class="w">      </span><span class="nt">&quot;delegation_chain&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;user-uuid-1&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;user-uuid-2&quot;</span><span class="p">],</span>
+<a id="__codelineno-3-30" name="__codelineno-3-30" href="#__codelineno-3-30"></a><span class="w">      </span><span class="nt">&quot;delegated_actions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;read&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span><span class="p">]</span>
+<a id="__codelineno-3-31" name="__codelineno-3-31" href="#__codelineno-3-31"></a><span class="w">    </span><span class="p">},</span>
+<a id="__codelineno-3-32" name="__codelineno-3-32" href="#__codelineno-3-32"></a><span class="w">    </span><span class="nt">&quot;principal&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-33" name="__codelineno-3-33" href="#__codelineno-3-33"></a><span class="w">      </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;agent-uuid&quot;</span><span class="p">,</span>
+<a id="__codelineno-3-34" name="__codelineno-3-34" href="#__codelineno-3-34"></a><span class="w">      </span><span class="nt">&quot;persona&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;travel-agent&quot;</span>
+<a id="__codelineno-3-35" name="__codelineno-3-35" href="#__codelineno-3-35"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-3-36" name="__codelineno-3-36" href="#__codelineno-3-36"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-3-37" name="__codelineno-3-37" href="#__codelineno-3-37"></a><span class="p">}</span>
+</code></pre></div>
+<h3 id="enrichment-steps">Enrichment Steps</h3>
+<p><strong>1. Delegation (PIP for ReBAC)</strong></p>
+<ul>
+<li>A <code>context.delegation</code> block is added</li>
+<li>Captures:</li>
+<li>Whether delegation is valid</li>
+<li>The resolved delegation chain</li>
+<li>The actions granted by delegation</li>
+<li>OPA does not resolve delegation itself; it consumes the result</li>
+</ul>
+<p><strong>2. Policy Attributes (PIP for ABAC)</strong></p>
+<p>Additional attributes are injected:</p>
+<ul>
+<li><code>autobook_consent</code> - User consent flag</li>
+<li><code>autobook_price</code> - Maximum price threshold</li>
+<li><code>autobook_leadtime</code> - Minimum lead time (days)</li>
+<li><code>autobook_risklevel</code> - Risk tolerance level</li>
+</ul>
+<p>These values:</p>
+<ul>
+<li>Are derived from user profiles</li>
+<li>Contain no PII</li>
+<li>Are normalized to types suitable for Rego evaluation</li>
+</ul>
+<p><strong>3. Normalization and Hardening</strong></p>
+<ul>
+<li>Dates converted to RFC 3339 timestamps</li>
+<li>Numeric values coerced to numbers</li>
+<li>Optional fields have consistent types or are absent</li>
+<li>Policy evaluation receives deterministic, safe input</li>
+</ul>
+<h2 id="why-this-separation-matters">Why This Separation Matters</h2>
+<ul>
+<li><strong>AuthZEN payloads</strong> express intent and context</li>
+<li><strong>OPA input documents</strong> express decision-ready facts</li>
+<li><strong>The translation layer:</strong></li>
+<li>Enforces security invariants</li>
+<li>Prevents PII leakage</li>
+<li>Shields policies from upstream variability</li>
+</ul>
+<p>This design keeps:</p>
+<ul>
+<li><strong>PEPs simple</strong> - Minimal authorization logic</li>
+<li><strong>Policies declarative</strong> - Distinct review, approval, and release cycle</li>
+<li><strong>Privacy preserved</strong> - No PII in policy decisions</li>
+<li><strong>Authorization explainable</strong> - Clear audit trail</li>
+</ul>
+<h2 id="summary">Summary</h2>
+<ul>
+<li><strong>Personas</strong> define <em>what role</em> a subject plays</li>
+<li><strong>Delegation</strong> defines <em>who may act for whom</em></li>
+<li><strong>OPA policies</strong> define <em>under which conditions actions are allowed</em></li>
+<li><strong>Autonomous AI execution</strong> is strictly gated and opt-in</li>
+</ul>
+<p>Together, these mechanisms ensure that authorization decisions are:</p>
+<ul>
+<li>Explicit</li>
+<li>Explainable</li>
+<li>Privacy-preserving</li>
+<li>Safe for agent-based execution</li>
+</ul>
 
 
 

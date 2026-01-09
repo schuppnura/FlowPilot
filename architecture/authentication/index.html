@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#authentication" class="md-skip">
+        <a href="#authentication-architecture" class="md-skip">
           Skip to content
         </a>
       
@@ -786,6 +786,24 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -802,6 +820,497 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#authentication-flows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authentication Flows
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Authentication Flows">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#desktop-client-authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Desktop Client Authentication
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#service-to-service-authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Service-to-Service Authentication
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#token-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Token Structure
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Token Structure">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#token-claims" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Token Claims
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-tokens-do-not-contain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What Tokens Do NOT Contain
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-token-payload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example Token Payload
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#token-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Token Validation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Token Validation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#jwks-based-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        JWKS-Based Validation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#validation-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validation Steps
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation Pattern
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#validation-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validation Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keycloak-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keycloak Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Keycloak Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#realm-flowpilot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Realm: flowpilot
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#clients" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Clients
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#users-and-personas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Users and Personas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#provisioning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Provisioning
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tls-and-certificates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TLS and Certificates
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="TLS and Certificates">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#local-development" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local Development
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#production-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Production Deployment
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#token-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Token Lifecycle
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Token Lifecycle">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#token-issuance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Token Issuance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#token-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Token Usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#token-expiry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Token Expiry
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#token-refresh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Token Refresh
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Considerations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Security Considerations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#token-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Token Storage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#token-transmission" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Token Transmission
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#token-validation_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Token Validation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jwks-caching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        JWKS Caching
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#invalid-token-signature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Invalid Token Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#token-expired" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Token Expired
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak-not-ready" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keycloak Not Ready
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wrong-issuer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wrong Issuer
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Best Practices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Best Practices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#development" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Development
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#production" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Production
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1672,8 +2181,374 @@
   
 
 
-<h1 id="authentication">Authentication</h1>
-<p>Documentation coming soon.</p>
+<h1 id="authentication-architecture">Authentication Architecture</h1>
+<p>FlowPilot uses OpenID Connect (OIDC) for authentication, with Keycloak as the identity provider. All services validate bearer tokens locally using JWKS, eliminating network dependencies for token validation.</p>
+<h2 id="authentication-flows">Authentication Flows</h2>
+<h3 id="desktop-client-authentication">Desktop Client Authentication</h3>
+<p><strong>Flow:</strong> Authorization Code + PKCE</p>
+<p>The desktop client (macOS app) uses the Authorization Code flow with PKCE (Proof Key for Code Exchange) for enhanced security.</p>
+<p><strong>Steps:</strong></p>
+<ol>
+<li><strong>User initiates login</strong> - User clicks login button in desktop app</li>
+<li><strong>App generates PKCE challenge</strong> - Creates code verifier and challenge</li>
+<li><strong>App opens browser</strong> - Redirects to Keycloak authorization endpoint</li>
+<li><strong>User authenticates</strong> - Enters credentials in Keycloak</li>
+<li><strong>Keycloak returns authorization code</strong> - Via redirect URI</li>
+<li><strong>App exchanges code for token</strong> - Sends code + code verifier</li>
+<li><strong>Keycloak returns access token</strong> - JWT with <code>sub</code> and <code>persona</code> claims</li>
+<li><strong>App uses token for API calls</strong> - Bearer token in Authorization header</li>
+</ol>
+<p><strong>PKCE Benefits:</strong></p>
+<ul>
+<li>Protects against authorization code interception</li>
+<li>Suitable for public clients (no client secret)</li>
+<li>Recommended for native applications</li>
+</ul>
+<h3 id="service-to-service-authentication">Service-to-Service Authentication</h3>
+<p><strong>Flow:</strong> Client Credentials</p>
+<p>Services authenticate to each other using the Client Credentials flow.</p>
+<p><strong>Service Account:</strong></p>
+<ul>
+<li>Client ID: <code>flowpilot-agent</code></li>
+<li>Client Secret: Stored in <code>.env</code> file (never committed)</li>
+<li>Subject: <code>agent-runner</code></li>
+<li>Persona: <code>ai-agent</code></li>
+</ul>
+<p><strong>Implementation Pattern:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_service_token</span><span class="p">():</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get service-to-service access token.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;KEYCLOAK_TOKEN_URL&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        <span class="n">data</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>            <span class="s2">&quot;grant_type&quot;</span><span class="p">:</span> <span class="s2">&quot;client_credentials&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>            <span class="s2">&quot;client_id&quot;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;AGENT_CLIENT_ID&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>            <span class="s2">&quot;client_secret&quot;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;AGENT_CLIENT_SECRET&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        <span class="p">},</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>        <span class="n">verify</span><span class="o">=</span><span class="kc">False</span>  <span class="c1"># Local dev only - NEVER in production</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="p">)</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">&quot;access_token&quot;</span><span class="p">]</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="c1"># Use token in requests</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;Authorization&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Bearer </span><span class="si">{</span><span class="n">get_service_token</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="token-structure">Token Structure</h2>
+<p>FlowPilot uses minimal bearer tokens that carry only essential information.</p>
+<h3 id="token-claims">Token Claims</h3>
+<p><strong>Standard Claims:</strong></p>
+<ul>
+<li><code>sub</code> - Subject (user UUID) - Pseudonymous identifier</li>
+<li><code>iss</code> - Issuer (Keycloak URL)</li>
+<li><code>aud</code> - Audience (client ID)</li>
+<li><code>exp</code> - Expiry timestamp</li>
+<li><code>nbf</code> - Not-before timestamp</li>
+<li><code>iat</code> - Issued-at timestamp</li>
+<li><code>typ</code> - Token type (Bearer)</li>
+<li><code>azp</code> - Authorized party (client ID)</li>
+</ul>
+<p><strong>Custom Claims:</strong></p>
+<ul>
+<li><code>persona</code> - Business role (e.g., <code>traveler</code>, <code>travel-agent</code>, <code>ai-agent</code>)</li>
+</ul>
+<h3 id="what-tokens-do-not-contain">What Tokens Do NOT Contain</h3>
+<p><strong>No PII:</strong></p>
+<ul>
+<li>❌ No names</li>
+<li>❌ No email addresses</li>
+<li>❌ No phone numbers</li>
+<li>❌ No personal preferences</li>
+<li>❌ No consent details</li>
+<li>❌ No profile attributes</li>
+</ul>
+<p><strong>Benefits:</strong></p>
+<ul>
+<li>Tokens remain small and stable</li>
+<li>Privacy preserved by design</li>
+<li>Lower breach impact</li>
+<li>GDPR-friendly</li>
+</ul>
+<h3 id="example-token-payload">Example Token Payload</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">&quot;sub&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;89eb5366-bab3-46e4-b8e1-abc5f2ea4631&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">&quot;persona&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;traveler&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">&quot;iss&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://localhost:8443/realms/flowpilot&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="nt">&quot;aud&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;flowpilot-desktop&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span><span class="nt">&quot;exp&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1704901200</span><span class="p">,</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span><span class="nt">&quot;nbf&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1704897600</span><span class="p">,</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">  </span><span class="nt">&quot;iat&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1704897600</span><span class="p">,</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span><span class="nt">&quot;typ&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Bearer&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">  </span><span class="nt">&quot;azp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;flowpilot-desktop&quot;</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="p">}</span>
+</code></pre></div>
+<h2 id="token-validation">Token Validation</h2>
+<p>All services validate tokens locally using JWKS (JSON Web Key Set).</p>
+<h3 id="jwks-based-validation">JWKS-Based Validation</h3>
+<p><strong>Benefits:</strong></p>
+<ul>
+<li><strong>Zero network calls per request</strong> - Public keys cached locally</li>
+<li><strong>High performance</strong> - Cryptographic verification only</li>
+<li><strong>Resilient</strong> - No dependency on Keycloak for validation</li>
+<li><strong>Scalable</strong> - No central bottleneck</li>
+</ul>
+<h3 id="validation-steps">Validation Steps</h3>
+<ol>
+<li><strong>Extract token</strong> from Authorization header</li>
+<li><strong>Decode header</strong> to get key ID (<code>kid</code>)</li>
+<li><strong>Fetch public key</strong> from local JWKS cache</li>
+<li><strong>Verify signature</strong> using public key</li>
+<li><strong>Validate claims:</strong></li>
+<li>Issuer matches expected issuer</li>
+<li>Audience matches expected audience (if configured)</li>
+<li>Token not expired (<code>exp</code> &gt; now)</li>
+<li>Token is valid (<code>nbf</code> ≤ now)</li>
+<li>Token type is Bearer</li>
+<li><strong>Extract claims</strong> for authorization</li>
+</ol>
+<h3 id="implementation-pattern">Implementation Pattern</h3>
+<p>All services use the shared security library:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">Depends</span><span class="p">,</span> <span class="n">HTTPException</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">security</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_token_claims</span><span class="p">(</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">token_claims</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">security</span><span class="o">.</span><span class="n">verify_token</span><span class="p">)</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Dependency that validates JWT and returns claims.&quot;&quot;&quot;</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="k">return</span> <span class="n">token_claims</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/protected-endpoint&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="k">def</span><span class="w"> </span><span class="nf">protected_handler</span><span class="p">(</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="n">token_claims</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_token_claims</span><span class="p">)</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="p">):</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="n">user_sub</span> <span class="o">=</span> <span class="n">token_claims</span><span class="p">[</span><span class="s2">&quot;sub&quot;</span><span class="p">]</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    <span class="n">user_persona</span> <span class="o">=</span> <span class="n">token_claims</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;persona&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>    <span class="c1"># Use validated claims</span>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Hello </span><span class="si">{</span><span class="n">user_sub</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}</span>
+</code></pre></div>
+<h3 id="validation-configuration">Validation Configuration</h3>
+<p><strong>Environment Variables:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># JWKS endpoint for public keys</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nv">KEYCLOAK_JWKS_URI</span><span class="o">=</span>https://keycloak:8443/realms/flowpilot/protocol/openid-connect/certs
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Expected issuer</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="nv">KEYCLOAK_ISSUER</span><span class="o">=</span>https://localhost:8443/realms/flowpilot
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1"># Expected audience (optional)</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="nv">KEYCLOAK_AUDIENCE</span><span class="o">=</span>flowpilot-desktop
+</code></pre></div>
+<h2 id="keycloak-configuration">Keycloak Configuration</h2>
+<h3 id="realm-flowpilot">Realm: flowpilot</h3>
+<p>All FlowPilot authentication happens in the <code>flowpilot</code> realm.</p>
+<h3 id="clients">Clients</h3>
+<p><strong>1. flowpilot-desktop</strong></p>
+<ul>
+<li><strong>Client Type:</strong> Public</li>
+<li><strong>Flow:</strong> Authorization Code + PKCE</li>
+<li><strong>Redirect URIs:</strong> Configured for desktop app</li>
+<li><strong>Token Settings:</strong></li>
+<li>Access token lifespan: Configurable (default: 5 minutes)</li>
+<li>Refresh token lifespan: Configurable (default: 30 minutes)</li>
+</ul>
+<p><strong>2. flowpilot-agent</strong></p>
+<ul>
+<li><strong>Client Type:</strong> Confidential</li>
+<li><strong>Flow:</strong> Client Credentials</li>
+<li><strong>Service Account:</strong> Enabled</li>
+<li><strong>Subject:</strong> <code>agent-runner</code></li>
+<li><strong>Persona:</strong> <code>ai-agent</code> (via protocol mapper)</li>
+</ul>
+<h3 id="users-and-personas">Users and Personas</h3>
+<p>Users are provisioned with personas via Keycloak roles:</p>
+<p><strong>Supported Personas:</strong></p>
+<ul>
+<li><code>traveler</code> - End users booking travel</li>
+<li><code>travel-agent</code> - Human travel agents</li>
+<li><code>office-manager</code> - Office administrators</li>
+<li><code>booking-assistant</code> - Booking support staff</li>
+<li><code>ai-agent</code> - AI agents (service accounts)</li>
+</ul>
+<p><strong>Persona Mapping:</strong></p>
+<p>Personas are mapped to the <code>persona</code> claim via protocol mappers:</p>
+<ol>
+<li>User has realm role (e.g., <code>traveler</code>)</li>
+<li>Protocol mapper adds <code>persona</code> claim to token</li>
+<li>Services read <code>persona</code> from validated token</li>
+</ol>
+<h3 id="provisioning">Provisioning</h3>
+<p>Users and configuration are provisioned automatically via setup scripts:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Provisioning happens during stack startup</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>make<span class="w"> </span>up
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># Or manually</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>keycloak-setup
+</code></pre></div>
+<p><strong>Setup Scripts:</strong></p>
+<ul>
+<li><code>scripts/setup_keycloak.sh</code> - Configure Keycloak</li>
+<li><code>scripts/provision_users.sh</code> - Create test users</li>
+</ul>
+<h2 id="tls-and-certificates">TLS and Certificates</h2>
+<h3 id="local-development">Local Development</h3>
+<p>FlowPilot uses <code>mkcert</code> for local TLS certificates:</p>
+<p><strong>Setup:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Install mkcert</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>brew<span class="w"> </span>install<span class="w"> </span>mkcert
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># Install local CA</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>mkcert<span class="w"> </span>-install
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="c1"># Copy root CA to project</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>cp<span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>mkcert<span class="w"> </span>-CAROOT<span class="k">)</span><span class="s2">/rootCA.pem&quot;</span><span class="w"> </span>infra/certs/mkcert-rootCA.pem
+</code></pre></div>
+<p><strong>Certificate Files:</strong></p>
+<ul>
+<li><code>infra/certs/localhost+2.pem</code> - Certificate</li>
+<li><code>infra/certs/localhost+2-key.pem</code> - Private key</li>
+<li><code>infra/certs/mkcert-rootCA.pem</code> - Root CA (for containers)</li>
+</ul>
+<h3 id="production-deployment">Production Deployment</h3>
+<p><strong>Requirements:</strong></p>
+<ul>
+<li>Use proper TLS certificates from CA (e.g., Let's Encrypt)</li>
+<li>Configure certificate validation properly</li>
+<li>Never use <code>verify=False</code> in requests</li>
+<li>Enable HSTS headers</li>
+</ul>
+<h2 id="token-lifecycle">Token Lifecycle</h2>
+<h3 id="token-issuance">Token Issuance</h3>
+<ol>
+<li><strong>User authenticates</strong> via Keycloak</li>
+<li><strong>Keycloak validates credentials</strong></li>
+<li><strong>Keycloak generates JWT</strong> with claims</li>
+<li><strong>Keycloak signs JWT</strong> with private key</li>
+<li><strong>Client receives access token</strong> (and refresh token)</li>
+</ol>
+<h3 id="token-usage">Token Usage</h3>
+<ol>
+<li><strong>Client includes token</strong> in Authorization header</li>
+<li><strong>Service extracts token</strong> from header</li>
+<li><strong>Service validates token</strong> using JWKS</li>
+<li><strong>Service extracts claims</strong> for authorization</li>
+<li><strong>Service processes request</strong> based on claims</li>
+</ol>
+<h3 id="token-expiry">Token Expiry</h3>
+<p><strong>Access Token:</strong></p>
+<ul>
+<li>Short-lived (configurable, default: 5 minutes)</li>
+<li>Must be refreshed or re-authenticated</li>
+</ul>
+<p><strong>Refresh Token:</strong></p>
+<ul>
+<li>Longer-lived (configurable, default: 30 minutes)</li>
+<li>Used to obtain new access tokens</li>
+<li>Not used in service-to-service flow</li>
+</ul>
+<h3 id="token-refresh">Token Refresh</h3>
+<p><strong>Desktop Client:</strong></p>
+<p>Clients can refresh tokens using the refresh token:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="n">keycloak_token_url</span><span class="p">,</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="n">data</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>        <span class="s2">&quot;grant_type&quot;</span><span class="p">:</span> <span class="s2">&quot;refresh_token&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>        <span class="s2">&quot;refresh_token&quot;</span><span class="p">:</span> <span class="n">refresh_token</span><span class="p">,</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>        <span class="s2">&quot;client_id&quot;</span><span class="p">:</span> <span class="n">client_id</span><span class="p">,</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    <span class="p">}</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="p">)</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="n">new_access_token</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">&quot;access_token&quot;</span><span class="p">]</span>
+</code></pre></div>
+<p><strong>Service Accounts:</strong></p>
+<p>Service accounts request new tokens as needed (no refresh token).</p>
+<h2 id="security-considerations">Security Considerations</h2>
+<h3 id="token-storage">Token Storage</h3>
+<p><strong>Desktop Client:</strong></p>
+<ul>
+<li>Store tokens securely (macOS Keychain)</li>
+<li>Never log tokens</li>
+<li>Clear tokens on logout</li>
+</ul>
+<p><strong>Services:</strong></p>
+<ul>
+<li>Tokens are transient (not stored)</li>
+<li>Service accounts fetch fresh tokens as needed</li>
+<li>Never log tokens</li>
+</ul>
+<h3 id="token-transmission">Token Transmission</h3>
+<ul>
+<li><strong>Always use HTTPS</strong> in production</li>
+<li><strong>Use Authorization header</strong> (not query parameters)</li>
+<li><strong>Never expose tokens</strong> in logs or error messages</li>
+</ul>
+<h3 id="token-validation_1">Token Validation</h3>
+<ul>
+<li><strong>Always validate signature</strong> using JWKS</li>
+<li><strong>Always check expiry</strong> (<code>exp</code> claim)</li>
+<li><strong>Always verify issuer</strong> (prevent token substitution)</li>
+<li><strong>Consider audience validation</strong> for multi-tenant scenarios</li>
+</ul>
+<h3 id="jwks-caching">JWKS Caching</h3>
+<p>The shared security library caches JWKS keys:</p>
+<ul>
+<li><strong>Cache TTL:</strong> 1 hour (configurable)</li>
+<li><strong>Refresh on key miss</strong> - If <code>kid</code> not in cache</li>
+<li><strong>Automatic rotation</strong> - Supports key rotation</li>
+</ul>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="invalid-token-signature">Invalid Token Signature</h3>
+<p><strong>Symptom:</strong> 401 Unauthorized with "Invalid token signature"</p>
+<p><strong>Causes:</strong></p>
+<ul>
+<li>JWKS endpoint unreachable</li>
+<li>Token signed with wrong key</li>
+<li>Clock skew between services</li>
+</ul>
+<p><strong>Solutions:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Check JWKS endpoint</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>curl<span class="w"> </span>https://localhost:8443/realms/flowpilot/protocol/openid-connect/certs<span class="w"> </span>--insecure
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1"># Check service logs</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>docker<span class="w"> </span>compose<span class="w"> </span>logs<span class="w"> </span>flowpilot-authz-api<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span>jwks
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="c1"># Restart service to refresh JWKS cache</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>docker<span class="w"> </span>compose<span class="w"> </span>restart<span class="w"> </span>flowpilot-authz-api
+</code></pre></div>
+<h3 id="token-expired">Token Expired</h3>
+<p><strong>Symptom:</strong> 401 Unauthorized with "Token expired"</p>
+<p><strong>Solution:</strong> Client must refresh token or re-authenticate</p>
+<h3 id="keycloak-not-ready">Keycloak Not Ready</h3>
+<p><strong>Symptom:</strong> Services fail to start with JWKS errors</p>
+<p><strong>Solution:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Wait for Keycloak to fully start (60+ seconds)</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>logs<span class="w"> </span>-f<span class="w"> </span>keycloak
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="c1"># Look for: &quot;Listening on: https://0.0.0.0:8443&quot;</span>
+</code></pre></div>
+<h3 id="wrong-issuer">Wrong Issuer</h3>
+<p><strong>Symptom:</strong> 401 Unauthorized with "Invalid issuer"</p>
+<p><strong>Cause:</strong> <code>KEYCLOAK_ISSUER</code> environment variable doesn't match token <code>iss</code> claim</p>
+<p><strong>Solution:</strong> Verify issuer configuration matches Keycloak realm URL</p>
+<h2 id="best-practices">Best Practices</h2>
+<h3 id="development">Development</h3>
+<ul>
+<li>✅ Use mkcert for local TLS</li>
+<li>✅ Use short-lived tokens for testing</li>
+<li>✅ Test token expiry scenarios</li>
+<li>✅ Never commit tokens or secrets</li>
+</ul>
+<h3 id="production">Production</h3>
+<ul>
+<li>✅ Use proper TLS certificates</li>
+<li>✅ Use managed OIDC provider or HA Keycloak</li>
+<li>✅ Rotate client secrets regularly</li>
+<li>✅ Monitor authentication failures</li>
+<li>✅ Implement token refresh logic</li>
+<li>✅ Set appropriate token lifespans</li>
+<li>❌ Never use <code>verify=False</code> for TLS</li>
+<li>❌ Never log tokens or secrets</li>
+<li>❌ Never store tokens in plaintext</li>
+</ul>
 
 
 
