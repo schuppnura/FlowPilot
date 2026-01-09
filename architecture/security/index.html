@@ -2072,22 +2072,22 @@
 </ol>
 <h2 id="defense-in-depth-layers">Defense-in-Depth Layers</h2>
 <h3 id="layer-1-jwt-validation">Layer 1: JWT Validation</h3>
-<p>All services validate bearer tokens using JWKS-based validation:</p>
-<p><strong>Validation checks:</strong></p>
+<p>All services validate bearer tokens using Firebase Admin SDK:</p>
+<p><strong>Validation checks (performed by Firebase Admin SDK):</strong></p>
 <ul>
-<li><strong>Signature verification</strong> - Using public keys from JWKS endpoint</li>
-<li><strong>Issuer validation</strong> - Must match configured issuer</li>
-<li><strong>Audience validation</strong> - Must match expected audience</li>
+<li><strong>Signature verification</strong> - Using Firebase public keys</li>
+<li><strong>Issuer validation</strong> - Must be Firebase (<code>securetoken.google.com</code>)</li>
+<li><strong>Audience validation</strong> - Must match Firebase project ID</li>
 <li><strong>Expiry check</strong> - Token must not be expired (<code>exp</code> claim)</li>
-<li><strong>Not-before check</strong> - Token must be valid (<code>nbf</code> claim)</li>
 <li><strong>Issued-at check</strong> - Token must have valid issue time (<code>iat</code> claim)</li>
-<li><strong>Type validation</strong> - Must be a bearer token (<code>typ</code> claim)</li>
+<li><strong>Authentication time</strong> - Validates <code>auth_time</code> claim</li>
 </ul>
 <p><strong>Benefits:</strong></p>
 <ul>
-<li><strong>Zero network calls per request</strong> - Public keys cached locally</li>
+<li><strong>Zero network calls per request</strong> - Public keys cached by SDK</li>
 <li><strong>High performance</strong> - Local cryptographic verification</li>
-<li><strong>Resilient</strong> - No dependency on authentication service for validation</li>
+<li><strong>Resilient</strong> - No dependency on Firebase servers for validation</li>
+<li><strong>Automatic key rotation</strong> - SDK handles Firebase key updates</li>
 </ul>
 <p><strong>Implementation pattern:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">Depends</span>
@@ -2273,9 +2273,9 @@
 <h2 id="environment-configuration">Environment Configuration</h2>
 <h3 id="security-environment-variables">Security Environment Variables</h3>
 <p><strong>JWT Validation:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nv">KEYCLOAK_JWKS_URI</span><span class="o">=</span>https://keycloak:8443/realms/flowpilot/protocol/openid-connect/certs
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nv">KEYCLOAK_ISSUER</span><span class="o">=</span>https://localhost:8443/realms/flowpilot
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="nv">KEYCLOAK_AUDIENCE</span><span class="o">=</span>flowpilot-desktop<span class="w">  </span><span class="c1"># Optional</span>
+<p>Firebase Admin SDK uses Application Default Credentials (ADC) - no configuration needed on Cloud Run.</p>
+<p>For local development:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nv">GOOGLE_APPLICATION_CREDENTIALS</span><span class="o">=</span>/path/to/serviceAccountKey.json<span class="w">  </span><span class="c1"># Optional</span>
 </code></pre></div>
 <p><strong>Input Validation:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nv">ENABLE_PAYLOAD_SIGNATURE_SCAN</span><span class="o">=</span><span class="m">0</span><span class="w">  </span><span class="c1"># 1 to enable attack signature scanning</span>

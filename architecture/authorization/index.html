@@ -2024,9 +2024,10 @@
 <h3 id="3-authz-api-validates-jwt">3. AuthZ-API Validates JWT</h3>
 <p>The authz-api validates the bearer token:</p>
 <ul>
-<li>Verifies signature using JWKS</li>
-<li>Checks issuer, audience, expiry</li>
-<li>Extracts <code>sub</code> claim</li>
+<li>Validates using Firebase Admin SDK</li>
+<li>Verifies signature using Firebase public keys</li>
+<li>Checks issuer (Firebase), audience (project ID), expiry</li>
+<li>Extracts <code>uid</code> (mapped to <code>sub</code>) and custom claims</li>
 </ul>
 <h3 id="4-delegation-check-rebac">4. Delegation Check (ReBAC)</h3>
 <p>If <code>subject.id ≠ context.principal.id</code>, authz-api queries the delegation-api:</p>

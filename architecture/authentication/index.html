@@ -938,10 +938,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#jwks-based-validation" class="md-nav__link">
+  <a href="#firebase-admin-sdk-validation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        JWKS-Based Validation
+        Firebase Admin SDK Validation
       
     </span>
   </a>
@@ -987,22 +987,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#keycloak-configuration" class="md-nav__link">
+  <a href="#firebase-configuration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Keycloak Configuration
+        Firebase Configuration
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Keycloak Configuration">
+    <nav class="md-nav" aria-label="Firebase Configuration">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#realm-flowpilot" class="md-nav__link">
+  <a href="#firebase-project" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Realm: flowpilot
+        Firebase Project
       
     </span>
   </a>
@@ -1010,10 +1010,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#clients" class="md-nav__link">
+  <a href="#user-data-model" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Clients
+        User Data Model
       
     </span>
   </a>
@@ -1021,10 +1021,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#users-and-personas" class="md-nav__link">
+  <a href="#personas" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Users and Personas
+        Personas
       
     </span>
   </a>
@@ -1032,10 +1032,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#provisioning" class="md-nav__link">
+  <a href="#user-provisioning" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Provisioning
+        User Provisioning
       
     </span>
   </a>
@@ -1060,10 +1060,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#local-development" class="md-nav__link">
+  <a href="#production-firebasegcp" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Local Development
+        Production (Firebase/GCP)
       
     </span>
   </a>
@@ -1071,10 +1071,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#production-deployment" class="md-nav__link">
+  <a href="#local-development-optional-keycloak" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Production Deployment
+        Local Development (Optional Keycloak)
       
     </span>
   </a>
@@ -2182,73 +2182,72 @@
 
 
 <h1 id="authentication-architecture">Authentication Architecture</h1>
-<p>FlowPilot uses OpenID Connect (OIDC) for authentication, with Keycloak as the identity provider. All services validate bearer tokens locally using JWKS, eliminating network dependencies for token validation.</p>
+<p>FlowPilot uses Firebase Authentication as the identity provider for production deployments. For local development, Keycloak can optionally be used. All services validate bearer tokens using Firebase Admin SDK (production) or JWKS (local dev).</p>
 <h2 id="authentication-flows">Authentication Flows</h2>
 <h3 id="desktop-client-authentication">Desktop Client Authentication</h3>
-<p><strong>Flow:</strong> Authorization Code + PKCE</p>
-<p>The desktop client (macOS app) uses the Authorization Code flow with PKCE (Proof Key for Code Exchange) for enhanced security.</p>
+<p><strong>Flow:</strong> Firebase Authentication SDK</p>
+<p>The desktop client (macOS app) uses the Firebase Authentication SDK with email/password sign-in.</p>
 <p><strong>Steps:</strong></p>
 <ol>
-<li><strong>User initiates login</strong> - User clicks login button in desktop app</li>
-<li><strong>App generates PKCE challenge</strong> - Creates code verifier and challenge</li>
-<li><strong>App opens browser</strong> - Redirects to Keycloak authorization endpoint</li>
-<li><strong>User authenticates</strong> - Enters credentials in Keycloak</li>
-<li><strong>Keycloak returns authorization code</strong> - Via redirect URI</li>
-<li><strong>App exchanges code for token</strong> - Sends code + code verifier</li>
-<li><strong>Keycloak returns access token</strong> - JWT with <code>sub</code> and <code>persona</code> claims</li>
+<li><strong>User initiates login</strong> - User enters credentials in app</li>
+<li><strong>App calls Firebase Auth</strong> - Using Firebase iOS SDK</li>
+<li><strong>Firebase validates credentials</strong> - Server-side validation</li>
+<li><strong>Firebase returns ID token</strong> - JWT with <code>uid</code>, <code>email</code>, and custom claims</li>
 <li><strong>App uses token for API calls</strong> - Bearer token in Authorization header</li>
 </ol>
-<p><strong>PKCE Benefits:</strong></p>
+<p><strong>Benefits:</strong></p>
 <ul>
-<li>Protects against authorization code interception</li>
-<li>Suitable for public clients (no client secret)</li>
-<li>Recommended for native applications</li>
+<li>No browser redirect required</li>
+<li>Built-in email verification</li>
+<li>Password reset functionality</li>
+<li>Multi-factor authentication (MFA) support</li>
+<li>Automatic token refresh</li>
 </ul>
 <h3 id="service-to-service-authentication">Service-to-Service Authentication</h3>
-<p><strong>Flow:</strong> Client Credentials</p>
-<p>Services authenticate to each other using the Client Credentials flow.</p>
+<p><strong>Flow:</strong> Google Cloud Identity Tokens</p>
+<p>Services authenticate to each other using Google Cloud identity tokens (Cloud Run).</p>
 <p><strong>Service Account:</strong></p>
 <ul>
-<li>Client ID: <code>flowpilot-agent</code></li>
-<li>Client Secret: Stored in <code>.env</code> file (never committed)</li>
-<li>Subject: <code>agent-runner</code></li>
-<li>Persona: <code>ai-agent</code></li>
+<li>Automatic on Cloud Run</li>
+<li>Uses Application Default Credentials (ADC)</li>
+<li>Subject: Service account email</li>
+<li>Persona: <code>service</code> or <code>ai-agent</code></li>
 </ul>
-<p><strong>Implementation Pattern:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_service_token</span><span class="p">():</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get service-to-service access token.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;KEYCLOAK_TOKEN_URL&quot;</span><span class="p">],</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        <span class="n">data</span><span class="o">=</span><span class="p">{</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>            <span class="s2">&quot;grant_type&quot;</span><span class="p">:</span> <span class="s2">&quot;client_credentials&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>            <span class="s2">&quot;client_id&quot;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;AGENT_CLIENT_ID&quot;</span><span class="p">],</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>            <span class="s2">&quot;client_secret&quot;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;AGENT_CLIENT_SECRET&quot;</span><span class="p">],</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        <span class="p">},</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>        <span class="n">verify</span><span class="o">=</span><span class="kc">False</span>  <span class="c1"># Local dev only - NEVER in production</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="p">)</span>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">&quot;access_token&quot;</span><span class="p">]</span>
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="c1"># Use token in requests</span>
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;Authorization&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Bearer </span><span class="si">{</span><span class="n">get_service_token</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}</span>
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+<p><strong>Implementation Pattern (Production/GCP):</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">google.auth</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">google.auth.transport.requests</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">google.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">compute_engine</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_service_token</span><span class="p">():</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get service-to-service access token.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="c1"># On Cloud Run, this automatically uses the service account</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">credentials</span><span class="p">,</span> <span class="n">project</span> <span class="o">=</span> <span class="n">google</span><span class="o">.</span><span class="n">auth</span><span class="o">.</span><span class="n">default</span><span class="p">()</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="c1"># Get an ID token for service-to-service auth</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">auth_req</span> <span class="o">=</span> <span class="n">google</span><span class="o">.</span><span class="n">auth</span><span class="o">.</span><span class="n">transport</span><span class="o">.</span><span class="n">requests</span><span class="o">.</span><span class="n">Request</span><span class="p">()</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">credentials</span><span class="o">.</span><span class="n">refresh</span><span class="p">(</span><span class="n">auth_req</span><span class="p">)</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="k">return</span> <span class="n">credentials</span><span class="o">.</span><span class="n">token</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="c1"># Use token in requests</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;Authorization&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Bearer </span><span class="si">{</span><span class="n">get_service_token</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
 </code></pre></div>
+<p><strong>Local Development:</strong></p>
+<p>For local testing, services can use Firebase Admin SDK to create custom tokens or use test tokens from Firebase console.</p>
 <h2 id="token-structure">Token Structure</h2>
 <p>FlowPilot uses minimal bearer tokens that carry only essential information.</p>
 <h3 id="token-claims">Token Claims</h3>
 <p><strong>Standard Claims:</strong></p>
 <ul>
-<li><code>sub</code> - Subject (user UUID) - Pseudonymous identifier</li>
-<li><code>iss</code> - Issuer (Keycloak URL)</li>
-<li><code>aud</code> - Audience (client ID)</li>
+<li><code>uid</code> - Firebase user ID - Pseudonymous identifier (mapped to <code>sub</code> in services)</li>
+<li><code>iss</code> - Issuer (Firebase project URL)</li>
+<li><code>aud</code> - Audience (Firebase project ID)</li>
 <li><code>exp</code> - Expiry timestamp</li>
-<li><code>nbf</code> - Not-before timestamp</li>
 <li><code>iat</code> - Issued-at timestamp</li>
-<li><code>typ</code> - Token type (Bearer)</li>
-<li><code>azp</code> - Authorized party (client ID)</li>
+<li><code>auth_time</code> - Authentication timestamp</li>
+<li><code>email</code> - User email (if available)</li>
+<li><code>email_verified</code> - Email verification status</li>
 </ul>
 <p><strong>Custom Claims:</strong></p>
 <ul>
@@ -2273,40 +2272,42 @@
 </ul>
 <h3 id="example-token-payload">Example Token Payload</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">&quot;sub&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;89eb5366-bab3-46e4-b8e1-abc5f2ea4631&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">&quot;persona&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;traveler&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">&quot;iss&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://localhost:8443/realms/flowpilot&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="nt">&quot;aud&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;flowpilot-desktop&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span><span class="nt">&quot;exp&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1704901200</span><span class="p">,</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span><span class="nt">&quot;nbf&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1704897600</span><span class="p">,</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">  </span><span class="nt">&quot;iat&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1704897600</span><span class="p">,</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span><span class="nt">&quot;typ&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Bearer&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">  </span><span class="nt">&quot;azp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;flowpilot-desktop&quot;</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">&quot;uid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;89eb5366-bab3-46e4-b8e1-abc5f2ea4631&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">&quot;email&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user@example.com&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">&quot;email_verified&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="nt">&quot;persona&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;traveler&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span><span class="nt">&quot;iss&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://securetoken.google.com/vision-course-476214&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span><span class="nt">&quot;aud&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;vision-course-476214&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">  </span><span class="nt">&quot;exp&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1704901200</span><span class="p">,</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span><span class="nt">&quot;iat&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1704897600</span><span class="p">,</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">  </span><span class="nt">&quot;auth_time&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1704897600</span>
 <a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="p">}</span>
 </code></pre></div>
 <h2 id="token-validation">Token Validation</h2>
-<p>All services validate tokens locally using JWKS (JSON Web Key Set).</p>
-<h3 id="jwks-based-validation">JWKS-Based Validation</h3>
+<p>All services validate tokens using Firebase Admin SDK.</p>
+<h3 id="firebase-admin-sdk-validation">Firebase Admin SDK Validation</h3>
 <p><strong>Benefits:</strong></p>
 <ul>
-<li><strong>Zero network calls per request</strong> - Public keys cached locally</li>
-<li><strong>High performance</strong> - Cryptographic verification only</li>
-<li><strong>Resilient</strong> - No dependency on Keycloak for validation</li>
-<li><strong>Scalable</strong> - No central bottleneck</li>
+<li><strong>Built-in verification</strong> - Handles signature validation automatically</li>
+<li><strong>High performance</strong> - Public keys cached by SDK</li>
+<li><strong>Resilient</strong> - No dependency on Firebase servers for validation</li>
+<li><strong>Scalable</strong> - Token verification is local</li>
+<li><strong>Automatic key rotation</strong> - SDK handles key updates</li>
 </ul>
 <h3 id="validation-steps">Validation Steps</h3>
 <ol>
 <li><strong>Extract token</strong> from Authorization header</li>
-<li><strong>Decode header</strong> to get key ID (<code>kid</code>)</li>
-<li><strong>Fetch public key</strong> from local JWKS cache</li>
-<li><strong>Verify signature</strong> using public key</li>
-<li><strong>Validate claims:</strong></li>
-<li>Issuer matches expected issuer</li>
-<li>Audience matches expected audience (if configured)</li>
-<li>Token not expired (<code>exp</code> &gt; now)</li>
-<li>Token is valid (<code>nbf</code> ≤ now)</li>
-<li>Token type is Bearer</li>
-<li><strong>Extract claims</strong> for authorization</li>
+<li><strong>Initialize Firebase Admin SDK</strong> (if not already initialized)</li>
+<li><strong>Call verify_id_token()</strong> - SDK handles all validation:</li>
+<li>Verifies signature using Firebase public keys</li>
+<li>Validates issuer (must be Firebase)</li>
+<li>Validates audience (must match project ID)</li>
+<li>Checks token expiry (<code>exp</code> &gt; now)</li>
+<li>Validates issued-at time (<code>iat</code>)</li>
+<li><strong>Extract claims</strong> from decoded token:</li>
+<li>Map <code>uid</code> to <code>sub</code> for consistency</li>
+<li>Extract custom claims (including <code>persona</code>)</li>
+<li>Return validated claims</li>
 </ol>
 <h3 id="implementation-pattern">Implementation Pattern</h3>
 <p>All services use the shared security library:</p>
@@ -2331,38 +2332,47 @@
 </code></pre></div>
 <h3 id="validation-configuration">Validation Configuration</h3>
 <p><strong>Environment Variables:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># JWKS endpoint for public keys</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nv">KEYCLOAK_JWKS_URI</span><span class="o">=</span>https://keycloak:8443/realms/flowpilot/protocol/openid-connect/certs
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Expected issuer</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="nv">KEYCLOAK_ISSUER</span><span class="o">=</span>https://localhost:8443/realms/flowpilot
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1"># Expected audience (optional)</span>
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="nv">KEYCLOAK_AUDIENCE</span><span class="o">=</span>flowpilot-desktop
+<p>Firebase Admin SDK uses Application Default Credentials (ADC) on Cloud Run - no explicit configuration needed for production.</p>
+<p><strong>For local development:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Optional: Path to service account key</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nv">GOOGLE_APPLICATION_CREDENTIALS</span><span class="o">=</span>/path/to/serviceAccountKey.json
 </code></pre></div>
-<h2 id="keycloak-configuration">Keycloak Configuration</h2>
-<h3 id="realm-flowpilot">Realm: flowpilot</h3>
-<p>All FlowPilot authentication happens in the <code>flowpilot</code> realm.</p>
-<h3 id="clients">Clients</h3>
-<p><strong>1. flowpilot-desktop</strong></p>
+<h2 id="firebase-configuration">Firebase Configuration</h2>
+<h3 id="firebase-project">Firebase Project</h3>
+<p>FlowPilot uses Firebase Authentication in the GCP project <code>vision-course-476214</code>.</p>
+<p><strong>Setup Steps:</strong></p>
+<ol>
+<li>Enable Firebase in <a href="https://console.firebase.google.com/">Firebase Console</a></li>
+<li>Enable Authentication → Sign-in methods → Email/Password</li>
+<li>Enable Firestore Database (Native mode)</li>
+</ol>
+<h3 id="user-data-model">User Data Model</h3>
+<p><strong>Firebase Authentication:</strong></p>
+<p>Stores core user identity:</p>
 <ul>
-<li><strong>Client Type:</strong> Public</li>
-<li><strong>Flow:</strong> Authorization Code + PKCE</li>
-<li><strong>Redirect URIs:</strong> Configured for desktop app</li>
-<li><strong>Token Settings:</strong></li>
-<li>Access token lifespan: Configurable (default: 5 minutes)</li>
-<li>Refresh token lifespan: Configurable (default: 30 minutes)</li>
+<li><code>uid</code> - Firebase user ID (pseudonymous)</li>
+<li><code>email</code> - User email address</li>
+<li><code>displayName</code> - Optional display name</li>
+<li><code>emailVerified</code> - Verification status</li>
 </ul>
-<p><strong>2. flowpilot-agent</strong></p>
-<ul>
-<li><strong>Client Type:</strong> Confidential</li>
-<li><strong>Flow:</strong> Client Credentials</li>
-<li><strong>Service Account:</strong> Enabled</li>
-<li><strong>Subject:</strong> <code>agent-runner</code></li>
-<li><strong>Persona:</strong> <code>ai-agent</code> (via protocol mapper)</li>
-</ul>
-<h3 id="users-and-personas">Users and Personas</h3>
-<p>Users are provisioned with personas via Keycloak roles:</p>
+<p><strong>Firestore (<code>users</code> collection):</strong></p>
+<p>Stores user profile and preferences:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p">{</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">&quot;persona&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;traveler&quot;</span><span class="p">],</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="nt">&quot;autobook_consent&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Yes&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span><span class="nt">&quot;autobook_price&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1500&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span><span class="nt">&quot;autobook_leadtime&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;7&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span><span class="nt">&quot;autobook_risklevel&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2&quot;</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>Custom Claims (Optional):</strong></p>
+<p>Can be set on Firebase Auth users for inclusion in ID tokens:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="p">{</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">&quot;persona&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;traveler&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;travel-agent&quot;</span><span class="p">]</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="p">}</span>
+</code></pre></div>
+<h3 id="personas">Personas</h3>
+<p>Users can have multiple personas:</p>
 <p><strong>Supported Personas:</strong></p>
 <ul>
 <li><code>traveler</code> - End users booking travel</li>
@@ -2371,61 +2381,71 @@
 <li><code>booking-assistant</code> - Booking support staff</li>
 <li><code>ai-agent</code> - AI agents (service accounts)</li>
 </ul>
-<p><strong>Persona Mapping:</strong></p>
-<p>Personas are mapped to the <code>persona</code> claim via protocol mappers:</p>
+<p><strong>Persona Storage:</strong></p>
 <ol>
-<li>User has realm role (e.g., <code>traveler</code>)</li>
-<li>Protocol mapper adds <code>persona</code> claim to token</li>
-<li>Services read <code>persona</code> from validated token</li>
+<li>Primary storage: Firestore <code>users</code> collection</li>
+<li>Optional: Firebase custom claims (for token inclusion)</li>
+<li>Services read persona from token or Firestore</li>
 </ol>
-<h3 id="provisioning">Provisioning</h3>
-<p>Users and configuration are provisioned automatically via setup scripts:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Provisioning happens during stack startup</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>make<span class="w"> </span>up
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># Or manually</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>keycloak-setup
+<h3 id="user-provisioning">User Provisioning</h3>
+<p>Users can be created via Firebase Admin SDK:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">firebase_admin</span><span class="w"> </span><span class="kn">import</span> <span class="n">auth</span><span class="p">,</span> <span class="n">firestore</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="c1"># Create user in Firebase Auth</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">user</span> <span class="o">=</span> <span class="n">auth</span><span class="o">.</span><span class="n">create_user</span><span class="p">(</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="n">email</span><span class="o">=</span><span class="s1">&#39;user@example.com&#39;</span><span class="p">,</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="n">password</span><span class="o">=</span><span class="s1">&#39;secure-password&#39;</span><span class="p">,</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    <span class="n">display_name</span><span class="o">=</span><span class="s1">&#39;Test User&#39;</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="p">)</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="c1"># Set custom claims</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="n">auth</span><span class="o">.</span><span class="n">set_custom_user_claims</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">uid</span><span class="p">,</span> <span class="p">{</span>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>    <span class="s1">&#39;persona&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;traveler&#39;</span><span class="p">]</span>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="p">})</span>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>
+<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="c1"># Create Firestore profile</span>
+<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="n">db</span> <span class="o">=</span> <span class="n">firestore</span><span class="o">.</span><span class="n">client</span><span class="p">()</span>
+<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="n">db</span><span class="o">.</span><span class="n">collection</span><span class="p">(</span><span class="s1">&#39;users&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">document</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">uid</span><span class="p">)</span><span class="o">.</span><span class="n">set</span><span class="p">({</span>
+<a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>    <span class="s1">&#39;persona&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;traveler&#39;</span><span class="p">],</span>
+<a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>    <span class="s1">&#39;autobook_consent&#39;</span><span class="p">:</span> <span class="s1">&#39;Yes&#39;</span><span class="p">,</span>
+<a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a>    <span class="s1">&#39;autobook_price&#39;</span><span class="p">:</span> <span class="s1">&#39;1500&#39;</span><span class="p">,</span>
+<a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a>    <span class="s1">&#39;autobook_leadtime&#39;</span><span class="p">:</span> <span class="s1">&#39;7&#39;</span><span class="p">,</span>
+<a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a>    <span class="s1">&#39;autobook_risklevel&#39;</span><span class="p">:</span> <span class="s1">&#39;2&#39;</span>
+<a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a><span class="p">})</span>
 </code></pre></div>
 <p><strong>Setup Scripts:</strong></p>
 <ul>
-<li><code>scripts/setup_keycloak.sh</code> - Configure Keycloak</li>
-<li><code>scripts/provision_users.sh</code> - Create test users</li>
+<li><code>scripts/setup_firebase_user.py</code> - Create test users</li>
+<li><code>flowpilot-provisioning/seed_firebase_users.py</code> - Bulk user provisioning</li>
 </ul>
 <h2 id="tls-and-certificates">TLS and Certificates</h2>
-<h3 id="local-development">Local Development</h3>
-<p>FlowPilot uses <code>mkcert</code> for local TLS certificates:</p>
+<h3 id="production-firebasegcp">Production (Firebase/GCP)</h3>
+<p>Firebase and Cloud Run handle TLS automatically:</p>
+<ul>
+<li>Firebase uses Google's managed certificates</li>
+<li>Cloud Run provides automatic HTTPS</li>
+<li>No certificate management required</li>
+</ul>
+<h3 id="local-development-optional-keycloak">Local Development (Optional Keycloak)</h3>
+<p>If using Keycloak for local development, use <code>mkcert</code>:</p>
 <p><strong>Setup:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Install mkcert</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>brew<span class="w"> </span>install<span class="w"> </span>mkcert
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># Install local CA</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>mkcert<span class="w"> </span>-install
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
-<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="c1"># Copy root CA to project</span>
-<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>cp<span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>mkcert<span class="w"> </span>-CAROOT<span class="k">)</span><span class="s2">/rootCA.pem&quot;</span><span class="w"> </span>infra/certs/mkcert-rootCA.pem
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Install mkcert</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>brew<span class="w"> </span>install<span class="w"> </span>mkcert
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1"># Install local CA</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>mkcert<span class="w"> </span>-install
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="c1"># Copy root CA to project</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>cp<span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>mkcert<span class="w"> </span>-CAROOT<span class="k">)</span><span class="s2">/rootCA.pem&quot;</span><span class="w"> </span>infra/certs/mkcert-rootCA.pem
 </code></pre></div>
-<p><strong>Certificate Files:</strong></p>
-<ul>
-<li><code>infra/certs/localhost+2.pem</code> - Certificate</li>
-<li><code>infra/certs/localhost+2-key.pem</code> - Private key</li>
-<li><code>infra/certs/mkcert-rootCA.pem</code> - Root CA (for containers)</li>
-</ul>
-<h3 id="production-deployment">Production Deployment</h3>
-<p><strong>Requirements:</strong></p>
-<ul>
-<li>Use proper TLS certificates from CA (e.g., Let's Encrypt)</li>
-<li>Configure certificate validation properly</li>
-<li>Never use <code>verify=False</code> in requests</li>
-<li>Enable HSTS headers</li>
-</ul>
 <h2 id="token-lifecycle">Token Lifecycle</h2>
 <h3 id="token-issuance">Token Issuance</h3>
 <ol>
-<li><strong>User authenticates</strong> via Keycloak</li>
-<li><strong>Keycloak validates credentials</strong></li>
-<li><strong>Keycloak generates JWT</strong> with claims</li>
-<li><strong>Keycloak signs JWT</strong> with private key</li>
-<li><strong>Client receives access token</strong> (and refresh token)</li>
+<li><strong>User authenticates</strong> via Firebase Authentication SDK</li>
+<li><strong>Firebase validates credentials</strong> server-side</li>
+<li><strong>Firebase generates JWT</strong> with claims and custom claims</li>
+<li><strong>Firebase signs JWT</strong> with Firebase private keys</li>
+<li><strong>Client receives ID token</strong> (and refresh token)</li>
 </ol>
 <h3 id="token-usage">Token Usage</h3>
 <ol>
@@ -2450,15 +2470,15 @@
 <h3 id="token-refresh">Token Refresh</h3>
 <p><strong>Desktop Client:</strong></p>
 <p>Clients can refresh tokens using the refresh token:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="n">keycloak_token_url</span><span class="p">,</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="n">data</span><span class="o">=</span><span class="p">{</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>        <span class="s2">&quot;grant_type&quot;</span><span class="p">:</span> <span class="s2">&quot;refresh_token&quot;</span><span class="p">,</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>        <span class="s2">&quot;refresh_token&quot;</span><span class="p">:</span> <span class="n">refresh_token</span><span class="p">,</span>
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>        <span class="s2">&quot;client_id&quot;</span><span class="p">:</span> <span class="n">client_id</span><span class="p">,</span>
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    <span class="p">}</span>
-<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="p">)</span>
-<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="n">new_access_token</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">&quot;access_token&quot;</span><span class="p">]</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>    <span class="n">keycloak_token_url</span><span class="p">,</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    <span class="n">data</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>        <span class="s2">&quot;grant_type&quot;</span><span class="p">:</span> <span class="s2">&quot;refresh_token&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>        <span class="s2">&quot;refresh_token&quot;</span><span class="p">:</span> <span class="n">refresh_token</span><span class="p">,</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>        <span class="s2">&quot;client_id&quot;</span><span class="p">:</span> <span class="n">client_id</span><span class="p">,</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>    <span class="p">}</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="p">)</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="n">new_access_token</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">&quot;access_token&quot;</span><span class="p">]</span>
 </code></pre></div>
 <p><strong>Service Accounts:</strong></p>
 <p>Service accounts request new tokens as needed (no refresh token).</p>
@@ -2506,14 +2526,14 @@
 <li>Clock skew between services</li>
 </ul>
 <p><strong>Solutions:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Check JWKS endpoint</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>curl<span class="w"> </span>https://localhost:8443/realms/flowpilot/protocol/openid-connect/certs<span class="w"> </span>--insecure
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1"># Check service logs</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>docker<span class="w"> </span>compose<span class="w"> </span>logs<span class="w"> </span>flowpilot-authz-api<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span>jwks
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>
-<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="c1"># Restart service to refresh JWKS cache</span>
-<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>docker<span class="w"> </span>compose<span class="w"> </span>restart<span class="w"> </span>flowpilot-authz-api
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Check JWKS endpoint</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>curl<span class="w"> </span>https://localhost:8443/realms/flowpilot/protocol/openid-connect/certs<span class="w"> </span>--insecure
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="c1"># Check service logs</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>docker<span class="w"> </span>compose<span class="w"> </span>logs<span class="w"> </span>flowpilot-authz-api<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span>jwks
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="c1"># Restart service to refresh JWKS cache</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>docker<span class="w"> </span>compose<span class="w"> </span>restart<span class="w"> </span>flowpilot-authz-api
 </code></pre></div>
 <h3 id="token-expired">Token Expired</h3>
 <p><strong>Symptom:</strong> 401 Unauthorized with "Token expired"</p>
@@ -2521,9 +2541,9 @@
 <h3 id="keycloak-not-ready">Keycloak Not Ready</h3>
 <p><strong>Symptom:</strong> Services fail to start with JWKS errors</p>
 <p><strong>Solution:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Wait for Keycloak to fully start (60+ seconds)</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>logs<span class="w"> </span>-f<span class="w"> </span>keycloak
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="c1"># Look for: &quot;Listening on: https://0.0.0.0:8443&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># Wait for Keycloak to fully start (60+ seconds)</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>logs<span class="w"> </span>-f<span class="w"> </span>keycloak
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="c1"># Look for: &quot;Listening on: https://0.0.0.0:8443&quot;</span>
 </code></pre></div>
 <h3 id="wrong-issuer">Wrong Issuer</h3>
 <p><strong>Symptom:</strong> 401 Unauthorized with "Invalid issuer"</p>

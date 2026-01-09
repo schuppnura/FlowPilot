@@ -864,10 +864,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-keycloak-ports-80808443" class="md-nav__link">
+  <a href="#4-firebase-authentication" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Keycloak (Ports 8080/8443)
+        4. Firebase Authentication
       
     </span>
   </a>
@@ -2059,13 +2059,13 @@
 <li>Stateless decision engine</li>
 <li>Policies mounted from filesystem</li>
 </ul>
-<h3 id="4-keycloak-ports-80808443">4. Keycloak (Ports 8080/8443)</h3>
-<p><strong>OIDC identity provider</strong></p>
+<h3 id="4-firebase-authentication">4. Firebase Authentication</h3>
+<p><strong>Identity provider (fully managed)</strong></p>
 <ul>
-<li>Issues bearer access tokens</li>
-<li>Personas mapped to roles</li>
-<li>Tokens validated locally by services</li>
-<li>Provides JWKS endpoint</li>
+<li>Issues Firebase ID tokens (JWTs)</li>
+<li>Personas stored in Firestore and custom claims</li>
+<li>Tokens validated locally by services using Firebase Admin SDK</li>
+<li>Automatic key rotation and management</li>
 </ul>
 <h3 id="5-flowpilot-domain-services-api-port-8003">5. flowpilot-domain-services-api (Port 8003)</h3>
 <p><strong>Workflow domain logic (PEP)</strong></p>
