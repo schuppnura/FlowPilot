@@ -1746,38 +1746,32 @@
 </ul>
 <h2 id="security-features">Security Features</h2>
 <p>FlowPilot implements several security best practices:</p>
-<ol>
-<li><strong>Authorization Architecture</strong></li>
+<p><strong>Authorization Architecture</strong></p>
+<ul>
 <li>Centralized policy decision point (PDP)</li>
 <li>Policy enforcement points (PEP) at domain service boundaries</li>
 <li>Relationship-based access control (ReBAC) for delegation</li>
-<li>
-<p>Explicit authorization checks for every operation</p>
-</li>
-<li>
+<li>Explicit authorization checks for every operation</li>
+</ul>
 <p><strong>Authentication</strong></p>
-</li>
+<ul>
 <li>OIDC with PKCE for desktop client</li>
 <li>Bearer token authentication for service-to-service communication</li>
-<li>
-<p>Keycloak as identity provider with realm isolation</p>
-</li>
-<li>
+<li>Keycloak as identity provider with realm isolation</li>
+</ul>
 <p><strong>Privacy by Design</strong></p>
-</li>
+<ul>
 <li>No PII exposed to AI/LLM components</li>
 <li>Principal identity uses opaque identifiers (sub)</li>
 <li>Profile information separated from domain data</li>
-<li>
-<p>Progressive profiling without storing sensitive data</p>
-</li>
-<li>
+<li>Progressive profiling without storing sensitive data</li>
+</ul>
 <p><strong>Auditability</strong></p>
-</li>
+<ul>
 <li>All authorization decisions are logged</li>
 <li>Per-item execution results with reasons</li>
 <li>Delegation chains are explicit and verifiable</li>
-</ol>
+</ul>
 <h2 id="dependencies">Dependencies</h2>
 <p>We recommend:
 - Regularly updating dependencies
