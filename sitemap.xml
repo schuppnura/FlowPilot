@@ -2,130 +2,130 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://flowpilot.dev/</loc>
-         <lastmod>2026-01-09</lastmod>
+         <lastmod>2026-01-10</lastmod>
     </url>
     <url>
          <loc>https://flowpilot.dev/CORS/</loc>
-         <lastmod>2026-01-09</lastmod>
+         <lastmod>2026-01-10</lastmod>
     </url>
     <url>
          <loc>https://flowpilot.dev/api/ai-agent/</loc>
-         <lastmod>2026-01-09</lastmod>
+         <lastmod>2026-01-10</lastmod>
     </url>
     <url>
          <loc>https://flowpilot.dev/api/authz/</loc>
-         <lastmod>2026-01-09</lastmod>
+         <lastmod>2026-01-10</lastmod>
     </url>
     <url>
          <loc>https://flowpilot.dev/api/delegation/</loc>
-         <lastmod>2026-01-09</lastmod>
+         <lastmod>2026-01-10</lastmod>
     </url>
     <url>
          <loc>https://flowpilot.dev/api/domain-services/</loc>
-         <lastmod>2026-01-09</lastmod>
+         <lastmod>2026-01-10</lastmod>
     </url>
     <url>
          <loc>https://flowpilot.dev/api/user-profile/</loc>
-         <lastmod>2026-01-09</lastmod>
+         <lastmod>2026-01-10</lastmod>
     </url>
     <url>
          <loc>https://flowpilot.dev/architecture/authentication/</loc>
-         <lastmod>2026-01-09</lastmod>
+         <lastmod>2026-01-10</lastmod>
     </url>
     <url>
          <loc>https://flowpilot.dev/architecture/authorization/</loc>
-         <lastmod>2026-01-09</lastmod>
+         <lastmod>2026-01-10</lastmod>
     </url>
     <url>
          <loc>https://flowpilot.dev/architecture/overview/</loc>
-         <lastmod>2026-01-09</lastmod>
+         <lastmod>2026-01-10</lastmod>
     </url>
     <url>
          <loc>https://flowpilot.dev/architecture/security/</loc>
-         <lastmod>2026-01-09</lastmod>
+         <lastmod>2026-01-10</lastmod>
     </url>
     <url>
          <loc>https://flowpilot.dev/architecture/services/</loc>
-         <lastmod>2026-01-09</lastmod>
+         <lastmod>2026-01-10</lastmod>
     </url>
     <url>
          <loc>https://flowpilot.dev/contributing/code-of-conduct/</loc>
-         <lastmod>2026-01-09</lastmod>
+         <lastmod>2026-01-10</lastmod>
     </url>
     <url>
          <loc>https://flowpilot.dev/contributing/contributing/</loc>
-         <lastmod>2026-01-09</lastmod>
+         <lastmod>2026-01-10</lastmod>
     </url>
     <url>
          <loc>https://flowpilot.dev/contributing/security/</loc>
-         <lastmod>2026-01-09</lastmod>
+         <lastmod>2026-01-10</lastmod>
     </url>
     <url>
          <loc>https://flowpilot.dev/deployment/environment/</loc>
-         <lastmod>2026-01-09</lastmod>
+         <lastmod>2026-01-10</lastmod>
     </url>
     <url>
          <loc>https://flowpilot.dev/deployment/gcp/</loc>
-         <lastmod>2026-01-09</lastmod>
+         <lastmod>2026-01-10</lastmod>
     </url>
     <url>
          <loc>https://flowpilot.dev/deployment/local/</loc>
-         <lastmod>2026-01-09</lastmod>
+         <lastmod>2026-01-10</lastmod>
     </url>
     <url>
          <loc>https://flowpilot.dev/deployment/overview/</loc>
-         <lastmod>2026-01-09</lastmod>
+         <lastmod>2026-01-10</lastmod>
     </url>
     <url>
          <loc>https://flowpilot.dev/development/commands/</loc>
-         <lastmod>2026-01-09</lastmod>
+         <lastmod>2026-01-10</lastmod>
     </url>
     <url>
          <loc>https://flowpilot.dev/development/policies/</loc>
-         <lastmod>2026-01-09</lastmod>
+         <lastmod>2026-01-10</lastmod>
     </url>
     <url>
          <loc>https://flowpilot.dev/development/testing/</loc>
-         <lastmod>2026-01-09</lastmod>
+         <lastmod>2026-01-10</lastmod>
     </url>
     <url>
          <loc>https://flowpilot.dev/development/troubleshooting/</loc>
-         <lastmod>2026-01-09</lastmod>
+         <lastmod>2026-01-10</lastmod>
     </url>
     <url>
          <loc>https://flowpilot.dev/getting-started/authentication/</loc>
-         <lastmod>2026-01-09</lastmod>
+         <lastmod>2026-01-10</lastmod>
     </url>
     <url>
          <loc>https://flowpilot.dev/getting-started/first-workflow/</loc>
-         <lastmod>2026-01-09</lastmod>
+         <lastmod>2026-01-10</lastmod>
     </url>
     <url>
          <loc>https://flowpilot.dev/getting-started/gcp-deployment/</loc>
-         <lastmod>2026-01-09</lastmod>
+         <lastmod>2026-01-10</lastmod>
     </url>
     <url>
          <loc>https://flowpilot.dev/getting-started/integration/</loc>
-         <lastmod>2026-01-09</lastmod>
+         <lastmod>2026-01-10</lastmod>
     </url>
     <url>
          <loc>https://flowpilot.dev/getting-started/local-development/</loc>
-         <lastmod>2026-01-09</lastmod>
+         <lastmod>2026-01-10</lastmod>
     </url>
     <url>
          <loc>https://flowpilot.dev/getting-started/quick-start/</loc>
-         <lastmod>2026-01-09</lastmod>
+         <lastmod>2026-01-10</lastmod>
     </url>
     <url>
          <loc>https://flowpilot.dev/guides/delegations/</loc>
-         <lastmod>2026-01-09</lastmod>
+         <lastmod>2026-01-10</lastmod>
     </url>
     <url>
          <loc>https://flowpilot.dev/guides/opa-policies/</loc>
-         <lastmod>2026-01-09</lastmod>
+         <lastmod>2026-01-10</lastmod>
     </url>
     <url>
          <loc>https://flowpilot.dev/guides/personas/</loc>
-         <lastmod>2026-01-09</lastmod>
+         <lastmod>2026-01-10</lastmod>
     </url>
 </urlset>

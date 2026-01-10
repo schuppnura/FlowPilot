@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#policies" class="md-skip">
+        <a href="#policy-development-guide" class="md-skip">
           Skip to content
         </a>
       
@@ -1048,6 +1048,24 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Policy Development
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -1064,6 +1082,624 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#policy-decision-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Policy Decision Flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-role-of-authz-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Role of Authz-API
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-auto-book-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Auto-Book Policy
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Auto-Book Policy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#policy-file-location" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Policy File Location
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#supported-actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported Actions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#policy-construction-step-by-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Policy Construction: Step by Step
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Policy Construction: Step by Step">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-package-and-default" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Package and Default
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-action-routing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Action Routing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-execute-gates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Execute Gates
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-anti-spoofing-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Anti-Spoofing Check
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-persona-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Persona Validation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-6-consent-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Consent Check
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-7-cost-limit-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 7: Cost Limit Check
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-8-lead-time-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 8: Lead Time Check
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-9-risk-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 9: Risk Check
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-10-reason-codes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 10: Reason Codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#opa-input-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OPA Input Structure
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="OPA Input Structure">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#data-sources-for-opa-input" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Sources for OPA Input
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#authz-api-enrichment-process" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authz-API Enrichment Process
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Authz-API Enrichment Process">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-validate-jwt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Validate JWT
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-query-delegation-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Query Delegation-API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-fetch-user-profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Fetch User Profile
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-normalize-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Normalize Data
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-call-opa" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Call OPA
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-return-decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Return Decision
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-policies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing Policies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Testing Policies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#test-opa-directly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test OPA Directly
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-via-authz-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test via Authz-API
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#policy-development-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Policy Development Workflow
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Policy Development Workflow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-edit-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Edit Policy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-restart-opa" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Restart OPA
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-test-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Test Policy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-test-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Test Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-run-regression-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Run Regression Tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-policy-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Policy Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Common Policy Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pattern-1-fail-closed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 1: Fail-Closed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-2-multiple-allow-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 2: Multiple Allow Rules
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-3-gated-allow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 3: Gated Allow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-4-reason-tracking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern 4: Reason Tracking
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Best Practices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Best Practices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#for-policy-authors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        For Policy Authors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#for-authz-api-developers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        For Authz-API Developers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#for-pep-developers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        For PEP Developers
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deployment
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deployment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#local-development" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local Development
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#production-gcp-cloud-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Production (GCP Cloud Run)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1672,8 +2308,637 @@
   
 
 
-<h1 id="policies">Policies</h1>
-<p>Documentation coming soon.</p>
+<h1 id="policy-development-guide">Policy Development Guide</h1>
+<p>This guide explains how FlowPilot's authorization policies work, how they're constructed, and the role of the authz-api in policy evaluation.</p>
+<h2 id="overview">Overview</h2>
+<p>FlowPilot uses <strong>Open Policy Agent (OPA)</strong> with <strong>Rego</strong> policies for declarative access control. The policy engine answers the question:</p>
+<blockquote>
+<p>"Is this subject allowed to perform this action on this resource?"</p>
+</blockquote>
+<h2 id="architecture">Architecture</h2>
+<h3 id="policy-decision-flow">Policy Decision Flow</h3>
+<ol>
+<li><strong>PEP (Policy Enforcement Point)</strong> - Application service (e.g., <code>ai-agent-api</code>)</li>
+<li><strong>Authz-API</strong> - Authorization façade (enriches requests, calls PIPs)</li>
+<li><strong>Delegation-API</strong> - Policy Information Point for ReBAC</li>
+<li><strong>OPA</strong> - Policy Decision Point (evaluates Rego policies)</li>
+</ol>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>PEP → Authz-API → Delegation-API (ReBAC)
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>                 → OPA (ABAC)
+</code></pre></div>
+<h3 id="the-role-of-authz-api">The Role of Authz-API</h3>
+<p>The authz-api acts as the <strong>orchestration layer</strong> between PEPs and the policy engine. It:</p>
+<ol>
+<li><strong>Validates JWTs</strong> - Ensures bearer tokens are valid</li>
+<li><strong>Resolves Delegation</strong> - Queries delegation-api for ReBAC data</li>
+<li><strong>Enriches Context</strong> - Adds policy-relevant attributes (consent, thresholds)</li>
+<li><strong>Normalizes Data</strong> - Converts types (dates to RFC3339, strings to numbers)</li>
+<li><strong>Calls OPA</strong> - Sends enriched input to policy engine</li>
+<li><strong>Returns Decision</strong> - Structured allow/deny with reason codes</li>
+</ol>
+<p><strong>Key Insight:</strong> The authz-api ensures OPA receives <strong>decision-ready facts</strong>, not raw requests.</p>
+<h2 id="the-auto-book-policy">The Auto-Book Policy</h2>
+<p>FlowPilot's primary policy is <code>auto_book.rego</code>, which controls autonomous AI booking and delegated access.</p>
+<h3 id="policy-file-location">Policy File Location</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>infra/opa/policies/auto_book.rego
+</code></pre></div>
+<h3 id="supported-actions">Supported Actions</h3>
+<ul>
+<li><code>execute</code> - Execute workflow items (book travel)</li>
+<li><code>read</code> - View workflows (read-only access)</li>
+</ul>
+<h2 id="policy-construction-step-by-step">Policy Construction: Step by Step</h2>
+<h3 id="step-1-package-and-default">Step 1: Package and Default</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">package</span><span class="w"> </span><span class="n">auto_book</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">default</span><span class="w"> </span><span class="n">allow</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">false</span>
+</code></pre></div>
+<p><strong>What this does:</strong></p>
+<ul>
+<li>Declares the policy package name</li>
+<li><strong>Fail-closed by default</strong> - Deny unless explicitly allowed</li>
+</ul>
+<p><strong>Authz-API role:</strong> Interprets <code>allow = false</code> as a deny decision</p>
+<h3 id="step-2-action-routing">Step 2: Action Routing</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">allow</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="n">allow_execute</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="p">}</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="n">allow</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;read&quot;</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">  </span><span class="n">allow_read</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>What this does:</strong></p>
+<ul>
+<li>Routes to different rule sets based on the requested action</li>
+<li><code>execute</code> requires full authorization gates</li>
+<li><code>read</code> has simpler requirements</li>
+</ul>
+<p><strong>Authz-API role:</strong> Includes <code>action.name</code> in the OPA input based on the PEP's request</p>
+<h3 id="step-3-execute-gates">Step 3: Execute Gates</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">allow_execute</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="n">authorized_principal</span><span class="w">  </span><span class="c1"># Anti-spoofing and delegation check</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="n">persona_valid</span><span class="w">         </span><span class="c1"># Persona check</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span><span class="n">has_consent</span><span class="w">          </span><span class="c1"># User consent</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span><span class="n">acceptable_risk</span><span class="w">      </span><span class="c1"># Risk threshold</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span><span class="n">within_cost_limit</span><span class="w">    </span><span class="c1"># Cost ceiling</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">  </span><span class="n">sufficient_advance</span><span class="w">   </span><span class="c1"># Lead time requirement</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>What this does:</strong></p>
+<ul>
+<li>Defines 6 gates that <strong>all must pass</strong> for execution</li>
+<li>Each gate is a separate rule evaluated independently</li>
+<li>If any gate fails, <code>allow_execute</code> is false</li>
+</ul>
+<p><strong>Authz-API role:</strong> Provides all data needed for gate evaluation (more below)</p>
+<h3 id="step-4-anti-spoofing-check">Step 4: Anti-Spoofing Check</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Owner directly accessing their own resource</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">authorized_principal</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">subject</span><span class="p">.</span><span class="n">persona</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">&quot;ai-agent&quot;</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span><span class="n">principal_id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">subject</span><span class="p">.</span><span class="n">id</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span><span class="n">owner_id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">id</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">  </span><span class="n">principal_id</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">owner_id</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="p">}</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="c1"># Agent-runner activated by the owner</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="n">authorized_principal</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">subject</span><span class="p">.</span><span class="n">persona</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;ai-agent&quot;</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="w">  </span><span class="n">principal_id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">principal</span><span class="p">.</span><span class="n">id</span>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="w">  </span><span class="n">owner_id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">id</span>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="w">  </span><span class="n">principal_id</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">owner_id</span>
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="p">}</span>
+<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>
+<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="c1"># Agent-runner in autonomous mode</span>
+<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a><span class="n">authorized_principal</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">subject</span><span class="p">.</span><span class="n">persona</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;ai-agent&quot;</span>
+<a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">autobook_consent</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="k">true</span>
+<a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a><span class="w">  </span><span class="k">not</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">delegation</span><span class="p">.</span><span class="n">valid</span>
+<a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a><span class="p">}</span>
+<a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a>
+<a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a><span class="c1"># Valid delegation</span>
+<a id="__codelineno-5-25" name="__codelineno-5-25" href="#__codelineno-5-25"></a><span class="n">authorized_principal</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-5-26" name="__codelineno-5-26" href="#__codelineno-5-26"></a><span class="w">  </span><span class="n">has_valid_delegation_for_action</span>
+<a id="__codelineno-5-27" name="__codelineno-5-27" href="#__codelineno-5-27"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>What this does:</strong></p>
+<ul>
+<li>Prevents principal spoofing (acting as someone else without permission)</li>
+<li>Allows 4 scenarios:</li>
+<li><strong>Owner acting directly</strong> - User executes their own workflow</li>
+<li><strong>Owner via agent</strong> - User activates AI agent to execute</li>
+<li><strong>Autonomous AI</strong> - AI acts independently with consent</li>
+<li><strong>Delegated user</strong> - Another user with explicit delegation</li>
+</ul>
+<p><strong>Authz-API role:</strong></p>
+<ul>
+<li>Queries <strong>delegation-api</strong> to get <code>context.delegation.valid</code></li>
+<li>Includes <code>context.delegation.delegated_actions</code> array</li>
+<li>Ensures <code>context.principal</code> is set when subject ≠ owner</li>
+</ul>
+<p><strong>Delegation Check Helper:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">has_valid_delegation_for_action</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">delegation</span><span class="p">.</span><span class="n">valid</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="k">true</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">delegation</span><span class="p">.</span><span class="n">delegated_actions</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="p">}</span>
+</code></pre></div>
+<p>This checks if:
+- Delegation exists (<code>valid == true</code>)
+- Delegation grants the requested action (e.g., <code>execute</code>)</p>
+<h3 id="step-5-persona-validation">Step 5: Persona Validation</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">valid_agent_personas</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="p">{</span><span class="s2">&quot;travel-agent&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;ai-agent&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;office-manager&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;booking-assistant&quot;</span><span class="p">}</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="c1"># AI-agent activated by delegated user</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">persona_valid</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">subject</span><span class="p">.</span><span class="n">persona</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;ai-agent&quot;</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">  </span><span class="n">principal_id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">principal</span><span class="p">.</span><span class="n">id</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">  </span><span class="n">owner_id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">id</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">  </span><span class="n">principal_id</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">owner_id</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">  </span><span class="n">principal_persona</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">principal</span><span class="p">.</span><span class="n">persona</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">  </span><span class="n">principal_persona</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="w">  </span><span class="n">valid_agent_personas</span><span class="p">[</span><span class="n">principal_persona</span><span class="p">]</span>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="p">}</span>
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="c1"># AI-agent activated by owner</span>
+<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="n">persona_valid</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">subject</span><span class="p">.</span><span class="n">persona</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;ai-agent&quot;</span>
+<a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a><span class="w">  </span><span class="n">principal_id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">principal</span><span class="p">.</span><span class="n">id</span>
+<a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a><span class="w">  </span><span class="n">owner_id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">id</span>
+<a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a><span class="w">  </span><span class="n">principal_id</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">owner_id</span>
+<a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a><span class="w">  </span><span class="n">owner_persona</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">persona</span>
+<a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a><span class="w">  </span><span class="n">principal_persona</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">principal</span><span class="p">.</span><span class="n">persona</span>
+<a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a><span class="w">  </span><span class="n">principal_persona</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">owner_persona</span>
+<a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a><span class="p">}</span>
+<a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a>
+<a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a><span class="c1"># Human user with delegation</span>
+<a id="__codelineno-7-26" name="__codelineno-7-26" href="#__codelineno-7-26"></a><span class="n">persona_valid</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-7-27" name="__codelineno-7-27" href="#__codelineno-7-27"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">subject</span><span class="p">.</span><span class="n">persona</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">&quot;ai-agent&quot;</span>
+<a id="__codelineno-7-28" name="__codelineno-7-28" href="#__codelineno-7-28"></a><span class="w">  </span><span class="n">principal_id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">subject</span><span class="p">.</span><span class="n">id</span>
+<a id="__codelineno-7-29" name="__codelineno-7-29" href="#__codelineno-7-29"></a><span class="w">  </span><span class="n">owner_id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">id</span>
+<a id="__codelineno-7-30" name="__codelineno-7-30" href="#__codelineno-7-30"></a><span class="w">  </span><span class="n">principal_id</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">owner_id</span>
+<a id="__codelineno-7-31" name="__codelineno-7-31" href="#__codelineno-7-31"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">subject</span><span class="p">.</span><span class="n">persona</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+<a id="__codelineno-7-32" name="__codelineno-7-32" href="#__codelineno-7-32"></a><span class="w">  </span><span class="n">valid_agent_personas</span><span class="p">[</span><span class="nb">input</span><span class="p">.</span><span class="n">subject</span><span class="p">.</span><span class="n">persona</span><span class="p">]</span>
+<a id="__codelineno-7-33" name="__codelineno-7-33" href="#__codelineno-7-33"></a><span class="p">}</span>
+<a id="__codelineno-7-34" name="__codelineno-7-34" href="#__codelineno-7-34"></a>
+<a id="__codelineno-7-35" name="__codelineno-7-35" href="#__codelineno-7-35"></a><span class="c1"># Owner executing directly</span>
+<a id="__codelineno-7-36" name="__codelineno-7-36" href="#__codelineno-7-36"></a><span class="n">persona_valid</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-7-37" name="__codelineno-7-37" href="#__codelineno-7-37"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">subject</span><span class="p">.</span><span class="n">persona</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">&quot;ai-agent&quot;</span>
+<a id="__codelineno-7-38" name="__codelineno-7-38" href="#__codelineno-7-38"></a><span class="w">  </span><span class="n">principal_id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">subject</span><span class="p">.</span><span class="n">id</span>
+<a id="__codelineno-7-39" name="__codelineno-7-39" href="#__codelineno-7-39"></a><span class="w">  </span><span class="n">owner_id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">id</span>
+<a id="__codelineno-7-40" name="__codelineno-7-40" href="#__codelineno-7-40"></a><span class="w">  </span><span class="n">principal_id</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">owner_id</span>
+<a id="__codelineno-7-41" name="__codelineno-7-41" href="#__codelineno-7-41"></a><span class="w">  </span><span class="n">owner_persona</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">persona</span>
+<a id="__codelineno-7-42" name="__codelineno-7-42" href="#__codelineno-7-42"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">subject</span><span class="p">.</span><span class="n">persona</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">owner_persona</span>
+<a id="__codelineno-7-43" name="__codelineno-7-43" href="#__codelineno-7-43"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>What this does:</strong></p>
+<ul>
+<li>Validates that the user's business role (persona) is appropriate</li>
+<li>Delegated users must have agent personas (<code>travel-agent</code>, etc.)</li>
+<li>Owners must match their own persona</li>
+</ul>
+<p><strong>Authz-API role:</strong></p>
+<ul>
+<li>Extracts <code>persona</code> from JWT custom claims</li>
+<li>Fetches <code>owner.persona</code> from user profile (Firestore)</li>
+<li>Includes both in OPA input for comparison</li>
+</ul>
+<h3 id="step-6-consent-check">Step 6: Consent Check</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">has_consent</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">autobook_consent</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="k">true</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>What this does:</strong></p>
+<ul>
+<li>Requires explicit user opt-in for autonomous booking</li>
+<li>Consent is per-user, not per-workflow</li>
+</ul>
+<p><strong>Authz-API role:</strong></p>
+<ul>
+<li>Fetches <code>autobook_consent</code> from user profile (Firestore)</li>
+<li>Converts string ("Yes"/"No") to boolean</li>
+<li>Includes in <code>resource.properties.owner</code></li>
+</ul>
+<h3 id="step-7-cost-limit-check">Step 7: Cost Limit Check</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">within_cost_limit</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="n">planned_price</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">planned_price</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span><span class="n">max_cost</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">autobook_price</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">  </span><span class="n">planned_price</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">max_cost</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>What this does:</strong></p>
+<ul>
+<li>Ensures booking cost doesn't exceed user's configured limit</li>
+<li>Cost limit is per-user preference</li>
+</ul>
+<p><strong>Authz-API role:</strong></p>
+<ul>
+<li>Extracts <code>planned_price</code> from workflow item resource</li>
+<li>Fetches <code>autobook_price</code> from user profile</li>
+<li>Converts both to numbers for comparison</li>
+</ul>
+<h3 id="step-8-lead-time-check">Step 8: Lead Time Check</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">sufficient_advance</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="n">departure_date_str</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">departure_date</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span><span class="n">departure</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="n">time</span><span class="p">.</span><span class="n">parse_rfc3339_ns</span><span class="p">(</span><span class="n">departure_date_str</span><span class="p">)</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">  </span><span class="n">now</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="n">time</span><span class="p">.</span><span class="n">now_ns</span><span class="p">()</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">  </span><span class="n">min_days</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">autobook_leadtime</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">  </span><span class="n">delta_days</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="p">(</span><span class="n">departure</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">now</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">1000000000</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">60</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">60</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">24</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="w">  </span><span class="n">delta_days</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">min_days</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>What this does:</strong></p>
+<ul>
+<li>Requires minimum advance notice before departure</li>
+<li>Prevents last-minute autonomous bookings</li>
+</ul>
+<p><strong>Authz-API role:</strong></p>
+<ul>
+<li>Converts <code>departure_date</code> to RFC3339 format (OPA requirement)</li>
+<li>Fetches <code>autobook_leadtime</code> from user profile</li>
+<li>Ensures <code>departure_date</code> is a valid timestamp</li>
+</ul>
+<h3 id="step-9-risk-check">Step 9: Risk Check</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">acceptable_risk</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="k">not</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">airline_risk_score</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="p">}</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="n">acceptable_risk</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">  </span><span class="n">risk</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">airline_risk_score</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">  </span><span class="n">max_risk</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">autobook_risklevel</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="w">  </span><span class="n">risk</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">max_risk</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>What this does:</strong></p>
+<ul>
+<li>Checks airline risk score against user's tolerance</li>
+<li>Allows execution if risk score is missing (optional field)</li>
+<li>Denies if risk exceeds configured threshold</li>
+</ul>
+<p><strong>Authz-API role:</strong></p>
+<ul>
+<li>Includes <code>airline_risk_score</code> if present in workflow item</li>
+<li>Fetches <code>autobook_risklevel</code> from user profile</li>
+<li>Converts both to numbers</li>
+</ul>
+<h3 id="step-10-reason-codes">Step 10: Reason Codes</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">reasons</span><span class="p">[</span><span class="n">code</span><span class="p">]</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">  </span><span class="n">principal_id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">subject</span><span class="p">.</span><span class="n">id</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">  </span><span class="n">owner_id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">id</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">  </span><span class="n">principal_id</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">owner_id</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="w">  </span><span class="k">not</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">delegation</span><span class="p">.</span><span class="n">valid</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="w">  </span><span class="n">code</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="s2">&quot;auto_book.principal_spoofing&quot;</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="p">}</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>
+<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="n">reasons</span><span class="p">[</span><span class="n">code</span><span class="p">]</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span>
+<a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a><span class="w">  </span><span class="n">code</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="s2">&quot;auto_book.no_consent&quot;</span>
+<a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a><span class="w">  </span><span class="n">authorized_principal</span>
+<a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a><span class="w">  </span><span class="k">not</span><span class="w"> </span><span class="n">has_consent</span>
+<a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a><span class="p">}</span>
+<a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a>
+<a id="__codelineno-12-17" name="__codelineno-12-17" href="#__codelineno-12-17"></a><span class="c1"># ... more reason rules ...</span>
+</code></pre></div>
+<p><strong>What this does:</strong></p>
+<ul>
+<li>Provides structured reason codes for denials</li>
+<li>Each failed gate has a corresponding reason</li>
+<li>Supports debugging and audit trails</li>
+</ul>
+<p><strong>Authz-API role:</strong></p>
+<ul>
+<li>Collects <code>reasons</code> array from OPA response</li>
+<li>Returns reason codes to PEP for logging/debugging</li>
+<li>Maps codes to human-readable messages</li>
+</ul>
+<h2 id="opa-input-structure">OPA Input Structure</h2>
+<p>Here's what the authz-api sends to OPA (enriched from PEP's AuthZEN request):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="p">{</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;agent-runner&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">    </span><span class="nt">&quot;persona&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ai-agent&quot;</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="w">  </span><span class="p">},</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="w">  </span><span class="nt">&quot;action&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span>
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="w">  </span><span class="p">},</span>
+<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="w">  </span><span class="nt">&quot;resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a><span class="w">    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;workflow_item&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a><span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;i_abc123&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a><span class="w">    </span><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a><span class="w">      </span><span class="nt">&quot;workflow_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;w_xyz789&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a><span class="w">      </span><span class="nt">&quot;planned_price&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">500.0</span><span class="p">,</span>
+<a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a><span class="w">      </span><span class="nt">&quot;departure_date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-01-30T00:00:00Z&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-16" name="__codelineno-13-16" href="#__codelineno-13-16"></a><span class="w">      </span><span class="nt">&quot;airline_risk_score&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">7.0</span><span class="p">,</span>
+<a id="__codelineno-13-17" name="__codelineno-13-17" href="#__codelineno-13-17"></a><span class="w">      </span><span class="nt">&quot;owner&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-13-18" name="__codelineno-13-18" href="#__codelineno-13-18"></a><span class="w">        </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user-uuid&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-19" name="__codelineno-13-19" href="#__codelineno-13-19"></a><span class="w">        </span><span class="nt">&quot;persona&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;traveler&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-20" name="__codelineno-13-20" href="#__codelineno-13-20"></a><span class="w">        </span><span class="nt">&quot;autobook_consent&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-13-21" name="__codelineno-13-21" href="#__codelineno-13-21"></a><span class="w">        </span><span class="nt">&quot;autobook_price&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1500</span><span class="p">,</span>
+<a id="__codelineno-13-22" name="__codelineno-13-22" href="#__codelineno-13-22"></a><span class="w">        </span><span class="nt">&quot;autobook_leadtime&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span>
+<a id="__codelineno-13-23" name="__codelineno-13-23" href="#__codelineno-13-23"></a><span class="w">        </span><span class="nt">&quot;autobook_risklevel&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span>
+<a id="__codelineno-13-24" name="__codelineno-13-24" href="#__codelineno-13-24"></a><span class="w">      </span><span class="p">}</span>
+<a id="__codelineno-13-25" name="__codelineno-13-25" href="#__codelineno-13-25"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-13-26" name="__codelineno-13-26" href="#__codelineno-13-26"></a><span class="w">  </span><span class="p">},</span>
+<a id="__codelineno-13-27" name="__codelineno-13-27" href="#__codelineno-13-27"></a><span class="w">  </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-13-28" name="__codelineno-13-28" href="#__codelineno-13-28"></a><span class="w">    </span><span class="nt">&quot;delegation&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-13-29" name="__codelineno-13-29" href="#__codelineno-13-29"></a><span class="w">      </span><span class="nt">&quot;valid&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-13-30" name="__codelineno-13-30" href="#__codelineno-13-30"></a><span class="w">      </span><span class="nt">&quot;delegation_chain&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;user1&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;user2&quot;</span><span class="p">],</span>
+<a id="__codelineno-13-31" name="__codelineno-13-31" href="#__codelineno-13-31"></a><span class="w">      </span><span class="nt">&quot;delegated_actions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;read&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span><span class="p">]</span>
+<a id="__codelineno-13-32" name="__codelineno-13-32" href="#__codelineno-13-32"></a><span class="w">    </span><span class="p">},</span>
+<a id="__codelineno-13-33" name="__codelineno-13-33" href="#__codelineno-13-33"></a><span class="w">    </span><span class="nt">&quot;principal&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-13-34" name="__codelineno-13-34" href="#__codelineno-13-34"></a><span class="w">      </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user-uuid&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-35" name="__codelineno-13-35" href="#__codelineno-13-35"></a><span class="w">      </span><span class="nt">&quot;persona&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;traveler&quot;</span>
+<a id="__codelineno-13-36" name="__codelineno-13-36" href="#__codelineno-13-36"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-13-37" name="__codelineno-13-37" href="#__codelineno-13-37"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-13-38" name="__codelineno-13-38" href="#__codelineno-13-38"></a><span class="p">}</span>
+</code></pre></div>
+<h3 id="data-sources-for-opa-input">Data Sources for OPA Input</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Source</th>
+<th>Provider</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>subject.id</code></td>
+<td>AuthZEN request</td>
+<td>PEP</td>
+</tr>
+<tr>
+<td><code>subject.persona</code></td>
+<td>JWT custom claims</td>
+<td>Authz-API</td>
+</tr>
+<tr>
+<td><code>action.name</code></td>
+<td>AuthZEN request</td>
+<td>PEP</td>
+</tr>
+<tr>
+<td><code>resource.id</code></td>
+<td>AuthZEN request</td>
+<td>PEP</td>
+</tr>
+<tr>
+<td><code>resource.properties.planned_price</code></td>
+<td>Workflow item data</td>
+<td>PEP</td>
+</tr>
+<tr>
+<td><code>resource.properties.departure_date</code></td>
+<td>Workflow item data</td>
+<td>PEP (normalized by authz-api)</td>
+</tr>
+<tr>
+<td><code>resource.properties.owner.autobook_*</code></td>
+<td>User profile (Firestore)</td>
+<td>Authz-API</td>
+</tr>
+<tr>
+<td><code>context.delegation.*</code></td>
+<td>Delegation graph</td>
+<td>Delegation-API (via authz-api)</td>
+</tr>
+<tr>
+<td><code>context.principal</code></td>
+<td>AuthZEN request or JWT</td>
+<td>PEP / Authz-API</td>
+</tr>
+</tbody>
+</table>
+<h2 id="authz-api-enrichment-process">Authz-API Enrichment Process</h2>
+<h3 id="1-validate-jwt">1. Validate JWT</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># Validate bearer token using Firebase Admin SDK</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="n">token_claims</span> <span class="o">=</span> <span class="n">security</span><span class="o">.</span><span class="n">verify_token</span><span class="p">(</span><span class="n">credentials</span><span class="p">)</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="n">user_sub</span> <span class="o">=</span> <span class="n">token_claims</span><span class="p">[</span><span class="s2">&quot;sub&quot;</span><span class="p">]</span>
+</code></pre></div>
+<h3 id="2-query-delegation-api">2. Query Delegation-API</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># Check if delegation exists</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="n">delegation_response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">DELEGATION_API_BASE_URL</span><span class="si">}</span><span class="s2">/v1/delegations/validate&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>    <span class="n">json</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>        <span class="s2">&quot;principal_id&quot;</span><span class="p">:</span> <span class="n">principal_id</span><span class="p">,</span>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>        <span class="s2">&quot;delegate_id&quot;</span><span class="p">:</span> <span class="n">subject_id</span><span class="p">,</span>
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>        <span class="s2">&quot;workflow_id&quot;</span><span class="p">:</span> <span class="n">workflow_id</span><span class="p">,</span>
+<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>        <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="n">action_name</span><span class="p">,</span>
+<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>    <span class="p">},</span>
+<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>    <span class="n">headers</span><span class="o">=</span><span class="n">headers</span>
+<a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="p">)</span>
+<a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a>
+<a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a><span class="c1"># Add to context</span>
+<a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a><span class="n">input_data</span><span class="p">[</span><span class="s2">&quot;context&quot;</span><span class="p">][</span><span class="s2">&quot;delegation&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a>    <span class="s2">&quot;valid&quot;</span><span class="p">:</span> <span class="n">delegation_response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">&quot;valid&quot;</span><span class="p">],</span>
+<a id="__codelineno-15-16" name="__codelineno-15-16" href="#__codelineno-15-16"></a>    <span class="s2">&quot;delegation_chain&quot;</span><span class="p">:</span> <span class="n">delegation_response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;delegation_chain&quot;</span><span class="p">,</span> <span class="p">[]),</span>
+<a id="__codelineno-15-17" name="__codelineno-15-17" href="#__codelineno-15-17"></a>    <span class="s2">&quot;delegated_actions&quot;</span><span class="p">:</span> <span class="n">delegation_response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;delegated_actions&quot;</span><span class="p">,</span> <span class="p">[]),</span>
+<a id="__codelineno-15-18" name="__codelineno-15-18" href="#__codelineno-15-18"></a><span class="p">}</span>
+</code></pre></div>
+<h3 id="3-fetch-user-profile">3. Fetch User Profile</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># Fetch owner&#39;s profile attributes from Firestore</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="n">owner_attributes</span> <span class="o">=</span> <span class="n">profile</span><span class="o">.</span><span class="n">fetch_attributes</span><span class="p">(</span><span class="n">owner_id</span><span class="p">)</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="c1"># Add to resource</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="n">input_data</span><span class="p">[</span><span class="s2">&quot;resource&quot;</span><span class="p">][</span><span class="s2">&quot;properties&quot;</span><span class="p">][</span><span class="s2">&quot;owner&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>    <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">owner_id</span><span class="p">,</span>
+<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>    <span class="s2">&quot;persona&quot;</span><span class="p">:</span> <span class="n">owner_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;persona&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;traveler&quot;</span><span class="p">])[</span><span class="mi">0</span><span class="p">],</span>
+<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>    <span class="s2">&quot;autobook_consent&quot;</span><span class="p">:</span> <span class="n">owner_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;autobook_consent&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;Yes&quot;</span><span class="p">,</span>
+<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>    <span class="s2">&quot;autobook_price&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">owner_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;autobook_price&quot;</span><span class="p">,</span> <span class="s2">&quot;0&quot;</span><span class="p">)),</span>
+<a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a>    <span class="s2">&quot;autobook_leadtime&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">owner_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;autobook_leadtime&quot;</span><span class="p">,</span> <span class="s2">&quot;0&quot;</span><span class="p">)),</span>
+<a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a>    <span class="s2">&quot;autobook_risklevel&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">owner_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;autobook_risklevel&quot;</span><span class="p">,</span> <span class="s2">&quot;0&quot;</span><span class="p">)),</span>
+<a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a><span class="p">}</span>
+</code></pre></div>
+<h3 id="4-normalize-data">4. Normalize Data</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># Convert departure date to RFC3339</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="k">if</span> <span class="s2">&quot;departure_date&quot;</span> <span class="ow">in</span> <span class="n">properties</span><span class="p">:</span>
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>    <span class="c1"># Convert YYYY-MM-DD to YYYY-MM-DDTHH:MM:SSZ</span>
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>    <span class="n">departure_date</span> <span class="o">=</span> <span class="n">properties</span><span class="p">[</span><span class="s2">&quot;departure_date&quot;</span><span class="p">]</span>
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>    <span class="n">properties</span><span class="p">[</span><span class="s2">&quot;departure_date&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">departure_date</span><span class="si">}</span><span class="s2">T00:00:00Z&quot;</span>
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>
+<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="c1"># Ensure numeric types</span>
+<a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a><span class="n">properties</span><span class="p">[</span><span class="s2">&quot;planned_price&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">properties</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;planned_price&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+<a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a><span class="k">if</span> <span class="s2">&quot;airline_risk_score&quot;</span> <span class="ow">in</span> <span class="n">properties</span><span class="p">:</span>
+<a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a>    <span class="n">properties</span><span class="p">[</span><span class="s2">&quot;airline_risk_score&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">properties</span><span class="p">[</span><span class="s2">&quot;airline_risk_score&quot;</span><span class="p">])</span>
+</code></pre></div>
+<h3 id="5-call-opa">5. Call OPA</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="n">opa_response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">OPA_URL</span><span class="si">}</span><span class="s2">/v1/data/auto_book/allow&quot;</span><span class="p">,</span>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>    <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;input&quot;</span><span class="p">:</span> <span class="n">input_data</span><span class="p">},</span>
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>    <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;Content-Type&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span><span class="p">},</span>
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="p">)</span>
+<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>
+<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="n">allow</span> <span class="o">=</span> <span class="n">opa_response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;result&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="6-return-decision">6. Return Decision</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="k">return</span> <span class="p">{</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>    <span class="s2">&quot;decision&quot;</span><span class="p">:</span> <span class="n">allow</span><span class="p">,</span>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>    <span class="s2">&quot;reasons&quot;</span><span class="p">:</span> <span class="n">reasons</span><span class="p">,</span>  <span class="c1"># From OPA</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>    <span class="s2">&quot;context&quot;</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>        <span class="s2">&quot;delegation_valid&quot;</span><span class="p">:</span> <span class="n">delegation_valid</span><span class="p">,</span>
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>        <span class="s2">&quot;policy_evaluated&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a>    <span class="p">}</span>
+<a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="p">}</span>
+</code></pre></div>
+<h2 id="testing-policies">Testing Policies</h2>
+<h3 id="test-opa-directly">Test OPA Directly</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8181/v1/data/auto_book/allow<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="s1">    &quot;input&quot;: {</span>
+<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="s1">      &quot;subject&quot;: {&quot;id&quot;: &quot;agent-runner&quot;, &quot;persona&quot;: &quot;ai-agent&quot;},</span>
+<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a><span class="s1">      &quot;action&quot;: {&quot;name&quot;: &quot;execute&quot;},</span>
+<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a><span class="s1">      &quot;resource&quot;: {</span>
+<a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a><span class="s1">        &quot;properties&quot;: {</span>
+<a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a><span class="s1">          &quot;planned_price&quot;: 500,</span>
+<a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a><span class="s1">          &quot;departure_date&quot;: &quot;2026-01-30T00:00:00Z&quot;,</span>
+<a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a><span class="s1">          &quot;airline_risk_score&quot;: 7,</span>
+<a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a><span class="s1">          &quot;owner&quot;: {</span>
+<a id="__codelineno-20-13" name="__codelineno-20-13" href="#__codelineno-20-13"></a><span class="s1">            &quot;id&quot;: &quot;user-123&quot;,</span>
+<a id="__codelineno-20-14" name="__codelineno-20-14" href="#__codelineno-20-14"></a><span class="s1">            &quot;persona&quot;: &quot;traveler&quot;,</span>
+<a id="__codelineno-20-15" name="__codelineno-20-15" href="#__codelineno-20-15"></a><span class="s1">            &quot;autobook_consent&quot;: true,</span>
+<a id="__codelineno-20-16" name="__codelineno-20-16" href="#__codelineno-20-16"></a><span class="s1">            &quot;autobook_price&quot;: 1500,</span>
+<a id="__codelineno-20-17" name="__codelineno-20-17" href="#__codelineno-20-17"></a><span class="s1">            &quot;autobook_leadtime&quot;: 7,</span>
+<a id="__codelineno-20-18" name="__codelineno-20-18" href="#__codelineno-20-18"></a><span class="s1">            &quot;autobook_risklevel&quot;: 10</span>
+<a id="__codelineno-20-19" name="__codelineno-20-19" href="#__codelineno-20-19"></a><span class="s1">          }</span>
+<a id="__codelineno-20-20" name="__codelineno-20-20" href="#__codelineno-20-20"></a><span class="s1">        }</span>
+<a id="__codelineno-20-21" name="__codelineno-20-21" href="#__codelineno-20-21"></a><span class="s1">      },</span>
+<a id="__codelineno-20-22" name="__codelineno-20-22" href="#__codelineno-20-22"></a><span class="s1">      &quot;context&quot;: {</span>
+<a id="__codelineno-20-23" name="__codelineno-20-23" href="#__codelineno-20-23"></a><span class="s1">        &quot;delegation&quot;: {&quot;valid&quot;: false},</span>
+<a id="__codelineno-20-24" name="__codelineno-20-24" href="#__codelineno-20-24"></a><span class="s1">        &quot;principal&quot;: {&quot;id&quot;: &quot;user-123&quot;, &quot;persona&quot;: &quot;traveler&quot;}</span>
+<a id="__codelineno-20-25" name="__codelineno-20-25" href="#__codelineno-20-25"></a><span class="s1">      }</span>
+<a id="__codelineno-20-26" name="__codelineno-20-26" href="#__codelineno-20-26"></a><span class="s1">    }</span>
+<a id="__codelineno-20-27" name="__codelineno-20-27" href="#__codelineno-20-27"></a><span class="s1">  }&#39;</span>
+</code></pre></div>
+<h3 id="test-via-authz-api">Test via Authz-API</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="c1"># Get a Firebase ID token</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="nv">TOKEN</span><span class="o">=</span><span class="s2">&quot;&lt;your-firebase-token&gt;&quot;</span>
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>
+<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8002/v1/evaluate<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a><span class="s1">    &quot;subject&quot;: {&quot;id&quot;: &quot;agent-runner&quot;},</span>
+<a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a><span class="s1">    &quot;action&quot;: {&quot;name&quot;: &quot;execute&quot;},</span>
+<a id="__codelineno-21-10" name="__codelineno-21-10" href="#__codelineno-21-10"></a><span class="s1">    &quot;resource&quot;: {</span>
+<a id="__codelineno-21-11" name="__codelineno-21-11" href="#__codelineno-21-11"></a><span class="s1">      &quot;type&quot;: &quot;workflow_item&quot;,</span>
+<a id="__codelineno-21-12" name="__codelineno-21-12" href="#__codelineno-21-12"></a><span class="s1">      &quot;id&quot;: &quot;i_test&quot;,</span>
+<a id="__codelineno-21-13" name="__codelineno-21-13" href="#__codelineno-21-13"></a><span class="s1">      &quot;workflow_id&quot;: &quot;w_test&quot;</span>
+<a id="__codelineno-21-14" name="__codelineno-21-14" href="#__codelineno-21-14"></a><span class="s1">    },</span>
+<a id="__codelineno-21-15" name="__codelineno-21-15" href="#__codelineno-21-15"></a><span class="s1">    &quot;context&quot;: {</span>
+<a id="__codelineno-21-16" name="__codelineno-21-16" href="#__codelineno-21-16"></a><span class="s1">      &quot;principal&quot;: {&quot;id&quot;: &quot;&lt;your-user-id&gt;&quot;}</span>
+<a id="__codelineno-21-17" name="__codelineno-21-17" href="#__codelineno-21-17"></a><span class="s1">    }</span>
+<a id="__codelineno-21-18" name="__codelineno-21-18" href="#__codelineno-21-18"></a><span class="s1">  }&#39;</span>
+</code></pre></div>
+<h2 id="policy-development-workflow">Policy Development Workflow</h2>
+<h3 id="1-edit-policy">1. Edit Policy</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>vim<span class="w"> </span>infra/opa/policies/auto_book.rego
+</code></pre></div>
+<h3 id="2-restart-opa">2. Restart OPA</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>docker<span class="w"> </span>compose<span class="w"> </span>restart<span class="w"> </span>opa
+</code></pre></div>
+<h3 id="3-test-policy">3. Test Policy</h3>
+<p>Use curl to test OPA directly (as shown above)</p>
+<h3 id="4-test-integration">4. Test Integration</h3>
+<p>Test via authz-api to ensure enrichment works</p>
+<h3 id="5-run-regression-tests">5. Run Regression Tests</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>python3<span class="w"> </span>flowpilot-testing/regression_test_firebase.py
+</code></pre></div>
+<h2 id="common-policy-patterns">Common Policy Patterns</h2>
+<h3 id="pattern-1-fail-closed">Pattern 1: Fail-Closed</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="k">default</span><span class="w"> </span><span class="n">allow</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">false</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>
+<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="n">allow</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a><span class="w">  </span><span class="c1"># Explicit conditions</span>
+<a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a><span class="p">}</span>
+</code></pre></div>
+<p>Always deny unless explicitly allowed.</p>
+<h3 id="pattern-2-multiple-allow-rules">Pattern 2: Multiple Allow Rules</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="n">allow</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">condition_a</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="n">allow</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">condition_b</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<p>Any rule can grant access (OR logic).</p>
+<h3 id="pattern-3-gated-allow">Pattern 3: Gated Allow</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="n">allow</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="w">  </span><span class="n">gate_1</span>
+<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a><span class="w">  </span><span class="n">gate_2</span>
+<a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a><span class="w">  </span><span class="n">gate_3</span>
+<a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a><span class="p">}</span>
+</code></pre></div>
+<p>All gates must pass (AND logic).</p>
+<h3 id="pattern-4-reason-tracking">Pattern 4: Reason Tracking</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="n">reasons</span><span class="p">[</span><span class="n">code</span><span class="p">]</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a><span class="w">  </span><span class="k">not</span><span class="w"> </span><span class="n">some_condition</span>
+<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a><span class="w">  </span><span class="n">code</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="s2">&quot;policy.failure_reason&quot;</span>
+<a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a><span class="p">}</span>
+</code></pre></div>
+<p>Provide structured denial reasons.</p>
+<h2 id="best-practices">Best Practices</h2>
+<h3 id="for-policy-authors">For Policy Authors</h3>
+<ol>
+<li><strong>Fail-closed</strong> - Default to deny</li>
+<li><strong>Explicit rules</strong> - Make allow conditions clear</li>
+<li><strong>Reason codes</strong> - Provide debugging information</li>
+<li><strong>Type safety</strong> - Validate data types in Rego</li>
+<li><strong>Comments</strong> - Document complex logic</li>
+</ol>
+<h3 id="for-authz-api-developers">For Authz-API Developers</h3>
+<ol>
+<li><strong>Normalize data</strong> - Convert types before OPA</li>
+<li><strong>Validate inputs</strong> - Ensure required fields exist</li>
+<li><strong>Enrich completely</strong> - Provide all data OPA needs</li>
+<li><strong>Handle errors</strong> - Graceful degradation on PIP failures</li>
+<li><strong>Log decisions</strong> - Audit all authorization outcomes</li>
+</ol>
+<h3 id="for-pep-developers">For PEP Developers</h3>
+<ol>
+<li><strong>Minimal requests</strong> - Send only intent, not policy data</li>
+<li><strong>Consistent format</strong> - Use AuthZEN structure</li>
+<li><strong>Include context</strong> - Provide principal when subject ≠ owner</li>
+<li><strong>Enforce decisions</strong> - Always respect authz-api response</li>
+</ol>
+<h2 id="deployment">Deployment</h2>
+<h3 id="local-development">Local Development</h3>
+<p>Policies are mounted from filesystem with hot-reload:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="c1"># docker-compose.yml</span>
+<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a><span class="nt">opa</span><span class="p">:</span>
+<a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a><span class="w">  </span><span class="nt">volumes</span><span class="p">:</span>
+<a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./infra/opa/policies:/policies</span>
+</code></pre></div>
+<h3 id="production-gcp-cloud-run">Production (GCP Cloud Run)</h3>
+<p>Policies are <strong>baked into the OPA container image</strong>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="c"># infra/opa/Dockerfile</span>
+<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a><span class="k">COPY</span><span class="w"> </span>infra/opa/policies<span class="w"> </span>/policies
+</code></pre></div>
+<p><strong>To update policies in production:</strong></p>
+<ol>
+<li>Edit <code>infra/opa/policies/auto_book.rego</code></li>
+<li>Rebuild OPA container</li>
+<li>Push to Artifact Registry</li>
+<li>Deploy to Cloud Run</li>
+</ol>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>docker<span class="w"> </span>build<span class="w"> </span>-f<span class="w"> </span>infra/opa/Dockerfile<span class="w"> </span>-t<span class="w"> </span>us-central1-docker.pkg.dev/PROJECT/flowpilot/opa:latest<span class="w"> </span>.
+<a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a>docker<span class="w"> </span>push<span class="w"> </span>us-central1-docker.pkg.dev/PROJECT/flowpilot/opa:latest
+<a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a>gcloud<span class="w"> </span>run<span class="w"> </span>deploy<span class="w"> </span>flowpilot-opa<span class="w"> </span>--image<span class="w"> </span>us-central1-docker.pkg.dev/PROJECT/flowpilot/opa:latest
+</code></pre></div>
+<h2 id="summary">Summary</h2>
+<p><strong>Policy Layer (OPA):</strong>
+- Declarative rules in Rego
+- Pure policy logic, no data fetching
+- Receives decision-ready input</p>
+<p><strong>Orchestration Layer (Authz-API):</strong>
+- Validates JWTs
+- Queries delegation-api (ReBAC)
+- Fetches user profiles (ABAC attributes)
+- Normalizes and enriches data
+- Calls OPA with complete context</p>
+<p><strong>Enforcement Layer (PEP):</strong>
+- Submits AuthZEN requests
+- Enforces authz-api decisions
+- Never evaluates policy directly</p>
+<p>This separation keeps policies clean, authorization centralized, and applications simple.</p>
 
 
 
