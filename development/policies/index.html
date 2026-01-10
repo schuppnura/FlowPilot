@@ -2184,13 +2184,10 @@
 </ul>
 <h2 id="policy-construction">Policy Construction</h2>
 <h3 id="step-1-default-deny">Step 1: Default Deny</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">package</span><span class="w"> </span><span class="n">auto_book</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">default</span><span class="w"> </span><span class="n">allow</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">false</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">default</span><span class="w"> </span><span class="n">allow</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">false</span>
 </code></pre></div>
 <p><strong>What this does:</strong></p>
 <ul>
-<li>Declares the policy package name</li>
 <li><strong>Fail-closed by default</strong> - Deny unless explicitly allowed</li>
 </ul>
 <p><strong>Authz-API role:</strong> Interprets <code>allow = false</code> as a deny decision</p>
