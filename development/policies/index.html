@@ -761,29 +761,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Overview
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#architecture" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Architecture
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Architecture">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
   <a href="#policy-decision-flow" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -792,34 +769,7 @@
     </span>
   </a>
   
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#the-role-of-authz-api" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The Role of Authz-API
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#the-auto-book-policy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The Auto-Book Policy
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="The Auto-Book Policy">
+    <nav class="md-nav" aria-label="Policy Decision Flow">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -833,19 +783,19 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#supported-actions" class="md-nav__link">
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-role-of-authz-api" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Supported Actions
+        The Role of Authz-API
       
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -860,6 +810,17 @@
   
     <nav class="md-nav" aria-label="Policy Construction">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#supported-actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported Actions
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#step-1-default-deny" class="md-nav__link">
@@ -2145,13 +2106,11 @@
 
 <h1 id="policy-development-guide">Policy Development Guide</h1>
 <p>This guide explains how FlowPilot's authorization policies work, how they're constructed, and the role of the authz-api in policy evaluation.</p>
-<h2 id="overview">Overview</h2>
 <p>FlowPilot uses <strong>Open Policy Agent (OPA)</strong> with <strong>Rego</strong> policies for declarative access control. The policy engine answers the question:</p>
 <blockquote>
 <p>"Is this subject allowed to perform this action on this resource?"</p>
 </blockquote>
-<h2 id="architecture">Architecture</h2>
-<h3 id="policy-decision-flow">Policy Decision Flow</h3>
+<h2 id="policy-decision-flow">Policy Decision Flow</h2>
 <ol>
 <li><strong>PEP (Policy Enforcement Point)</strong> - Application service (e.g., <code>ai-agent-api</code>)</li>
 <li><strong>Authz-API</strong> - Authorization façade (enriches requests, calls PIPs)</li>
@@ -2161,7 +2120,10 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>PEP → Authz-API → Delegation-API (ReBAC)
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>                 → OPA (ABAC)
 </code></pre></div>
-<h3 id="the-role-of-authz-api">The Role of Authz-API</h3>
+<h3 id="policy-file-location">Policy File Location</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>infra/opa/policies/auto_book.rego
+</code></pre></div>
+<h2 id="the-role-of-authz-api">The Role of Authz-API</h2>
 <p>The authz-api acts as the <strong>orchestration layer</strong> between PEPs and the policy engine. It:</p>
 <ol>
 <li><strong>Validates JWTs</strong> - Ensures bearer tokens are valid</li>
@@ -2172,17 +2134,13 @@
 <li><strong>Returns Decision</strong> - Structured allow/deny with reason codes</li>
 </ol>
 <p><strong>Key Insight:</strong> The authz-api ensures OPA receives <strong>decision-ready facts</strong>, not raw requests.</p>
-<h2 id="the-auto-book-policy">The Auto-Book Policy</h2>
+<h2 id="policy-construction">Policy Construction</h2>
 <p>FlowPilot's primary policy is <code>auto_book.rego</code>, which controls autonomous AI booking and delegated access.</p>
-<h3 id="policy-file-location">Policy File Location</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>infra/opa/policies/auto_book.rego
-</code></pre></div>
 <h3 id="supported-actions">Supported Actions</h3>
 <ul>
 <li><code>execute</code> - Execute workflow items (book travel)</li>
 <li><code>read</code> - View workflows (read-only access)</li>
 </ul>
-<h2 id="policy-construction">Policy Construction</h2>
 <h3 id="step-1-default-deny">Step 1: Default Deny</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">default</span><span class="w"> </span><span class="n">allow</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">false</span>
 </code></pre></div>
