@@ -862,10 +862,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#step-1-package-and-default" class="md-nav__link">
+  <a href="#step-1-default-deny" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 1: Package and Default
+        Step 1: Default Deny
       
     </span>
   </a>
@@ -873,10 +873,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-2-action-routing" class="md-nav__link">
+  <a href="#step-2-decision-routing" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 2: Action Routing
+        Step 2: Decision Routing
       
     </span>
   </a>
@@ -884,10 +884,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-3-execute-gates" class="md-nav__link">
+  <a href="#step-3-decisions-gates" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 3: Execute Gates
+        Step 3: Decisions Gates
       
     </span>
   </a>
@@ -895,10 +895,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-4-anti-spoofing-check" class="md-nav__link">
+  <a href="#step-4-anti-spoofing-checks" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 4: Anti-Spoofing Check
+        Step 4: Anti-Spoofing Checks
       
     </span>
   </a>
@@ -928,10 +928,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-7-cost-limit-check" class="md-nav__link">
+  <a href="#step-7-owner-self-declared-constraint-check-1" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 7: Cost Limit Check
+        Step 7: Owner Self-declared Constraint Check 1
       
     </span>
   </a>
@@ -939,10 +939,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-8-lead-time-check" class="md-nav__link">
+  <a href="#step-8-owner-self-declared-constraint-check-2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 8: Lead Time Check
+        Step 8: Owner Self-declared Constraint Check 2
       
     </span>
   </a>
@@ -950,10 +950,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-9-risk-check" class="md-nav__link">
+  <a href="#step-9-owner-self-declared-constraint-check-3" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 9: Risk Check
+        Step 9: Owner Self-declared Constraint Check 3
       
     </span>
   </a>
@@ -961,10 +961,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-10-reason-codes" class="md-nav__link">
+  <a href="#step-10-deny-reason-codes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 10: Reason Codes
+        Step 10: Deny Reason Codes
       
     </span>
   </a>
@@ -977,15 +977,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#opa-input-structure" class="md-nav__link">
+  <a href="#opa-authzen-structure" class="md-nav__link">
     <span class="md-ellipsis">
       
-        OPA Input Structure
+        OPA AuthZEN Structure
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="OPA Input Structure">
+    <nav class="md-nav" aria-label="OPA AuthZEN Structure">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1017,10 +1017,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-validate-jwt" class="md-nav__link">
+  <a href="#1-validate-incoming-jwt-and-authzen" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Validate JWT
+        1. Validate incoming JWT and AuthZEN
       
     </span>
   </a>
@@ -1028,10 +1028,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-query-delegation-api" class="md-nav__link">
+  <a href="#2-fetch-user-profile" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Query Delegation-API
+        2. Fetch User Profile
       
     </span>
   </a>
@@ -1039,10 +1039,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3-fetch-user-profile" class="md-nav__link">
+  <a href="#3-fetch-delegation-chain" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Fetch User Profile
+        3. Fetch Delegation Chain
       
     </span>
   </a>
@@ -1061,10 +1061,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#5-call-opa" class="md-nav__link">
+  <a href="#5-construct-new-authzen-and-call-opa" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. Call OPA
+        5. Construct new AuthZEN and call OPA
       
     </span>
   </a>
@@ -2183,7 +2183,7 @@
 <li><code>read</code> - View workflows (read-only access)</li>
 </ul>
 <h2 id="policy-construction-step-by-step">Policy Construction: Step by Step</h2>
-<h3 id="step-1-package-and-default">Step 1: Package and Default</h3>
+<h3 id="step-1-default-deny">Step 1: Default Deny</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">package</span><span class="w"> </span><span class="n">auto_book</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">default</span><span class="w"> </span><span class="n">allow</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">false</span>
@@ -2194,7 +2194,7 @@
 <li><strong>Fail-closed by default</strong> - Deny unless explicitly allowed</li>
 </ul>
 <p><strong>Authz-API role:</strong> Interprets <code>allow = false</code> as a deny decision</p>
-<h3 id="step-2-action-routing">Step 2: Action Routing</h3>
+<h3 id="step-2-decision-routing">Step 2: Decision Routing</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">allow</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span>
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="n">allow_execute</span>
@@ -2212,7 +2212,7 @@
 <li><code>read</code> has simpler requirements</li>
 </ul>
 <p><strong>Authz-API role:</strong> Includes <code>action.name</code> in the OPA input based on the PEP's request</p>
-<h3 id="step-3-execute-gates">Step 3: Execute Gates</h3>
+<h3 id="step-3-decisions-gates">Step 3: Decisions Gates</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">allow_execute</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="n">authorized_principal</span><span class="w">  </span><span class="c1"># Anti-spoofing and delegation check</span>
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="n">persona_valid</span><span class="w">         </span><span class="c1"># Persona check</span>
@@ -2229,7 +2229,7 @@
 <li>If any gate fails, <code>allow_execute</code> is false</li>
 </ul>
 <p><strong>Authz-API role:</strong> Provides all data needed for gate evaluation (more below)</p>
-<h3 id="step-4-anti-spoofing-check">Step 4: Anti-Spoofing Check</h3>
+<h3 id="step-4-anti-spoofing-checks">Step 4: Anti-Spoofing Checks</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Owner directly accessing their own resource</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">authorized_principal</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">subject</span><span class="p">.</span><span class="n">persona</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">&quot;ai-agent&quot;</span>
@@ -2355,7 +2355,7 @@
 <li>Converts string ("Yes"/"No") to boolean</li>
 <li>Includes in <code>resource.properties.owner</code></li>
 </ul>
-<h3 id="step-7-cost-limit-check">Step 7: Cost Limit Check</h3>
+<h3 id="step-7-owner-self-declared-constraint-check-1">Step 7: Owner Self-declared Constraint Check 1</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">within_cost_limit</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="n">planned_price</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">planned_price</span>
 <a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span><span class="n">max_cost</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">autobook_price</span>
@@ -2373,7 +2373,7 @@
 <li>Fetches <code>autobook_price</code> from user profile</li>
 <li>Converts both to numbers for comparison</li>
 </ul>
-<h3 id="step-8-lead-time-check">Step 8: Lead Time Check</h3>
+<h3 id="step-8-owner-self-declared-constraint-check-2">Step 8: Owner Self-declared Constraint Check 2</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">sufficient_advance</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="n">departure_date_str</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">departure_date</span>
 <a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span><span class="n">departure</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="n">time</span><span class="p">.</span><span class="n">parse_rfc3339_ns</span><span class="p">(</span><span class="n">departure_date_str</span><span class="p">)</span>
@@ -2394,7 +2394,7 @@
 <li>Fetches <code>autobook_leadtime</code> from user profile</li>
 <li>Ensures <code>departure_date</code> is a valid timestamp</li>
 </ul>
-<h3 id="step-9-risk-check">Step 9: Risk Check</h3>
+<h3 id="step-9-owner-self-declared-constraint-check-3">Step 9: Owner Self-declared Constraint Check 3</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">acceptable_risk</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="k">not</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">airline_risk_score</span>
 <a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="p">}</span>
@@ -2417,7 +2417,7 @@
 <li>Fetches <code>autobook_risklevel</code> from user profile</li>
 <li>Converts both to numbers</li>
 </ul>
-<h3 id="step-10-reason-codes">Step 10: Reason Codes</h3>
+<h3 id="step-10-deny-reason-codes">Step 10: Deny Reason Codes</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">reasons</span><span class="p">[</span><span class="n">code</span><span class="p">]</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span>
 <a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">  </span><span class="n">principal_id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">subject</span><span class="p">.</span><span class="n">id</span>
@@ -2448,7 +2448,7 @@
 <li>Returns reason codes to PEP for logging/debugging</li>
 <li>Maps codes to human-readable messages</li>
 </ul>
-<h2 id="opa-input-structure">OPA Input Structure</h2>
+<h2 id="opa-authzen-structure">OPA AuthZEN Structure</h2>
 <p>Here's what the authz-api sends to OPA (enriched from PEP's AuthZEN request):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="p">{</span>
 <a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;api_request&quot;</span><span class="p">,</span>
@@ -2565,44 +2565,44 @@
 </tbody>
 </table>
 <h2 id="authz-api-enrichment-process">Authz-API Enrichment Process</h2>
-<h3 id="1-validate-jwt">1. Validate JWT</h3>
+<h3 id="1-validate-incoming-jwt-and-authzen">1. Validate incoming JWT and AuthZEN</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># Validate bearer token using Firebase Admin SDK</span>
 <a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="n">token_claims</span> <span class="o">=</span> <span class="n">security</span><span class="o">.</span><span class="n">verify_token</span><span class="p">(</span><span class="n">credentials</span><span class="p">)</span>
 <a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="n">user_sub</span> <span class="o">=</span> <span class="n">token_claims</span><span class="p">[</span><span class="s2">&quot;sub&quot;</span><span class="p">]</span>
 </code></pre></div>
-<h3 id="2-query-delegation-api">2. Query Delegation-API</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># Check if delegation exists</span>
-<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="n">delegation_response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">DELEGATION_API_BASE_URL</span><span class="si">}</span><span class="s2">/v1/delegations/validate&quot;</span><span class="p">,</span>
-<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>    <span class="n">json</span><span class="o">=</span><span class="p">{</span>
-<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>        <span class="s2">&quot;principal_id&quot;</span><span class="p">:</span> <span class="n">principal_id</span><span class="p">,</span>
-<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>        <span class="s2">&quot;delegate_id&quot;</span><span class="p">:</span> <span class="n">subject_id</span><span class="p">,</span>
-<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>        <span class="s2">&quot;workflow_id&quot;</span><span class="p">:</span> <span class="n">workflow_id</span><span class="p">,</span>
-<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>        <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="n">action_name</span><span class="p">,</span>
-<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>    <span class="p">},</span>
-<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>    <span class="n">headers</span><span class="o">=</span><span class="n">headers</span>
-<a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="p">)</span>
-<a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a>
-<a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a><span class="c1"># Add to context</span>
-<a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a><span class="n">input_data</span><span class="p">[</span><span class="s2">&quot;context&quot;</span><span class="p">][</span><span class="s2">&quot;delegation&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a>    <span class="s2">&quot;valid&quot;</span><span class="p">:</span> <span class="n">delegation_response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">&quot;valid&quot;</span><span class="p">],</span>
-<a id="__codelineno-15-16" name="__codelineno-15-16" href="#__codelineno-15-16"></a>    <span class="s2">&quot;delegation_chain&quot;</span><span class="p">:</span> <span class="n">delegation_response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;delegation_chain&quot;</span><span class="p">,</span> <span class="p">[]),</span>
-<a id="__codelineno-15-17" name="__codelineno-15-17" href="#__codelineno-15-17"></a>    <span class="s2">&quot;delegated_actions&quot;</span><span class="p">:</span> <span class="n">delegation_response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;delegated_actions&quot;</span><span class="p">,</span> <span class="p">[]),</span>
-<a id="__codelineno-15-18" name="__codelineno-15-18" href="#__codelineno-15-18"></a><span class="p">}</span>
+<h3 id="2-fetch-user-profile">2. Fetch User Profile</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># Fetch owner&#39;s profile attributes from Firestore</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="n">owner_attributes</span> <span class="o">=</span> <span class="n">profile</span><span class="o">.</span><span class="n">fetch_attributes</span><span class="p">(</span><span class="n">owner_id</span><span class="p">)</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="c1"># Add to resource</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="n">input_data</span><span class="p">[</span><span class="s2">&quot;resource&quot;</span><span class="p">][</span><span class="s2">&quot;properties&quot;</span><span class="p">][</span><span class="s2">&quot;owner&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>    <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">owner_id</span><span class="p">,</span>
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>    <span class="s2">&quot;persona&quot;</span><span class="p">:</span> <span class="n">owner_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;persona&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;traveler&quot;</span><span class="p">])[</span><span class="mi">0</span><span class="p">],</span>
+<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>    <span class="s2">&quot;autobook_consent&quot;</span><span class="p">:</span> <span class="n">owner_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;autobook_consent&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;Yes&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>    <span class="s2">&quot;autobook_price&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">owner_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;autobook_price&quot;</span><span class="p">,</span> <span class="s2">&quot;0&quot;</span><span class="p">)),</span>
+<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>    <span class="s2">&quot;autobook_leadtime&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">owner_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;autobook_leadtime&quot;</span><span class="p">,</span> <span class="s2">&quot;0&quot;</span><span class="p">)),</span>
+<a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a>    <span class="s2">&quot;autobook_risklevel&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">owner_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;autobook_risklevel&quot;</span><span class="p">,</span> <span class="s2">&quot;0&quot;</span><span class="p">)),</span>
+<a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a><span class="p">}</span>
 </code></pre></div>
-<h3 id="3-fetch-user-profile">3. Fetch User Profile</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># Fetch owner&#39;s profile attributes from Firestore</span>
-<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="n">owner_attributes</span> <span class="o">=</span> <span class="n">profile</span><span class="o">.</span><span class="n">fetch_attributes</span><span class="p">(</span><span class="n">owner_id</span><span class="p">)</span>
-<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>
-<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="c1"># Add to resource</span>
-<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="n">input_data</span><span class="p">[</span><span class="s2">&quot;resource&quot;</span><span class="p">][</span><span class="s2">&quot;properties&quot;</span><span class="p">][</span><span class="s2">&quot;owner&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>    <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">owner_id</span><span class="p">,</span>
-<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>    <span class="s2">&quot;persona&quot;</span><span class="p">:</span> <span class="n">owner_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;persona&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;traveler&quot;</span><span class="p">])[</span><span class="mi">0</span><span class="p">],</span>
-<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>    <span class="s2">&quot;autobook_consent&quot;</span><span class="p">:</span> <span class="n">owner_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;autobook_consent&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;Yes&quot;</span><span class="p">,</span>
-<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>    <span class="s2">&quot;autobook_price&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">owner_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;autobook_price&quot;</span><span class="p">,</span> <span class="s2">&quot;0&quot;</span><span class="p">)),</span>
-<a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a>    <span class="s2">&quot;autobook_leadtime&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">owner_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;autobook_leadtime&quot;</span><span class="p">,</span> <span class="s2">&quot;0&quot;</span><span class="p">)),</span>
-<a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a>    <span class="s2">&quot;autobook_risklevel&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">owner_attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;autobook_risklevel&quot;</span><span class="p">,</span> <span class="s2">&quot;0&quot;</span><span class="p">)),</span>
-<a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a><span class="p">}</span>
+<h3 id="3-fetch-delegation-chain">3. Fetch Delegation Chain</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># Check if delegation exists</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="n">delegation_response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">DELEGATION_API_BASE_URL</span><span class="si">}</span><span class="s2">/v1/delegations/validate&quot;</span><span class="p">,</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>    <span class="n">json</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>        <span class="s2">&quot;principal_id&quot;</span><span class="p">:</span> <span class="n">principal_id</span><span class="p">,</span>
+<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>        <span class="s2">&quot;delegate_id&quot;</span><span class="p">:</span> <span class="n">subject_id</span><span class="p">,</span>
+<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>        <span class="s2">&quot;workflow_id&quot;</span><span class="p">:</span> <span class="n">workflow_id</span><span class="p">,</span>
+<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>        <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="n">action_name</span><span class="p">,</span>
+<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>    <span class="p">},</span>
+<a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a>    <span class="n">headers</span><span class="o">=</span><span class="n">headers</span>
+<a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a><span class="p">)</span>
+<a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a>
+<a id="__codelineno-16-13" name="__codelineno-16-13" href="#__codelineno-16-13"></a><span class="c1"># Add to context</span>
+<a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a><span class="n">input_data</span><span class="p">[</span><span class="s2">&quot;context&quot;</span><span class="p">][</span><span class="s2">&quot;delegation&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-16-15" name="__codelineno-16-15" href="#__codelineno-16-15"></a>    <span class="s2">&quot;valid&quot;</span><span class="p">:</span> <span class="n">delegation_response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">&quot;valid&quot;</span><span class="p">],</span>
+<a id="__codelineno-16-16" name="__codelineno-16-16" href="#__codelineno-16-16"></a>    <span class="s2">&quot;delegation_chain&quot;</span><span class="p">:</span> <span class="n">delegation_response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;delegation_chain&quot;</span><span class="p">,</span> <span class="p">[]),</span>
+<a id="__codelineno-16-17" name="__codelineno-16-17" href="#__codelineno-16-17"></a>    <span class="s2">&quot;delegated_actions&quot;</span><span class="p">:</span> <span class="n">delegation_response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;delegated_actions&quot;</span><span class="p">,</span> <span class="p">[]),</span>
+<a id="__codelineno-16-18" name="__codelineno-16-18" href="#__codelineno-16-18"></a><span class="p">}</span>
 </code></pre></div>
 <h3 id="4-normalize-data">4. Normalize Data</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># Convert departure date to RFC3339</span>
@@ -2616,7 +2616,7 @@
 <a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a><span class="k">if</span> <span class="s2">&quot;airline_risk_score&quot;</span> <span class="ow">in</span> <span class="n">properties</span><span class="p">:</span>
 <a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a>    <span class="n">properties</span><span class="p">[</span><span class="s2">&quot;airline_risk_score&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">properties</span><span class="p">[</span><span class="s2">&quot;airline_risk_score&quot;</span><span class="p">])</span>
 </code></pre></div>
-<h3 id="5-call-opa">5. Call OPA</h3>
+<h3 id="5-construct-new-authzen-and-call-opa">5. Construct new AuthZEN and call OPA</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="n">opa_response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
 <a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">OPA_URL</span><span class="si">}</span><span class="s2">/v1/data/auto_book/allow&quot;</span><span class="p">,</span>
 <a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>    <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;input&quot;</span><span class="p">:</span> <span class="n">input_data</span><span class="p">},</span>
