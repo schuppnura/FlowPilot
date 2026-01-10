@@ -769,23 +769,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Policy Decision Flow">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#policy-file-location" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Policy File Location
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -812,10 +795,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#supported-actions" class="md-nav__link">
+  <a href="#step-0-supported-actions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Supported Actions
+        Step 0. Supported Actions
       
     </span>
   </a>
@@ -2120,9 +2103,6 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>PEP → Authz-API → Delegation-API (ReBAC)
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>                 → OPA (ABAC)
 </code></pre></div>
-<h3 id="policy-file-location">Policy File Location</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>infra/opa/policies/auto_book.rego
-</code></pre></div>
 <h2 id="the-role-of-authz-api">The Role of Authz-API</h2>
 <p>The authz-api acts as the <strong>orchestration layer</strong> between PEPs and the policy engine. It:</p>
 <ol>
@@ -2136,7 +2116,10 @@
 <p><strong>Key Insight:</strong> The authz-api ensures OPA receives <strong>decision-ready facts</strong>, not raw requests.</p>
 <h2 id="policy-construction">Policy Construction</h2>
 <p>FlowPilot's primary policy is <code>auto_book.rego</code>, which controls autonomous AI booking and delegated access.</p>
-<h3 id="supported-actions">Supported Actions</h3>
+<p>Policy is stored in a file of type REGO at:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>infra/opa/policies/auto_book.rego
+</code></pre></div></p>
+<h3 id="step-0-supported-actions">Step 0. Supported Actions</h3>
 <ul>
 <li><code>execute</code> - Execute workflow items (book travel)</li>
 <li><code>read</code> - View workflows (read-only access)</li>
@@ -2689,8 +2672,7 @@
 <li><strong>Fail-closed</strong> - Default to deny</li>
 <li><strong>Explicit rules</strong> - Make allow conditions clear</li>
 <li><strong>Reason codes</strong> - Provide debugging information</li>
-<li><strong>Type safety</strong> - Validate data types in Rego</li>
-<li><strong>Comments</strong> - Document complex logic</li>
+<li><strong>Type safety</strong> - Ensure data is normalized before</li>
 </ol>
 <h3 id="for-authz-api-developers">For Authz-API Developers</h3>
 <ol>
@@ -2720,6 +2702,7 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="c"># infra/opa/Dockerfile</span>
 <a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a><span class="k">COPY</span><span class="w"> </span>infra/opa/policies<span class="w"> </span>/policies
 </code></pre></div>
+<p>Having them baked in enables a strong version control based on a git repo. And with strong version control comes the ability for strong governance. The latter, hwoever, is a matter of process and organization, not a technical matter.</p>
 <p><strong>To update policies in production:</strong></p>
 <ol>
 <li>Edit <code>infra/opa/policies/auto_book.rego</code></li>

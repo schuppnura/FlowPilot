@@ -564,10 +564,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#defense-in-depth-security" class="md-nav__link">
+  <a href="#policy-driven-authorization" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Defense-in-Depth Security
+        Policy-Driven Authorization
       
     </span>
   </a>
@@ -586,10 +586,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#policy-driven-authorization" class="md-nav__link">
+  <a href="#defense-in-depth-security" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Policy-Driven Authorization
+        Defense-in-Depth Security
       
     </span>
   </a>
@@ -1779,6 +1779,22 @@
 </ul>
 </div>
 <h2 id="key-features">Key Features</h2>
+<h3 id="policy-driven-authorization">Policy-Driven Authorization</h3>
+<ul>
+<li>Adopting standards for which open source and GenAI is available</li>
+<li>Declarative Rego policies in OPA</li>
+<li>Attribute-based access control (ABAC)</li>
+<li>Consent and risk threshold evaluation</li>
+<li>Explainable authorization decisions</li>
+<li>Adopting the AuthZEN protocol</li>
+</ul>
+<h3 id="relationship-based-access-control">Relationship-Based Access Control</h3>
+<ul>
+<li>Explicit delegation graph management</li>
+<li>Transitive delegation chain resolution</li>
+<li>Workflow-scoped and global delegations</li>
+<li>Time-bound and revocable delegations</li>
+</ul>
 <h3 id="defense-in-depth-security">Defense-in-Depth Security</h3>
 <ul>
 <li>JWKS-based JWT validation (zero network calls per request)</li>
@@ -1788,36 +1804,22 @@
 <li>Production-safe error handling</li>
 <li>Zero PII exposure to LLMs</li>
 </ul>
-<h3 id="relationship-based-access-control">Relationship-Based Access Control</h3>
-<ul>
-<li>Explicit delegation graph management</li>
-<li>Transitive delegation chain resolution</li>
-<li>Workflow-scoped and global delegations</li>
-<li>Time-bound and revocable delegations</li>
-</ul>
-<h3 id="policy-driven-authorization">Policy-Driven Authorization</h3>
-<ul>
-<li>Declarative Rego policies in OPA</li>
-<li>Attribute-based access control (ABAC)</li>
-<li>Consent and risk threshold evaluation</li>
-<li>Explainable authorization decisions</li>
-</ul>
 <h3 id="production-ready-patterns">Production-Ready Patterns</h3>
 <ul>
-<li>Microservices architecture</li>
-<li>Docker Compose for local development</li>
-<li>Cloud Run deployment for GCP</li>
+<li>Solid microservices architecture, adopting separation of concern</li>
 <li>Comprehensive testing suite</li>
 <li>OpenAPI specifications for all APIs</li>
+<li>Cloud Run deployment for GCP</li>
+<li>Docker Compose for local development</li>
 </ul>
 <h2 id="technology-stack">Technology Stack</h2>
 <ul>
 <li><strong>Backend</strong>: Python + FastAPI</li>
-<li><strong>Policy Engine</strong>: Open Policy Agent (OPA)</li>
-<li><strong>Authentication</strong>: Firebase (GCP) / Keycloak (local)</li>
-<li><strong>Database</strong>: PostgreSQL (GCP) / SQLite (local)</li>
-<li><strong>Infrastructure</strong>: Google Cloud Run / Docker Compose</li>
-<li><strong>Client</strong>: React (web app) / Swift (macOS desktop app)</li>
+<li><strong>Policy Engine</strong>: Open Policy Agent (OPA) and ready for Topaz</li>
+<li><strong>Graph Database</strong>: PostgreSQL (GCP) / SQLite (local) and ready for Topaz Directory</li>
+<li><strong>Identity P&lt;ovider</strong>: Firebase (GCP) / Keycloak (local) and ready for any other OIDC IdP</li>
+<li><strong>Infrastructure</strong>: Google Cloud Run / Docker Compose and ready for any containerized deployment</li>
+<li><strong>Client</strong>: React (web app) / Swift (macOS desktop app) and ready for any other client tech</li>
 </ul>
 <h2 id="next-steps">Next Steps</h2>
 <p><strong>For App Developers:</strong> Start with the <a href="getting-started/integration/">Integration Guide</a> to add FlowPilot to your application.</p>

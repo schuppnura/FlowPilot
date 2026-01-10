@@ -1576,45 +1576,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Security Best Practices">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#production-deployment" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Production Deployment
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#demodevelopment-environment-warnings" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Demo/Development Environment Warnings
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#known-limitations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Known Limitations
-      
-    </span>
-  </a>
-  
 </li>
       
         <li class="md-nav__item">
@@ -1728,7 +1689,6 @@
 <li>We request that you do not publicly disclose the vulnerability until we have released a fix</li>
 </ul>
 <h2 id="security-best-practices">Security Best Practices</h2>
-<h3 id="production-deployment">Production Deployment</h3>
 <p>When deploying FlowPilot in production:</p>
 <ol>
 <li><strong>Authentication &amp; Authorization</strong></li>
@@ -1742,7 +1702,7 @@
 <p><strong>Transport Security</strong></p>
 </li>
 <li>MUST use TLS 1.2 or higher for all services</li>
-<li>Use valid, non-self-signed certificates</li>
+<li>Use valid, public certificates</li>
 <li>Configure proper cipher suites</li>
 <li>
 <p>Enable HSTS (HTTP Strict Transport Security)</p>
@@ -1761,15 +1721,13 @@
 </li>
 <li>Never commit secrets to version control</li>
 <li>Use environment variables or secret management systems</li>
-<li>Rotate Keycloak admin credentials immediately</li>
-<li>Generate new client secrets for all OIDC clients</li>
+<li>Rotate IdP admin credentials immediately</li>
 <li>
-<p>Update <strong><em>REMOVED</em></strong> configuration with production-grade settings</p>
+<p>Generate new client secrets for all OIDC clients</p>
 </li>
 <li>
 <p><strong>Database Security</strong></p>
 </li>
-<li>Use strong authentication for <strong><em>REMOVED</em></strong> directory DB</li>
 <li>Encrypt data at rest</li>
 <li>Regular backups with encryption</li>
 <li>
@@ -1793,29 +1751,11 @@
 <li>Profile information is stored separately from domain data</li>
 <li>Ensure GDPR/privacy compliance for your jurisdiction</li>
 </ol>
-<h3 id="demodevelopment-environment-warnings">Demo/Development Environment Warnings</h3>
-<p><strong>The default configuration requires additional hardening for production:</strong></p>
-<ul>
-<li>Self-signed certificates are used (replace with CA-signed certs)</li>
-<li>Default credentials (admin/admin for Keycloak - must be changed)</li>
-<li>Default client secret in docker-compose (must be regenerated)</li>
-<li>No rate limiting configured</li>
-<li>Services exposed on localhost</li>
-</ul>
-<p>**Authentication is ENABLED by default.</p>
-<h2 id="known-limitations">Known Limitations</h2>
-<ul>
-<li>Demo setup uses self-signed TLS certificates for Keycloak</li>
-<li>Default Keycloak realm includes test users with simple passwords</li>
-<li>No rate limiting configured by default  </li>
-<li>Services communicate over HTTP internally in Docker network (TLS termination at ingress recommended)</li>
-<li>Client secret visible in docker-compose.yml (use secrets management in production)</li>
-</ul>
 <h2 id="security-features">Security Features</h2>
 <p>FlowPilot implements several security best practices:</p>
 <ol>
 <li><strong>Authorization Architecture</strong></li>
-<li>Centralized policy decision point (PDP) with <strong><em>REMOVED</em></strong></li>
+<li>Centralized policy decision point (PDP)</li>
 <li>Policy enforcement points (PEP) at domain service boundaries</li>
 <li>Relationship-based access control (ReBAC) for delegation</li>
 <li>
@@ -1850,10 +1790,7 @@
 - Regularly updating dependencies
 - Monitoring security advisories for:
   - Python packages (requirements.txt)
-  - Docker base images
-  - Keycloak
-  - <strong><em>REMOVED</em></strong>
-  - Swift dependencies</p>
+  - Docker base images</p>
 <h2 id="security-contacts">Security Contacts</h2>
 <p>For security-related questions or concerns:
 - Email: ciso@nura.pro

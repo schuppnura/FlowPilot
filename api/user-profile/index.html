@@ -883,11 +883,11 @@
 </ul>
 <h3 id="key-features">Key Features</h3>
 <ul>
-<li>✅ Clean abstraction over Firebase (no Firebase SDK required in clients)</li>
-<li>✅ JWT authentication on all endpoints (except <code>/health</code>)</li>
-<li>✅ Users can only access/modify their own profile</li>
-<li>✅ Input validation and sanitization</li>
-<li>✅ Zero PII exposure (only UUID and persona processed)</li>
+<li>Clean abstraction over Firebase (no Firebase SDK required in clients)</li>
+<li>JWT authentication on all endpoints (except <code>/health</code>)</li>
+<li>Users can only access/modify their own profile</li>
+<li>Input validation and sanitization</li>
+<li>Zero PII proliferation (only UUID and persona processed)</li>
 </ul>
 <h2 id="authentication">Authentication</h2>
 <p>All endpoints (except <code>/health</code>) require a Bearer token:</p>
@@ -979,11 +979,13 @@
 <a href="#__codelineno-8-2" id="__codelineno-8-2" name="__codelineno-8-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span>
 </code></pre></div>
 <h2 id="persona-values">Persona Values</h2>
-<p>Allowed persona values are configurable. Default values:</p>
+<p>Supported persona values are configurable. Default values:</p>
 <ul>
-<li><code>traveler</code> - End user booking travel</li>
+<li><code>traveler</code> - End user booking travel, and any co-traveler</li>
 <li><code>travel-agent</code> - Professional travel agent</li>
-<li><code>admin</code> - System administrator</li>
+<li><code>office-manager</code> - Professional responsbile for booking business travel</li>
+<li><code>booking-assistant</code> - Professional helping travel agents</li>
+<li><code>ai-agent</code> - Automated travel agent</li>
 </ul>
 <h2 id="validation-rules">Validation Rules</h2>
 <ul>
