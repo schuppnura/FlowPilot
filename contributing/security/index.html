@@ -1690,44 +1690,60 @@
 </ul>
 <h2 id="security-best-practices">Security Best Practices</h2>
 <p>When deploying FlowPilot in production:</p>
-<p><strong>API endpoints</strong>
-- Review sanitzation rules regularly
-- Ensure application-level validation of JWT access tokens at all endpoints</p>
-<p><strong>Authentication &amp; Authorization</strong>
-- All API endpoints MUST require valid bearer tokens
-- Use production-grade secrets (not demo credentials)
-- Rotate credentials regularly
-- Implement proper token validation and expiry</p>
-<p><strong>Transport Security</strong>
-- MUST use TLS 1.2 or higher for all services
-- Use valid, public certificates
-- Configure proper cipher suites
-- Enable HSTS (HTTP Strict Transport Security)</p>
-<p><strong>Network Security</strong>
-- Deploy services behind a firewall
-- Use network segmentation
-- Limit service exposure (only expose necessary endpoints)
-- Configure rate limiting</p>
-<p><strong>Secrets Management</strong>
-- Never commit secrets to version control
-- Use environment variables or secret management systems
-- Rotate IdP admin credentials immediately
-- Generate new client secrets for all OIDC clients</p>
-<p><strong>Database Security</strong>
-- Encrypt data at rest
-- Regular backups with encryption
-- Limit database access to only necessary services</p>
-<p><strong>Container Security</strong>
-- Use minimal base images
-- Scan images for vulnerabilities
-- Run containers as non-root users
-- Keep dependencies updated
-- Use container registry scanning</p>
-<p><strong>Privacy &amp; Compliance</strong>
-- FlowPilot is designed with privacy-by-design principles
-- No PII is exposed to LLMs
-- Profile information is stored separately from domain data
-- Ensure GDPR/privacy compliance for your jurisdiction</p>
+<p><strong>API endpoints</strong></p>
+<ul>
+<li>Review sanitzation rules regularly</li>
+<li>Ensure application-level validation of JWT access tokens at all endpoints</li>
+</ul>
+<p><strong>Authentication &amp; Authorization</strong></p>
+<ul>
+<li>All API endpoints MUST require valid bearer tokens</li>
+<li>Use production-grade secrets (not demo credentials)</li>
+<li>Rotate credentials regularly</li>
+<li>Implement proper token validation and expiry</li>
+</ul>
+<p><strong>Transport Security</strong></p>
+<ul>
+<li>MUST use TLS 1.2 or higher for all services</li>
+<li>Use valid, public certificates</li>
+<li>Configure proper cipher suites</li>
+<li>Enable HSTS (HTTP Strict Transport Security)</li>
+</ul>
+<p><strong>Network Security</strong></p>
+<ul>
+<li>Deploy services behind a firewall</li>
+<li>Use network segmentation</li>
+<li>Limit service exposure (only expose necessary endpoints)</li>
+<li>Configure rate limiting</li>
+</ul>
+<p><strong>Secrets Management</strong></p>
+<ul>
+<li>Never commit secrets to version control</li>
+<li>Use environment variables or secret management systems</li>
+<li>Rotate IdP admin credentials immediately</li>
+<li>Generate new client secrets for all OIDC clients</li>
+</ul>
+<p><strong>Database Security</strong></p>
+<ul>
+<li>Encrypt data at rest</li>
+<li>Regular backups with encryption</li>
+<li>Limit database access to only necessary services</li>
+</ul>
+<p><strong>Container Security</strong></p>
+<ul>
+<li>Use minimal base images</li>
+<li>Scan images for vulnerabilities</li>
+<li>Run containers as non-root users</li>
+<li>Keep dependencies updated</li>
+<li>Use container registry scanning</li>
+</ul>
+<p><strong>Privacy &amp; Compliance</strong></p>
+<ul>
+<li>FlowPilot is designed with privacy-by-design principles</li>
+<li>No PII is exposed to LLMs</li>
+<li>Profile information is stored separately from domain data</li>
+<li>Ensure GDPR/privacy compliance for your jurisdiction</li>
+</ul>
 <h2 id="security-features">Security Features</h2>
 <p>FlowPilot implements several security best practices:</p>
 <ol>
