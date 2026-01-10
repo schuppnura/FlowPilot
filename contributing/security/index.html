@@ -1690,41 +1690,44 @@
 </ul>
 <h2 id="security-best-practices">Security Best Practices</h2>
 <p>When deploying FlowPilot in production:</p>
+<p><strong>API endpoints</strong>
+- Review sanitzation rules regularly
+- Ensure application-level validation of JWT access tokens at all endpoints</p>
 <p><strong>Authentication &amp; Authorization</strong>
-   - All API endpoints MUST require valid bearer tokens
-   - Use production-grade secrets (not demo credentials)
-   - Rotate credentials regularly
-   - Implement proper token validation and expiry</p>
+- All API endpoints MUST require valid bearer tokens
+- Use production-grade secrets (not demo credentials)
+- Rotate credentials regularly
+- Implement proper token validation and expiry</p>
 <p><strong>Transport Security</strong>
-   - MUST use TLS 1.2 or higher for all services
-   - Use valid, public certificates
-   - Configure proper cipher suites
-   - Enable HSTS (HTTP Strict Transport Security)</p>
+- MUST use TLS 1.2 or higher for all services
+- Use valid, public certificates
+- Configure proper cipher suites
+- Enable HSTS (HTTP Strict Transport Security)</p>
 <p><strong>Network Security</strong>
-   - Deploy services behind a firewall
-   - Use network segmentation
-   - Limit service exposure (only expose necessary endpoints)
-   - Configure rate limiting</p>
+- Deploy services behind a firewall
+- Use network segmentation
+- Limit service exposure (only expose necessary endpoints)
+- Configure rate limiting</p>
 <p><strong>Secrets Management</strong>
-   - Never commit secrets to version control
-   - Use environment variables or secret management systems
-   - Rotate IdP admin credentials immediately
-   - Generate new client secrets for all OIDC clients</p>
+- Never commit secrets to version control
+- Use environment variables or secret management systems
+- Rotate IdP admin credentials immediately
+- Generate new client secrets for all OIDC clients</p>
 <p><strong>Database Security</strong>
-   - Encrypt data at rest
-   - Regular backups with encryption
-   - Limit database access to only necessary services</p>
+- Encrypt data at rest
+- Regular backups with encryption
+- Limit database access to only necessary services</p>
 <p><strong>Container Security</strong>
-   - Use minimal base images
-   - Scan images for vulnerabilities
-   - Run containers as non-root users
-   - Keep dependencies updated
-   - Use container registry scanning</p>
+- Use minimal base images
+- Scan images for vulnerabilities
+- Run containers as non-root users
+- Keep dependencies updated
+- Use container registry scanning</p>
 <p><strong>Privacy &amp; Compliance</strong>
-   - FlowPilot is designed with privacy-by-design principles
-   - No PII is exposed to LLMs
-   - Profile information is stored separately from domain data
-   - Ensure GDPR/privacy compliance for your jurisdiction</p>
+- FlowPilot is designed with privacy-by-design principles
+- No PII is exposed to LLMs
+- Profile information is stored separately from domain data
+- Ensure GDPR/privacy compliance for your jurisdiction</p>
 <h2 id="security-features">Security Features</h2>
 <p>FlowPilot implements several security best practices:</p>
 <ol>
