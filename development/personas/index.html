@@ -2623,45 +2623,43 @@
 <li>Carlo (traveler) creates a workflow</li>
 <li>Carlo executes his own workflow</li>
 </ul>
-<p><strong>Authorization Flow:</strong></p>
-<ol>
-<li>Domain-services-api receives request with Carlo's token</li>
-<li>Authz-api extracts <code>sub=carlo-uuid</code> from JWT</li>
-<li>Authz-api fetches Carlo's "traveler" persona from user-profile-api</li>
-<li>OPA evaluates:</li>
-<li><code>authorized_principal</code>: ✓ (owner == principal)</li>
-<li><code>persona_valid</code>: ✓ (traveler == traveler)</li>
-<li><code>owner_persona_active</code>: ✓ (status == "active")</li>
-<li><code>owner_persona_valid_time</code>: ✓ (current time within range)</li>
-<li><code>has_consent</code>: ✓ (autobook_consent == true)</li>
-<li>Other gates...</li>
-<li>Decision: <strong>Allow</strong> (if all gates pass)</li>
-</ol>
+<p><strong>Authorization Flow:</strong>
+1. Domain-services-api receives request with Carlo's token
+2. Authz-api extracts <code>sub=carlo-uuid</code> from JWT
+3. Authz-api fetches Carlo's "traveler" persona from user-profile-api
+4. OPA evaluates:
+   - <code>authorized_principal</code>: ✓ (owner == principal)
+   - <code>persona_valid</code>: ✓ (traveler == traveler)
+   - <code>owner_persona_active</code>: ✓ (status == "active")
+   - <code>owner_persona_valid_time</code>: ✓ (current time within range)
+   - <code>has_consent</code>: ✓ (autobook_consent == true)
+   - Other gates...
+5. Decision: <strong>Allow</strong> (if all gates pass)</p>
 <h3 id="scenario-2-delegated-travel-agent">Scenario 2: Delegated Travel Agent</h3>
 <p><strong>Context:</strong></p>
 <ul>
 <li>Carlo (traveler) delegates to Yannick (travel-agent)</li>
 <li>Yannick executes Carlo's workflow</li>
 </ul>
-<p><strong>Authorization Flow:</strong></p>
-<ol>
-<li>Domain-services-api receives request with Yannick's token</li>
-<li>Authz-api extracts <code>sub=yannick-uuid</code> from JWT</li>
-<li>Authz-api queries delegation-api: valid delegation exists</li>
-<li>Authz-api fetches Carlo's "traveler" persona (resource owner)</li>
-<li>OPA evaluates:</li>
-<li><code>authorized_principal</code>: ✓ (valid delegation with "execute" action)</li>
-<li><code>persona_valid</code>: ✓ (Yannick's persona "travel-agent" is an agent persona)</li>
-<li><code>owner_persona_active</code>: ✓ (Carlo's persona status == "active")</li>
-<li><code>owner_persona_valid_time</code>: ✓ (Carlo's persona is valid)</li>
-<li><code>has_consent</code>: ✓ (Carlo's autobook_consent == true)</li>
-<li>Other gates...</li>
-<li>Decision: <strong>Allow</strong> (if all gates pass)</li>
-</ol>
+<p><strong>Authorization Flow:</strong>
+1. Domain-services-api receives request with Yannick's token
+2. Authz-api extracts <code>sub=yannick-uuid</code> from JWT
+3. Authz-api queries delegation-api: valid delegation exists
+4. Authz-api fetches Carlo's "traveler" persona (resource owner)
+5. OPA evaluates:
+   - <code>authorized_principal</code>: ✓ (valid delegation with "execute" action)
+   - <code>persona_valid</code>: ✓ (Yannick's persona "travel-agent" is an agent persona)
+   - <code>owner_persona_active</code>: ✓ (Carlo's persona status == "active")
+   - <code>owner_persona_valid_time</code>: ✓ (Carlo's persona is valid)
+   - <code>has_consent</code>: ✓ (Carlo's autobook_consent == true)
+   - Other gates...
+6. Decision: <strong>Allow</strong> (if all gates pass)</p>
 <h3 id="scenario-3-autonomous-ai-agent">Scenario 3: Autonomous AI Agent</h3>
-<p><strong>Context:</strong>
-- AI agent attempts to book autonomously (no delegation)
-- Carlo's workflow with autobook consent</p>
+<p><strong>Context:</strong></p>
+<ul>
+<li>AI agent attempts to book autonomously (no delegation)</li>
+<li>Carlo's workflow with autobook consent</li>
+</ul>
 <p><strong>Authorization Flow:</strong>
 1. AI-agent-api calls domain-services-api with service token
 2. AuthZEN request: <code>subject.persona = "ai-agent"</code>, <code>context.principal.id = carlo-uuid</code>
@@ -2677,9 +2675,11 @@
    - <code>acceptable_risk</code>: Check Carlo's autobook_risklevel
 5. Decision: <strong>Allow</strong> or <strong>Deny</strong> based on ABAC gates</p>
 <h3 id="scenario-4-persona-mismatch">Scenario 4: Persona Mismatch</h3>
-<p><strong>Context:</strong>
-- Martine has two personas: "traveler" and "office-manager"
-- Martine (office-manager) tries to execute her own workflow created with "traveler" persona</p>
+<p><strong>Context:</strong></p>
+<ul>
+<li>Martine has two personas: "traveler" and "office-manager"</li>
+<li>Martine (office-manager) tries to execute her own workflow created with "traveler" persona</li>
+</ul>
 <p><strong>Authorization Flow:</strong>
 1. Workflow was created with <code>owner.persona = "traveler"</code>
 2. Martine's request has <code>subject.persona = "office-manager"</code>
@@ -2691,16 +2691,20 @@
 <h2 id="troubleshooting">Troubleshooting</h2>
 <h3 id="persona-not-found">Persona Not Found</h3>
 <p><strong>Symptom:</strong> Authorization denied with <code>auto_book.no_consent</code> despite user having consent</p>
-<p><strong>Causes:</strong>
-1. Persona not created or provisioned
-2. Persona fetch fails (403, 404, timeout)
-3. Service account cannot access user-profile-api</p>
-<p><strong>Debug Steps:</strong>
-1. Verify persona exists:
+<p><strong>Causes:</strong></p>
+<ol>
+<li>Persona not created or provisioned</li>
+<li>Persona fetch fails (403, 404, timeout)</li>
+<li>Service account cannot access user-profile-api</li>
+</ol>
+<p><strong>Debug Steps:</strong></p>
+<ol>
+<li>
+<p>Verify persona exists:
    <div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer &lt;user-token&gt;&quot;</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span>https://user-profile-api/v1/personas
 </code></pre></div></p>
-<ol>
+</li>
 <li>
 <p>Check authz-api logs for persona fetch errors:
    <div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>gcloud<span class="w"> </span>logging<span class="w"> </span><span class="nb">read</span><span class="w"> </span><span class="s2">&quot;resource.labels.service_name=flowpilot-authz-api \</span>
@@ -2722,18 +2726,23 @@
 </ol>
 <h3 id="persona-status-denied">Persona Status Denied</h3>
 <p><strong>Symptom:</strong> Authorization denied with <code>auto_book.persona_inactive</code> or <code>auto_book.persona_expired</code></p>
-<p><strong>Causes:</strong>
-1. Persona status is not "active"
-2. Current time is outside valid_from/valid_till range</p>
-<p><strong>Resolution:</strong>
-1. Update persona status:
+<p><strong>Causes:</strong></p>
+<ol>
+<li>Persona status is not "active"</li>
+<li>Current time is outside valid_from/valid_till range</li>
+</ol>
+<p><strong>Resolution:</strong></p>
+<ol>
+<li>
+<p>Update persona status:
    <div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>PUT<span class="w"> </span>https://user-profile-api/v1/personas/&lt;persona-id&gt;<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer &lt;user-token&gt;&quot;</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;status&quot;: &quot;active&quot;}&#39;</span>
 </code></pre></div></p>
-<ol>
-<li>Update temporal validity:
+</li>
+<li>
+<p>Update temporal validity:
    <div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>PUT<span class="w"> </span>https://user-profile-api/v1/personas/&lt;persona-id&gt;<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer &lt;user-token&gt;&quot;</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
@@ -2741,7 +2750,8 @@
 <a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="s1">    &quot;valid_from&quot;: &quot;2024-01-01T00:00:00Z&quot;,</span>
 <a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="s1">    &quot;valid_till&quot;: &quot;2027-12-31T23:59:59Z&quot;</span>
 <a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="s1">  }&#39;</span>
-</code></pre></div></li>
+</code></pre></div></p>
+</li>
 </ol>
 <h3 id="firestore-index-missing">Firestore Index Missing</h3>
 <p><strong>Symptom:</strong> User-profile-api returns 500 error: "The query requires an index"</p>
