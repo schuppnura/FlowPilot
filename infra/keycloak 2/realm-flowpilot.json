@@ -1,0 +1,209 @@
+{
+  "realm": "flowpilot",
+  "enabled": true,
+  "registrationAllowed": true,
+  "loginWithEmailAllowed": false,
+  "duplicateEmailsAllowed": true,
+  "userManagedAccessAllowed": true,
+  "attributes": {
+    "userProfileEnabled": "true"
+  },
+  "clientScopes": [
+    {
+      "name": "autobook",
+      "description": "Autobook consent scope",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "autobook_consent",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "autobook_consent",
+            "claim.name": "autobook_consent",
+            "jsonType.label": "String",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "false"
+          }
+        },
+        {
+          "name": "autobook_price",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "autobook_price",
+            "claim.name": "autobook_price",
+            "jsonType.label": "String",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "false"
+          }
+        },
+        {
+          "name": "autobook_leadtime",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "autobook_leadtime",
+            "claim.name": "autobook_leadtime",
+            "jsonType.label": "String",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "false"
+          }
+        },
+        {
+          "name": "autobook_risklevel",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "autobook_risklevel",
+            "claim.name": "autobook_risklevel",
+            "jsonType.label": "String",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "false"
+          }
+        },
+        {
+          "name": "persona",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "persona",
+            "claim.name": "persona",
+            "jsonType.label": "String",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "false",
+            "multivalued": "true",
+            "aggregate.attrs": "false"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "traveler1",
+      "enabled": true,
+      "firstName": "Demo",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "DEMO_USER_PASSWORD_HERE",
+          "temporary": false
+        }
+      ]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "flowpilot-desktop",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "flowpilot-demo://oauth/callback",
+        "http://localhost:9999/callback"
+      ],
+      "webOrigins": [
+        "http://localhost:9999"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "flowpilot-desktop",
+            "id.token.claim": "true",
+            "access.token.claim": "true"
+          }
+        }
+      ],
+      "defaultClientScopes": [
+        "autobook",
+        "web-origins",
+        "acr",
+        "roles",
+        "profile"
+      ]
+    },
+    {
+      "clientId": "flowpilot-agent",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "secret": "QYAusJMKgHNHFO5TKucXat245XqFzUl0",
+      "defaultClientScopes": [
+        "autobook",
+        "web-origins",
+        "acr",
+        "roles",
+        "profile"
+      ]
+    },
+    {
+      "clientId": "flowpilot-testing",
+      "name": "FlowPilot Testing Script",
+      "description": "OAuth client for user_based_testing.py script",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:8765/callback",
+        "https://localhost:8765/callback"
+      ],
+      "webOrigins": [
+        "http://localhost:8765",
+        "https://localhost:8765"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "flowpilot-testing",
+            "id.token.claim": "true",
+            "access.token.claim": "true"
+          }
+        }
+      ],
+      "defaultClientScopes": [
+        "autobook",
+        "web-origins",
+        "acr",
+        "roles"
+      ]
+    }
+  ]
+}

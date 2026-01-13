@@ -176,7 +176,17 @@ To optimise processing as a single back-end, the microservices can also be put i
    - AI agent service
    - Always call authz-api before execution
 
----
+### API Documentation
+
+OpenAPI specifications available in `flowpilot_openapi/`:
+- `authz.openapi.yaml` - Authorization API
+- `delegation.openapi.yaml` - Delegation API
+- `domain-services.openapi.yaml` - Workflow API
+- `ai-agent.openapi.yaml` - AI Agent API
+
+View the specs using Swagger Editor, Postman or similar tool.
+
+⸻
 
 ## Authorization architecture
 
@@ -1027,17 +1037,6 @@ AGENT_CLIENT_SECRET=<your-secret>
 
 ⸻
 
-## API Documentation
-
-OpenAPI specifications available in `flowpilot_openapi/`:
-- `authz.openapi.yaml` - Authorization API
-- `delegation.openapi.yaml` - Delegation API
-- `domain-services.openapi.yaml` - Workflow API
-- `ai-agent.openapi.yaml` - AI Agent API
-
-View specs using Swagger Editor, Postman or similar tool.
-
-⸻
 
 ## Important Notes
 
