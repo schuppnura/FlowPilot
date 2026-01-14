@@ -12,15 +12,19 @@
         <meta name="author" content="FlowPilot Team">
       
       
-        <link rel="canonical" href="https://flowpilot.dev/CORS/">
+        <link rel="canonical" href="https://flowpilot.dev/architecture/cors/">
       
       
+        <link rel="prev" href="../authentication/">
+      
+      
+        <link rel="next" href="../../development/policies/">
       
       
         
       
       
-      <link rel="icon" href="../assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
     
     
@@ -29,10 +33,10 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -51,7 +55,7 @@
       
     
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -90,7 +94,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="FlowPilot Documentation" class="md-header__button md-logo" aria-label="FlowPilot Documentation" data-md-component="logo">
+    <a href="../.." title="FlowPilot Documentation" class="md-header__button md-logo" aria-label="FlowPilot Documentation" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -223,7 +227,7 @@
   
   
     <li class="md-tabs__item">
-      <a href=".." class="md-tabs__link">
+      <a href="../.." class="md-tabs__link">
         
   
   
@@ -240,11 +244,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../architecture/overview/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../overview/" class="md-tabs__link">
           
   
   
@@ -264,7 +270,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../development/policies/" class="md-tabs__link">
+        <a href="../../development/policies/" class="md-tabs__link">
           
   
   
@@ -284,7 +290,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../development/personas/" class="md-tabs__link">
+        <a href="../../development/personas/" class="md-tabs__link">
           
   
   
@@ -304,7 +310,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../api/authz/" class="md-tabs__link">
+        <a href="../../api/authz/" class="md-tabs__link">
           
   
   
@@ -324,7 +330,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../getting-started/integration/" class="md-tabs__link">
+        <a href="../../getting-started/integration/" class="md-tabs__link">
           
   
   
@@ -344,7 +350,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../deployment/overview/" class="md-tabs__link">
+        <a href="../../deployment/overview/" class="md-tabs__link">
           
   
   
@@ -364,7 +370,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../contributing/code-of-conduct/" class="md-tabs__link">
+        <a href="../../contributing/code-of-conduct/" class="md-tabs__link">
           
   
   
@@ -400,7 +406,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="FlowPilot Documentation" class="md-nav__button md-logo" aria-label="FlowPilot Documentation" data-md-component="logo">
+    <a href="../.." title="FlowPilot Documentation" class="md-nav__button md-logo" aria-label="FlowPilot Documentation" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -430,7 +436,7 @@
   
   
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -454,28 +460,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
-        
-          
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
             
   
   
@@ -493,7 +502,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -511,7 +520,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/overview/" class="md-nav__link">
+      <a href="../overview/" class="md-nav__link">
         
   
   
@@ -539,7 +548,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/authorization/" class="md-nav__link">
+      <a href="../authorization/" class="md-nav__link">
         
   
   
@@ -567,7 +576,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/security/" class="md-nav__link">
+      <a href="../security/" class="md-nav__link">
         
   
   
@@ -595,7 +604,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/services/" class="md-nav__link">
+      <a href="../services/" class="md-nav__link">
         
   
   
@@ -623,7 +632,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/authentication/" class="md-nav__link">
+      <a href="../authentication/" class="md-nav__link">
         
   
   
@@ -639,6 +648,331 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CORS Configuration
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CORS Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment Variables
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#local-development-docker-compose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local Development (Docker Compose)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#production-gcp-cloud-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Production (GCP Cloud Run)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Production (GCP Cloud Run)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#default-production-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Default Production Settings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#recommended-production-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommended Production Settings
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Considerations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Security Considerations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#development-vs-production" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Development vs. Production
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#credentials-and-wildcard-origins" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Credentials and Wildcard Origins
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Best Practices
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#updating-cors-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Updating CORS Settings
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Updating CORS Settings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#local-development" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local Development
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gcp-cloud-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GCP Cloud Run
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-cors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing CORS
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Testing CORS">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#browser-devtools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Browser DevTools
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cors-preflight-requests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CORS Preflight Requests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#common-cors-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common CORS Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation Details
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related Documentation
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -712,7 +1046,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../development/policies/" class="md-nav__link">
+      <a href="../../development/policies/" class="md-nav__link">
         
   
   
@@ -740,7 +1074,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../development/testing/" class="md-nav__link">
+      <a href="../../development/testing/" class="md-nav__link">
         
   
   
@@ -768,7 +1102,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../development/commands/" class="md-nav__link">
+      <a href="../../development/commands/" class="md-nav__link">
         
   
   
@@ -796,7 +1130,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../development/troubleshooting/" class="md-nav__link">
+      <a href="../../development/troubleshooting/" class="md-nav__link">
         
   
   
@@ -885,7 +1219,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../development/personas/" class="md-nav__link">
+      <a href="../../development/personas/" class="md-nav__link">
         
   
   
@@ -974,7 +1308,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/authz/" class="md-nav__link">
+      <a href="../../api/authz/" class="md-nav__link">
         
   
   
@@ -1002,7 +1336,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/domain-services/" class="md-nav__link">
+      <a href="../../api/domain-services/" class="md-nav__link">
         
   
   
@@ -1030,7 +1364,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/delegation/" class="md-nav__link">
+      <a href="../../api/delegation/" class="md-nav__link">
         
   
   
@@ -1058,7 +1392,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/user-profile/" class="md-nav__link">
+      <a href="../../api/user-profile/" class="md-nav__link">
         
   
   
@@ -1086,7 +1420,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/ai-agent/" class="md-nav__link">
+      <a href="../../api/ai-agent/" class="md-nav__link">
         
   
   
@@ -1175,7 +1509,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../getting-started/integration/" class="md-nav__link">
+      <a href="../../getting-started/integration/" class="md-nav__link">
         
   
   
@@ -1203,7 +1537,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../getting-started/authentication/" class="md-nav__link">
+      <a href="../../getting-started/authentication/" class="md-nav__link">
         
   
   
@@ -1231,7 +1565,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../getting-started/first-workflow/" class="md-nav__link">
+      <a href="../../getting-started/first-workflow/" class="md-nav__link">
         
   
   
@@ -1320,7 +1654,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../deployment/overview/" class="md-nav__link">
+      <a href="../../deployment/overview/" class="md-nav__link">
         
   
   
@@ -1348,7 +1682,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../deployment/local/" class="md-nav__link">
+      <a href="../../deployment/local/" class="md-nav__link">
         
   
   
@@ -1376,7 +1710,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../deployment/gcp/" class="md-nav__link">
+      <a href="../../deployment/gcp/" class="md-nav__link">
         
   
   
@@ -1404,7 +1738,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../deployment/environment/" class="md-nav__link">
+      <a href="../../deployment/environment/" class="md-nav__link">
         
   
   
@@ -1493,7 +1827,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../contributing/code-of-conduct/" class="md-nav__link">
+      <a href="../../contributing/code-of-conduct/" class="md-nav__link">
         
   
   
@@ -1521,7 +1855,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../contributing/contributing/" class="md-nav__link">
+      <a href="../../contributing/contributing/" class="md-nav__link">
         
   
   
@@ -1549,7 +1883,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../contributing/security/" class="md-nav__link">
+      <a href="../../contributing/security/" class="md-nav__link">
         
   
   
@@ -1804,9 +2138,9 @@
 </code></pre></div>
 <h2 id="related-documentation">Related Documentation</h2>
 <ul>
-<li><a href="../getting-started/integration/">Integration Guide</a> - Web application integration examples</li>
-<li><a href="../architecture/security/">Security Architecture</a> - Overall security model</li>
-<li><a href="../deployment/gcp/">Deployment Guide</a> - GCP Cloud Run deployment with CORS</li>
+<li><a href="getting-started/integration.md">Integration Guide</a> - Web application integration examples</li>
+<li><a href="architecture/security.md">Security Architecture</a> - Overall security model</li>
+<li><a href="deployment/gcp.md">Deployment Guide</a> - GCP Cloud Run deployment with CORS</li>
 </ul>
 
 
@@ -1881,10 +2215,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "toc.integrate", "search.suggest", "search.highlight", "content.tabs.link", "content.code.annotation", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "toc.integrate", "search.suggest", "search.highlight", "content.tabs.link", "content.code.annotation", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>

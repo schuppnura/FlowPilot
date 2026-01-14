@@ -5,10 +5,6 @@
          <lastmod>2026-01-14</lastmod>
     </url>
     <url>
-         <loc>https://flowpilot.dev/CORS/</loc>
-         <lastmod>2026-01-14</lastmod>
-    </url>
-    <url>
          <loc>https://flowpilot.dev/api/ai-agent/</loc>
          <lastmod>2026-01-14</lastmod>
     </url>
@@ -34,6 +30,10 @@
     </url>
     <url>
          <loc>https://flowpilot.dev/architecture/authorization/</loc>
+         <lastmod>2026-01-14</lastmod>
+    </url>
+    <url>
+         <loc>https://flowpilot.dev/architecture/cors/</loc>
          <lastmod>2026-01-14</lastmod>
     </url>
     <url>
