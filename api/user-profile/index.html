@@ -1072,6 +1072,7 @@
 <h3 id="key-features">Key Features</h3>
 <ul>
 <li><strong>Multi-persona support</strong> - Users can have multiple independent personas</li>
+<li><strong>Unique persona titles</strong> - Each user can only have one persona per title (enforced)</li>
 <li><strong>Persona-scoped autobook settings</strong> - Each persona has its own consent and thresholds</li>
 <li><strong>Temporal validity</strong> - Personas have status and valid time ranges</li>
 <li><strong>JWT authentication</strong> - All endpoints require authentication (except <code>/health</code>)</li>
@@ -1105,12 +1106,13 @@
 <a href="#__codelineno-2-4" id="__codelineno-2-4" name="__codelineno-2-4"></a><span class="w">  </span><span class="nt">"valid_from"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2024-01-01T00:00:00Z"</span><span class="p">,</span>
 <a href="#__codelineno-2-5" id="__codelineno-2-5" name="__codelineno-2-5"></a><span class="w">  </span><span class="nt">"valid_till"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-12-31T23:59:59Z"</span><span class="p">,</span>
 <a href="#__codelineno-2-6" id="__codelineno-2-6" name="__codelineno-2-6"></a><span class="w">  </span><span class="nt">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"active"</span><span class="p">,</span>
-<a href="#__codelineno-2-7" id="__codelineno-2-7" name="__codelineno-2-7"></a><span class="w">  </span><span class="nt">"autobook_consent"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a href="#__codelineno-2-7" id="__codelineno-2-7" name="__codelineno-2-7"></a><span class="w">  </span><span class="nt">"consent"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
 <a href="#__codelineno-2-8" id="__codelineno-2-8" name="__codelineno-2-8"></a><span class="w">  </span><span class="nt">"autobook_price"</span><span class="p">:</span><span class="w"> </span><span class="mi">5000</span><span class="p">,</span>
 <a href="#__codelineno-2-9" id="__codelineno-2-9" name="__codelineno-2-9"></a><span class="w">  </span><span class="nt">"autobook_leadtime"</span><span class="p">:</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span>
 <a href="#__codelineno-2-10" id="__codelineno-2-10" name="__codelineno-2-10"></a><span class="w">  </span><span class="nt">"autobook_risklevel"</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span>
 <a href="#__codelineno-2-11" id="__codelineno-2-11" name="__codelineno-2-11"></a><span class="p">}</span>
 </code></pre></div></p>
+<p><strong>Note:</strong> Each user can only have one persona per title. Attempting to create a duplicate persona title will result in a 400 error.</p>
 <p><strong>Response (201 Created):</strong>
 <div class="highlight"><pre><span></span><code><a href="#__codelineno-3-1" id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="p">{</span>
 <a href="#__codelineno-3-2" id="__codelineno-3-2" name="__codelineno-3-2"></a><span class="w">  </span><span class="nt">"persona_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"b9678f30-f4b0-4033-82db-846357311165"</span><span class="p">,</span>
@@ -1122,7 +1124,7 @@
 <a href="#__codelineno-3-8" id="__codelineno-3-8" name="__codelineno-3-8"></a><span class="w">  </span><span class="nt">"valid_till"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-12-31T23:59:59Z"</span><span class="p">,</span>
 <a href="#__codelineno-3-9" id="__codelineno-3-9" name="__codelineno-3-9"></a><span class="w">  </span><span class="nt">"created_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-01-13T17:00:00Z"</span><span class="p">,</span>
 <a href="#__codelineno-3-10" id="__codelineno-3-10" name="__codelineno-3-10"></a><span class="w">  </span><span class="nt">"updated_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-01-13T17:00:00Z"</span><span class="p">,</span>
-<a href="#__codelineno-3-11" id="__codelineno-3-11" name="__codelineno-3-11"></a><span class="w">  </span><span class="nt">"autobook_consent"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a href="#__codelineno-3-11" id="__codelineno-3-11" name="__codelineno-3-11"></a><span class="w">  </span><span class="nt">"consent"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
 <a href="#__codelineno-3-12" id="__codelineno-3-12" name="__codelineno-3-12"></a><span class="w">  </span><span class="nt">"autobook_price"</span><span class="p">:</span><span class="w"> </span><span class="mi">5000</span><span class="p">,</span>
 <a href="#__codelineno-3-13" id="__codelineno-3-13" name="__codelineno-3-13"></a><span class="w">  </span><span class="nt">"autobook_leadtime"</span><span class="p">:</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span>
 <a href="#__codelineno-3-14" id="__codelineno-3-14" name="__codelineno-3-14"></a><span class="w">  </span><span class="nt">"autobook_risklevel"</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span>
@@ -1145,7 +1147,7 @@
 <a href="#__codelineno-4-10" id="__codelineno-4-10" name="__codelineno-4-10"></a><span class="w">      </span><span class="nt">"valid_till"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-12-31T23:59:59Z"</span><span class="p">,</span>
 <a href="#__codelineno-4-11" id="__codelineno-4-11" name="__codelineno-4-11"></a><span class="w">      </span><span class="nt">"created_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-01-13T17:00:00Z"</span><span class="p">,</span>
 <a href="#__codelineno-4-12" id="__codelineno-4-12" name="__codelineno-4-12"></a><span class="w">      </span><span class="nt">"updated_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-01-13T17:00:00Z"</span><span class="p">,</span>
-<a href="#__codelineno-4-13" id="__codelineno-4-13" name="__codelineno-4-13"></a><span class="w">      </span><span class="nt">"autobook_consent"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a href="#__codelineno-4-13" id="__codelineno-4-13" name="__codelineno-4-13"></a><span class="w">      </span><span class="nt">"consent"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
 <a href="#__codelineno-4-14" id="__codelineno-4-14" name="__codelineno-4-14"></a><span class="w">      </span><span class="nt">"autobook_price"</span><span class="p">:</span><span class="w"> </span><span class="mi">5000</span><span class="p">,</span>
 <a href="#__codelineno-4-15" id="__codelineno-4-15" name="__codelineno-4-15"></a><span class="w">      </span><span class="nt">"autobook_leadtime"</span><span class="p">:</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span>
 <a href="#__codelineno-4-16" id="__codelineno-4-16" name="__codelineno-4-16"></a><span class="w">      </span><span class="nt">"autobook_risklevel"</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span>
@@ -1194,7 +1196,7 @@
 <a href="#__codelineno-6-9" id="__codelineno-6-9" name="__codelineno-6-9"></a><span class="s1">    "valid_from": "2024-01-01T00:00:00Z",</span>
 <a href="#__codelineno-6-10" id="__codelineno-6-10" name="__codelineno-6-10"></a><span class="s1">    "valid_till": "2026-12-31T23:59:59Z",</span>
 <a href="#__codelineno-6-11" id="__codelineno-6-11" name="__codelineno-6-11"></a><span class="s1">    "status": "active",</span>
-<a href="#__codelineno-6-12" id="__codelineno-6-12" name="__codelineno-6-12"></a><span class="s1">    "autobook_consent": true,</span>
+<a href="#__codelineno-6-12" id="__codelineno-6-12" name="__codelineno-6-12"></a><span class="s1">    "consent": true,</span>
 <a href="#__codelineno-6-13" id="__codelineno-6-13" name="__codelineno-6-13"></a><span class="s1">    "autobook_price": 5000,</span>
 <a href="#__codelineno-6-14" id="__codelineno-6-14" name="__codelineno-6-14"></a><span class="s1">    "autobook_leadtime": 7,</span>
 <a href="#__codelineno-6-15" id="__codelineno-6-15" name="__codelineno-6-15"></a><span class="s1">    "autobook_risklevel": 3</span>
@@ -1259,7 +1261,7 @@
 </ul>
 <h3 id="autobook-fields">Autobook Fields</h3>
 <ul>
-<li><strong>autobook_consent</strong>: Boolean (allow autonomous AI booking)</li>
+<li><strong>consent</strong>: Boolean (allow autonomous AI booking)</li>
 <li><strong>autobook_price</strong>: Integer (max price in EUR)</li>
 <li><strong>autobook_leadtime</strong>: Integer (min advance booking days)</li>
 <li><strong>autobook_risklevel</strong>: Integer 0-100 (max airline risk score)</li>
@@ -1267,6 +1269,7 @@
 <h2 id="validation-rules">Validation Rules</h2>
 <ul>
 <li><strong>title</strong>: Must be one of the allowed persona titles</li>
+<li><strong>Unique persona titles</strong>: Each user can only have one persona per title</li>
 <li><strong>scope</strong>: Non-empty array of action strings</li>
 <li><strong>status</strong>: Must be "active", "inactive", "suspended", or "expired"</li>
 <li><strong>valid_from/valid_till</strong>: Must be valid ISO 8601 timestamps</li>
@@ -1319,25 +1322,35 @@
 </tbody>
 </table>
 <h3 id="common-error-examples">Common Error Examples</h3>
-<p><strong>400 Bad Request:</strong>
+<p><strong>400 Bad Request - Invalid Title:</strong>
 <div class="highlight"><pre><span></span><code><a href="#__codelineno-13-1" id="__codelineno-13-1" name="__codelineno-13-1"></a><span class="p">{</span>
-<a href="#__codelineno-13-2" id="__codelineno-13-2" name="__codelineno-13-2"></a><span class="w">  </span><span class="nt">"detail"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Invalid persona title: 'invalid-persona'"</span>
+<a href="#__codelineno-13-2" id="__codelineno-13-2" name="__codelineno-13-2"></a><span class="w">  </span><span class="nt">"detail"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Invalid persona title 'invalid-persona'. Allowed: admin, booking-assistant, office-manager, travel-agent, traveler"</span>
 <a href="#__codelineno-13-3" id="__codelineno-13-3" name="__codelineno-13-3"></a><span class="p">}</span>
 </code></pre></div></p>
-<p><strong>403 Forbidden (User endpoint):</strong>
+<p><strong>400 Bad Request - Duplicate Title:</strong>
 <div class="highlight"><pre><span></span><code><a href="#__codelineno-14-1" id="__codelineno-14-1" name="__codelineno-14-1"></a><span class="p">{</span>
-<a href="#__codelineno-14-2" id="__codelineno-14-2" name="__codelineno-14-2"></a><span class="w">  </span><span class="nt">"detail"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Persona does not belong to authenticated user"</span>
+<a href="#__codelineno-14-2" id="__codelineno-14-2" name="__codelineno-14-2"></a><span class="w">  </span><span class="nt">"detail"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Persona with title 'traveler' already exists for this user. Each user can only have one persona per title."</span>
 <a href="#__codelineno-14-3" id="__codelineno-14-3" name="__codelineno-14-3"></a><span class="p">}</span>
 </code></pre></div></p>
-<p><strong>403 Forbidden (Service endpoint):</strong>
+<p><strong>400 Bad Request - Max Personas:</strong>
 <div class="highlight"><pre><span></span><code><a href="#__codelineno-15-1" id="__codelineno-15-1" name="__codelineno-15-1"></a><span class="p">{</span>
-<a href="#__codelineno-15-2" id="__codelineno-15-2" name="__codelineno-15-2"></a><span class="w">  </span><span class="nt">"detail"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Forbidden: Service account required"</span>
+<a href="#__codelineno-15-2" id="__codelineno-15-2" name="__codelineno-15-2"></a><span class="w">  </span><span class="nt">"detail"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Maximum 5 personas per user. Delete an existing persona first."</span>
 <a href="#__codelineno-15-3" id="__codelineno-15-3" name="__codelineno-15-3"></a><span class="p">}</span>
 </code></pre></div></p>
-<p><strong>404 Not Found:</strong>
+<p><strong>403 Forbidden (User endpoint):</strong>
 <div class="highlight"><pre><span></span><code><a href="#__codelineno-16-1" id="__codelineno-16-1" name="__codelineno-16-1"></a><span class="p">{</span>
-<a href="#__codelineno-16-2" id="__codelineno-16-2" name="__codelineno-16-2"></a><span class="w">  </span><span class="nt">"detail"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Persona not found"</span>
+<a href="#__codelineno-16-2" id="__codelineno-16-2" name="__codelineno-16-2"></a><span class="w">  </span><span class="nt">"detail"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Persona does not belong to authenticated user"</span>
 <a href="#__codelineno-16-3" id="__codelineno-16-3" name="__codelineno-16-3"></a><span class="p">}</span>
+</code></pre></div></p>
+<p><strong>403 Forbidden (Service endpoint):</strong>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-17-1" id="__codelineno-17-1" name="__codelineno-17-1"></a><span class="p">{</span>
+<a href="#__codelineno-17-2" id="__codelineno-17-2" name="__codelineno-17-2"></a><span class="w">  </span><span class="nt">"detail"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Forbidden: Service account required"</span>
+<a href="#__codelineno-17-3" id="__codelineno-17-3" name="__codelineno-17-3"></a><span class="p">}</span>
+</code></pre></div></p>
+<p><strong>404 Not Found:</strong>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-18-1" id="__codelineno-18-1" name="__codelineno-18-1"></a><span class="p">{</span>
+<a href="#__codelineno-18-2" id="__codelineno-18-2" name="__codelineno-18-2"></a><span class="w">  </span><span class="nt">"detail"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Persona not found"</span>
+<a href="#__codelineno-18-3" id="__codelineno-18-3" name="__codelineno-18-3"></a><span class="p">}</span>
 </code></pre></div></p>
 <h2 id="storage-backends">Storage Backends</h2>
 <h3 id="local-development-sqlite">Local Development (SQLite)</h3>
@@ -1352,19 +1365,19 @@
 <li>Serverless, auto-scaling</li>
 <li>Requires composite indexes:</li>
 </ul>
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-17-1" id="__codelineno-17-1" name="__codelineno-17-1"></a><span class="c1"># Create required indexes</span>
-<a href="#__codelineno-17-2" id="__codelineno-17-2" name="__codelineno-17-2"></a>gcloud<span class="w"> </span>firestore<span class="w"> </span>indexes<span class="w"> </span>composite<span class="w"> </span>create<span class="w"> </span><span class="se">\</span>
-<a href="#__codelineno-17-3" id="__codelineno-17-3" name="__codelineno-17-3"></a><span class="w">  </span>--collection-group<span class="o">=</span>personas<span class="w"> </span><span class="se">\</span>
-<a href="#__codelineno-17-4" id="__codelineno-17-4" name="__codelineno-17-4"></a><span class="w">  </span>--query-scope<span class="o">=</span>COLLECTION<span class="w"> </span><span class="se">\</span>
-<a href="#__codelineno-17-5" id="__codelineno-17-5" name="__codelineno-17-5"></a><span class="w">  </span>--field-config<span class="w"> </span>field-path<span class="o">=</span>user_sub,order<span class="o">=</span>ascending<span class="w"> </span><span class="se">\</span>
-<a href="#__codelineno-17-6" id="__codelineno-17-6" name="__codelineno-17-6"></a><span class="w">  </span>--field-config<span class="w"> </span>field-path<span class="o">=</span>status,order<span class="o">=</span>ascending<span class="w"> </span><span class="se">\</span>
-<a href="#__codelineno-17-7" id="__codelineno-17-7" name="__codelineno-17-7"></a><span class="w">  </span>--field-config<span class="w"> </span>field-path<span class="o">=</span>created_at,order<span class="o">=</span>descending
-<a href="#__codelineno-17-8" id="__codelineno-17-8" name="__codelineno-17-8"></a>
-<a href="#__codelineno-17-9" id="__codelineno-17-9" name="__codelineno-17-9"></a>gcloud<span class="w"> </span>firestore<span class="w"> </span>indexes<span class="w"> </span>composite<span class="w"> </span>create<span class="w"> </span><span class="se">\</span>
-<a href="#__codelineno-17-10" id="__codelineno-17-10" name="__codelineno-17-10"></a><span class="w">  </span>--collection-group<span class="o">=</span>personas<span class="w"> </span><span class="se">\</span>
-<a href="#__codelineno-17-11" id="__codelineno-17-11" name="__codelineno-17-11"></a><span class="w">  </span>--query-scope<span class="o">=</span>COLLECTION<span class="w"> </span><span class="se">\</span>
-<a href="#__codelineno-17-12" id="__codelineno-17-12" name="__codelineno-17-12"></a><span class="w">  </span>--field-config<span class="w"> </span>field-path<span class="o">=</span>user_sub,order<span class="o">=</span>ascending<span class="w"> </span><span class="se">\</span>
-<a href="#__codelineno-17-13" id="__codelineno-17-13" name="__codelineno-17-13"></a><span class="w">  </span>--field-config<span class="w"> </span>field-path<span class="o">=</span>created_at,order<span class="o">=</span>descending
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-19-1" id="__codelineno-19-1" name="__codelineno-19-1"></a><span class="c1"># Create required indexes</span>
+<a href="#__codelineno-19-2" id="__codelineno-19-2" name="__codelineno-19-2"></a>gcloud<span class="w"> </span>firestore<span class="w"> </span>indexes<span class="w"> </span>composite<span class="w"> </span>create<span class="w"> </span><span class="se">\</span>
+<a href="#__codelineno-19-3" id="__codelineno-19-3" name="__codelineno-19-3"></a><span class="w">  </span>--collection-group<span class="o">=</span>personas<span class="w"> </span><span class="se">\</span>
+<a href="#__codelineno-19-4" id="__codelineno-19-4" name="__codelineno-19-4"></a><span class="w">  </span>--query-scope<span class="o">=</span>COLLECTION<span class="w"> </span><span class="se">\</span>
+<a href="#__codelineno-19-5" id="__codelineno-19-5" name="__codelineno-19-5"></a><span class="w">  </span>--field-config<span class="w"> </span>field-path<span class="o">=</span>user_sub,order<span class="o">=</span>ascending<span class="w"> </span><span class="se">\</span>
+<a href="#__codelineno-19-6" id="__codelineno-19-6" name="__codelineno-19-6"></a><span class="w">  </span>--field-config<span class="w"> </span>field-path<span class="o">=</span>status,order<span class="o">=</span>ascending<span class="w"> </span><span class="se">\</span>
+<a href="#__codelineno-19-7" id="__codelineno-19-7" name="__codelineno-19-7"></a><span class="w">  </span>--field-config<span class="w"> </span>field-path<span class="o">=</span>created_at,order<span class="o">=</span>descending
+<a href="#__codelineno-19-8" id="__codelineno-19-8" name="__codelineno-19-8"></a>
+<a href="#__codelineno-19-9" id="__codelineno-19-9" name="__codelineno-19-9"></a>gcloud<span class="w"> </span>firestore<span class="w"> </span>indexes<span class="w"> </span>composite<span class="w"> </span>create<span class="w"> </span><span class="se">\</span>
+<a href="#__codelineno-19-10" id="__codelineno-19-10" name="__codelineno-19-10"></a><span class="w">  </span>--collection-group<span class="o">=</span>personas<span class="w"> </span><span class="se">\</span>
+<a href="#__codelineno-19-11" id="__codelineno-19-11" name="__codelineno-19-11"></a><span class="w">  </span>--query-scope<span class="o">=</span>COLLECTION<span class="w"> </span><span class="se">\</span>
+<a href="#__codelineno-19-12" id="__codelineno-19-12" name="__codelineno-19-12"></a><span class="w">  </span>--field-config<span class="w"> </span>field-path<span class="o">=</span>user_sub,order<span class="o">=</span>ascending<span class="w"> </span><span class="se">\</span>
+<a href="#__codelineno-19-13" id="__codelineno-19-13" name="__codelineno-19-13"></a><span class="w">  </span>--field-config<span class="w"> </span>field-path<span class="o">=</span>created_at,order<span class="o">=</span>descending
 </code></pre></div>
 <h2 id="related-documentation">Related Documentation</h2>
 <ul>

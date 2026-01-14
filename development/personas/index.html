@@ -2302,38 +2302,44 @@
 </tbody>
 </table>
 <h3 id="autobook-attributes">Autobook Attributes</h3>
-<p>Autobook attributes define autonomous AI booking preferences:</p>
+<p>Autobook attributes define autonomous AI booking preferences. These are <strong>policy-specific attributes</strong> defined in the policy manifest:</p>
 <table>
 <thead>
 <tr>
 <th>Field</th>
 <th>Type</th>
+<th>Default</th>
 <th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>autobook_consent</code></td>
+<td><code>consent</code></td>
 <td>Boolean</td>
-<td>Whether user allows autonomous AI booking</td>
+<td>false</td>
+<td>Whether user allows autonomous AI booking (general attribute)</td>
 </tr>
 <tr>
 <td><code>autobook_price</code></td>
 <td>Integer</td>
+<td>500</td>
 <td>Maximum booking price (EUR)</td>
 </tr>
 <tr>
 <td><code>autobook_leadtime</code></td>
 <td>Integer</td>
+<td>7</td>
 <td>Minimum advance booking time (days)</td>
 </tr>
 <tr>
 <td><code>autobook_risklevel</code></td>
 <td>Integer</td>
-<td>Maximum airline risk score (0-100)</td>
+<td>3</td>
+<td>Maximum airline risk score (1-5 scale)</td>
 </tr>
 </tbody>
 </table>
+<p><strong>Note:</strong> These attributes are defined in the travel policy manifest (<code>infra/opa/policies/travel/manifest.yaml</code>). If a persona is missing these attributes, the defaults are automatically applied by the authz-api.</p>
 <h3 id="example-persona-document">Example Persona Document</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;persona_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b9678f30-f4b0-4033-82db-846357311165&quot;</span><span class="p">,</span>
@@ -2525,8 +2531,10 @@
 <li>Extract <code>owner.id</code> and <code>owner.persona</code> (title) from AuthZEN request</li>
 <li>If <code>owner.persona_id</code> is present, fetch directly: <code>GET /v1/personas/{persona_id}</code></li>
 <li>If only <code>owner.persona</code> (title) is present, fetch by user and title: <code>GET /v1/users/{user_sub}/personas</code></li>
-<li>If fetch fails (404, 403, timeout), use default values (deny by default)</li>
-<li>Augment <code>resource.properties.owner</code> with autobook attributes for OPA</li>
+<li>If fetch fails (404, 403, timeout), use empty persona (defaults will be applied)</li>
+<li><strong>Apply defaults</strong> - Missing persona attributes are filled with policy-defined defaults</li>
+<li><strong>Validate required attributes</strong> - Check that all required attributes are present</li>
+<li>Augment <code>resource.properties.owner</code> with policy-specific attributes for OPA</li>
 </ol>
 <p><strong>Code Location:</strong> <code>flowpilot-services/authz-api/authz_core.py</code></p>
 <p><strong>Key Functions:</strong></p>

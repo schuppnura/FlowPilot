@@ -530,6 +530,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="The Travel Booking Metaphor">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#multiple-policies-one-platform" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multiple Policies, One Platform
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1865,12 +1882,20 @@
 </ul>
 <p>This maps cleanly to other domains:</p>
 <ul>
-<li>Financial approvals</li>
-<li>Medical record handling</li>
-<li>Case management</li>
-<li>Enterprise automation</li>
-<li>Agent-based task execution</li>
+<li><strong>Financial approvals</strong> - Multi-level approval workflows with delegation</li>
+<li><strong>Medical record handling</strong> - Role-based access with patient consent</li>
+<li><strong>Case management</strong> - Workflow delegation between case workers</li>
+<li><strong>Enterprise automation</strong> - AI agents executing tasks within policy constraints</li>
+<li><strong>Agent-based task execution</strong> - Autonomous agents with user-defined limits</li>
 </ul>
+<h3 id="multiple-policies-one-platform">Multiple Policies, One Platform</h3>
+<p>FlowPilot supports multiple authorization policies side-by-side:</p>
+<ul>
+<li><strong>Travel Policy</strong> - Autonomous booking with cost, risk, and lead time constraints</li>
+<li><strong>Nursing Policy</strong> - Healthcare workflows with certification and patient load limits</li>
+<li><strong>Custom Policies</strong> - Define your own with typed attributes and validation rules</li>
+</ul>
+<p>Policies are automatically selected based on resource type or explicit hints, with manifest-driven configuration for attributes, defaults, and validation.</p>
 <h2 id="for-developers-building">For Developers Building</h2>
 <ul>
 <li><strong>AI-powered applications</strong> with autonomous agents</li>
@@ -1918,12 +1943,15 @@
 <h2 id="key-features">Key Features</h2>
 <h3 id="policy-driven-authorization">Policy-Driven Authorization</h3>
 <ul>
-<li>Adopting standards for which open source and GenAI is available</li>
-<li>Declarative Rego policies in OPA</li>
-<li>Attribute-based access control (ABAC)</li>
-<li>Consent and risk threshold evaluation</li>
-<li>Explainable authorization decisions</li>
-<li>Adopting the AuthZEN protocol</li>
+<li><strong>Multi-policy architecture</strong> - Dynamic policy selection per request</li>
+<li><strong>Manifest-driven configuration</strong> - Declarative policy metadata with typed attributes</li>
+<li><strong>Automatic defaults</strong> - Missing attributes filled with sensible policy-defined defaults</li>
+<li><strong>Attribute validation</strong> - Required fields enforced with structured error messages</li>
+<li><strong>Policy routing</strong> - Automatic selection based on resource type or explicit hints</li>
+<li><strong>Declarative Rego policies</strong> in OPA with ABAC (Attribute-Based Access Control)</li>
+<li><strong>Consent and risk threshold evaluation</strong> - User-defined constraints</li>
+<li><strong>Explainable authorization decisions</strong> with structured reason codes</li>
+<li><strong>AuthZEN protocol</strong> compliance for standardized authorization requests</li>
 </ul>
 <h3 id="relationship-based-access-control">Relationship-Based Access Control</h3>
 <ul>
