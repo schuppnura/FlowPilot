@@ -1051,45 +1051,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Supported Persona Titles">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#end-user-personas" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        End-User Personas
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#delegation-personas" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Delegation Personas
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#system-personas" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        System Personas
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -2317,7 +2278,7 @@ With its persona-driven authorisation policies, FlowPilot:</p>
 </table>
 <h3 id="custom-attributes">Custom Attributes</h3>
 <p>In addition to the persona lifecycle management attributes, each persona can also have a number of custom attributes specific to the business use case.</p>
-<p>For the "travel" use case, we defined the following autobook attributes to reflect autonomous AI booking preferences:</p>
+<p>For the "travel" use case, FlowPilot defined the following autobook attributes to reflect autonomous AI booking preferences:</p>
 <table>
 <thead>
 <tr>
@@ -2362,8 +2323,8 @@ With its persona-driven authorisation policies, FlowPilot:</p>
 <a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="p">}</span>
 </code></pre></div>
 <h2 id="supported-persona-titles">Supported Persona Titles</h2>
-<p>FlowPilot defines the following persona titles for the "Travel" use case:</p>
-<h3 id="end-user-personas">End-User Personas</h3>
+<p>Persona Titles are custom names for each busienss role.</p>
+<p>For the "travel" use case, FlowPilot defined the following persona titles:</p>
 <ul>
 <li>
 <p><strong><code>traveler</code></strong> - End users who book travel for themselves</p>
@@ -2381,9 +2342,6 @@ With its persona-driven authorisation policies, FlowPilot:</p>
 <li>Autobook preferences apply to their workflows</li>
 </ul>
 </li>
-</ul>
-<h3 id="delegation-personas">Delegation Personas</h3>
-<ul>
 <li>
 <p><strong><code>travel-agent</code></strong> - Professional travel agents</p>
 <ul>
@@ -2405,10 +2363,9 @@ With its persona-driven authorisation policies, FlowPilot:</p>
 <li>Can execute workflows with delegation</li>
 </ul>
 </li>
-</ul>
-<h3 id="system-personas">System Personas</h3>
+<li>
+<p><strong><code>ai-agent</code></strong> - Autonomous AI agents</p>
 <ul>
-<li><strong><code>ai-agent</code></strong> - Autonomous AI agents<ul>
 <li>System-only persona (not stored in user-profile-api)</li>
 <li>Used by ai-agent-api and domain-services-api</li>
 <li>Subject to autobook policy gates</li>
