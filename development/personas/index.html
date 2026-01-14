@@ -2628,13 +2628,15 @@
 <li>Domain-services-api receives request with Carlo's token</li>
 <li>Authz-api extracts <code>sub=carlo-uuid</code> from JWT</li>
 <li>Authz-api fetches Carlo's "traveler" persona from user-profile-api</li>
-<li>OPA evaluates:</li>
+<li>OPA evaluates:<ul>
 <li><code>authorized_principal</code>: ✓ (owner == principal)</li>
 <li><code>persona_valid</code>: ✓ (traveler == traveler)</li>
 <li><code>owner_persona_active</code>: ✓ (status == "active")</li>
 <li><code>owner_persona_valid_time</code>: ✓ (current time within range)</li>
 <li><code>has_consent</code>: ✓ (autobook_consent == true)</li>
 <li>Other gates...</li>
+</ul>
+</li>
 <li>Decision: <strong>Allow</strong> (if all gates pass)</li>
 </ol>
 <h3 id="scenario-2-delegated-travel-agent">Scenario 2: Delegated Travel Agent</h3>
@@ -2649,13 +2651,15 @@
 <li>Authz-api extracts <code>sub=yannick-uuid</code> from JWT</li>
 <li>Authz-api queries delegation-api: valid delegation exists</li>
 <li>Authz-api fetches Carlo's "traveler" persona (resource owner)</li>
-<li>OPA evaluates:</li>
+<li>OPA evaluates:<ul>
 <li><code>authorized_principal</code>: ✓ (valid delegation with "execute" action)</li>
 <li><code>persona_valid</code>: ✓ (Yannick's persona "travel-agent" is an agent persona)</li>
 <li><code>owner_persona_active</code>: ✓ (Carlo's persona status == "active")</li>
 <li><code>owner_persona_valid_time</code>: ✓ (Carlo's persona is valid)</li>
 <li><code>has_consent</code>: ✓ (Carlo's autobook_consent == true)</li>
 <li>Other gates...</li>
+</ul>
+</li>
 <li>Decision: <strong>Allow</strong> (if all gates pass)</li>
 </ol>
 <h3 id="scenario-3-autonomous-ai-agent">Scenario 3: Autonomous AI Agent</h3>
@@ -2669,7 +2673,7 @@
 <li>AI-agent-api calls domain-services-api with service token</li>
 <li>AuthZEN request: <code>subject.persona = "ai-agent"</code>, <code>context.principal.id = carlo-uuid</code></li>
 <li>Authz-api fetches Carlo's "traveler" persona</li>
-<li>OPA evaluates:</li>
+<li>OPA evaluates:<ul>
 <li><code>authorized_principal</code>: ✓ (autobook_consent == true, no delegation required)</li>
 <li><code>persona_valid</code>: ✓ (context.principal.persona == owner.persona)</li>
 <li><code>owner_persona_active</code>: ✓ (status == "active")</li>
@@ -2678,6 +2682,8 @@
 <li><code>within_cost_limit</code>: Check Carlo's autobook_price</li>
 <li><code>sufficient_advance</code>: Check Carlo's autobook_leadtime</li>
 <li><code>acceptable_risk</code>: Check Carlo's autobook_risklevel</li>
+</ul>
+</li>
 <li>Decision: <strong>Allow</strong> or <strong>Deny</strong> based on ABAC gates</li>
 </ol>
 <h3 id="scenario-4-persona-mismatch">Scenario 4: Persona Mismatch</h3>
@@ -2690,9 +2696,11 @@
 <ol>
 <li>Workflow was created with <code>owner.persona = "traveler"</code></li>
 <li>Martine's request has <code>subject.persona = "office-manager"</code></li>
-<li>OPA evaluates:</li>
+<li>OPA evaluates:<ul>
 <li><code>authorized_principal</code>: ✓ (owner == principal)</li>
 <li><code>persona_valid</code>: ✗ (office-manager ≠ traveler, and office-manager is not allowed for owner execution)</li>
+</ul>
+</li>
 <li>Decision: <strong>Deny</strong> with reason_code <code>"auto_book.persona_mismatch"</code></li>
 </ol>
 <p>Resolution: Martine must switch to her "traveler" persona when executing her own workflows.</p>
