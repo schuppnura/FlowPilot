@@ -959,15 +959,15 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-5a-persona-status-and-temporal-validity" class="md-nav__link">
+  <a href="#step-6-persona-status-and-temporal-validity" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 5a: Persona Status and Temporal Validity
+        Step 6: Persona Status and Temporal Validity
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Step 5a: Persona Status and Temporal Validity">
+    <nav class="md-nav" aria-label="Step 6: Persona Status and Temporal Validity">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -998,10 +998,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-6-consent-check" class="md-nav__link">
+  <a href="#step-7-user-consent-check" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 6: Consent Check
+        Step 7: User Consent Check
       
     </span>
   </a>
@@ -1009,10 +1009,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-7-user-declared-constraints-check" class="md-nav__link">
+  <a href="#step-8-user-declared-constraints-check" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 7: User-declared Constraints Check
+        Step 8: User Declared Constraints Check
       
     </span>
   </a>
@@ -1020,10 +1020,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-8-deny-reason-codes" class="md-nav__link">
+  <a href="#step-9-deny-reason-codes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 8: Deny Reason Codes
+        Step 9: Deny Reason Codes
       
     </span>
   </a>
@@ -2421,7 +2421,7 @@ To achieve this, the authz-api:</p>
 <li>Includes both <code>subject.persona</code> and enriched <code>owner</code> object in OPA input</li>
 </ul>
 <p><strong>Important:</strong> The <code>owner.persona</code> field contains the persona <strong>title</strong> (e.g., "traveler"), while the full persona data (with autobook attributes, status, and temporal validity) is fetched from user-profile-api and merged into <code>resource.properties.owner</code>.</p>
-<h3 id="step-5a-persona-status-and-temporal-validity">Step 5a: Persona Status and Temporal Validity</h3>
+<h3 id="step-6-persona-status-and-temporal-validity">Step 6: Persona Status and Temporal Validity</h3>
 <p>In addition to persona matching, the policy enforces two additional persona-level gates:</p>
 <h4 id="persona-status-check">Persona Status Check</h4>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">owner_persona_active</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
@@ -2477,7 +2477,7 @@ To achieve this, the authz-api:</p>
 <li>Extracts: <code>persona_status</code>, <code>valid_from</code>, <code>valid_till</code>, and all <code>autobook_*</code> fields</li>
 <li>Merges into <code>resource.properties.owner</code> for OPA evaluation</li>
 </ul>
-<h3 id="step-6-consent-check">Step 6: Consent Check</h3>
+<h3 id="step-7-user-consent-check">Step 7: User Consent Check</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">has_consent</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">autobook_consent</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="k">true</span>
 <a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="p">}</span>
@@ -2494,7 +2494,7 @@ To achieve this, the authz-api:</p>
 <li>Includes in <code>resource.properties.owner.autobook_consent</code></li>
 </ul>
 <p><strong>Important:</strong> Autobook consent is <strong>per-persona</strong>, not per-user. A user with multiple personas can have different consent settings for each.</p>
-<h3 id="step-7-user-declared-constraints-check">Step 7: User-declared Constraints Check</h3>
+<h3 id="step-8-user-declared-constraints-check">Step 8: User Declared Constraints Check</h3>
 <p>A user can set constraits to the AI-agent about when it can act autonomously.</p>
 <p>In the use case of "travel", this reflects the risk a traveler is willing to take in terms of cost, transport risk, and time to change their mind.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">within_cost_limit</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
@@ -2533,7 +2533,7 @@ To achieve this, the authz-api:</p>
 <li>Fetches <code>autobook_leadtime</code> from user profile</li>
 <li>Converts and normalizes prices, risk scores and times</li>
 </ul>
-<h3 id="step-8-deny-reason-codes">Step 8: Deny Reason Codes</h3>
+<h3 id="step-9-deny-reason-codes">Step 9: Deny Reason Codes</h3>
 <p>The policy provides a structured reason code for every denial scenario. Reason codes follow the gate evaluation order:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># 1. Principal spoofing (no delegation)</span>
 <a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="n">reasons</span><span class="p">[</span><span class="n">code</span><span class="p">]</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
