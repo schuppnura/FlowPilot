@@ -1919,7 +1919,7 @@
 <li><strong>Service tokens</strong> - For internal service-to-service communication</li>
 </ol>
 <p>When your app authenticates a user with Firebase/Auth0/etc., you exchange the ID token for a pseudonymous FlowPilot access token via the <code>/v1/token/exchange</code> endpoint. This token contains only the user's UUID (<code>sub</code>) with zero PII, preventing personal information from proliferating across your backend services.</p>
-<p>Personas (roles) are passed as request parameters selected by the user, not embedded in tokens. This allows users to switch personas without re-authentication and prevents token bloat.</p>
+<p>Personas (business roles) are passed as request parameters selected by the user, not embedded in tokens. This allows users to switch personas without re-authentication and prevents token bloat.</p>
 <h2 id="quick-links">Quick Links</h2>
 <div class="grid cards">
 <ul>
