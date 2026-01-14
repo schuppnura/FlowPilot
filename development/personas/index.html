@@ -2327,37 +2327,45 @@
 <p>FlowPilot defines the following persona titles:</p>
 <h3 id="end-user-personas">End-User Personas</h3>
 <ul>
-<li><strong><code>traveler</code></strong> - End users who book travel for themselves</li>
+<li><strong><code>traveler</code></strong> - End users who book travel for themselves<ul>
 <li>Can own workflows</li>
 <li>Can delegate to agents</li>
 <li>Autobook preferences apply to their workflows</li>
 </ul>
+</li>
+</ul>
 <h3 id="agent-personas">Agent Personas</h3>
 <ul>
-<li><strong><code>travel-agent</code></strong> - Professional travel agents</li>
-<li>Can execute workflows on behalf of travelers (with delegation)</li>
 <li>
-<p>Trusted role for booking operations</p>
+<p><strong><code>travel-agent</code></strong> - Professional travel agents</p>
+<ul>
+<li>Can execute workflows on behalf of travelers (with delegation)</li>
+<li>Trusted role for booking operations</li>
+</ul>
 </li>
 <li>
 <p><strong><code>office-manager</code></strong> - Office administrators</p>
-</li>
+<ul>
 <li>Can manage travel bookings for employees</li>
-<li>
-<p>Can execute workflows with delegation</p>
+<li>Can execute workflows with delegation</li>
+</ul>
 </li>
 <li>
 <p><strong><code>booking-assistant</code></strong> - Booking support staff</p>
-</li>
+<ul>
 <li>Can assist with travel bookings</li>
 <li>Can execute workflows with delegation</li>
 </ul>
+</li>
+</ul>
 <h3 id="system-personas">System Personas</h3>
 <ul>
-<li><strong><code>ai-agent</code></strong> - Autonomous AI agents</li>
+<li><strong><code>ai-agent</code></strong> - Autonomous AI agents<ul>
 <li>System-only persona (not stored in user-profile-api)</li>
 <li>Used by ai-agent-api and domain-services-api</li>
 <li>Subject to autobook policy gates</li>
+</ul>
+</li>
 </ul>
 <h2 id="persona-lifecycle">Persona Lifecycle</h2>
 <h3 id="1-creation">1. Creation</h3>
@@ -2553,33 +2561,37 @@
 <p>The <code>auto_book.rego</code> policy enforces these persona rules:</p>
 <h4 id="execute-action-rules">Execute Action Rules</h4>
 <ol>
-<li><strong>Authorized Principal + Persona Validation</strong></li>
+<li>
+<p><strong>Authorized Principal + Persona Validation</strong></p>
+<ul>
 <li>Owner executing their own workflow: <code>subject.persona</code> must match <code>owner.persona</code></li>
 <li>Delegated user: <code>subject.persona</code> must be one of: <code>travel-agent</code>, <code>office-manager</code>, <code>booking-assistant</code>, <code>ai-agent</code></li>
 <li>AI agent activated by owner: <code>context.principal.persona</code> must match <code>owner.persona</code></li>
-<li>
-<p>AI agent activated by delegate: <code>context.principal.persona</code> must be an agent persona</p>
+<li>AI agent activated by delegate: <code>context.principal.persona</code> must be an agent persona</li>
+</ul>
 </li>
 <li>
 <p><strong>Persona Status</strong></p>
-</li>
+<ul>
 <li><code>owner.persona_status</code> must be <code>"active"</code></li>
-<li>
-<p>If missing, defaults to allowing (backward compatibility)</p>
+<li>If missing, defaults to allowing (backward compatibility)</li>
+</ul>
 </li>
 <li>
 <p><strong>Persona Temporal Validity</strong></p>
-</li>
+<ul>
 <li>Current time must be between <code>owner.persona_valid_from</code> and <code>owner.persona_valid_till</code></li>
 <li>If missing, defaults to allowing (backward compatibility)</li>
+</ul>
+</li>
 </ol>
 <h4 id="read-action-rules">Read Action Rules</h4>
 <ol>
 <li><strong>Owner can always read</strong> (no persona restrictions)</li>
 <li><strong>AI agents can read</strong> (needed to list workflow items)</li>
-<li><strong>Delegated users with read permission</strong>:</li>
+<li><strong>Delegated users with read permission</strong>:<ul>
 <li>Must have valid delegation with <code>"read"</code> action</li>
-<li><code>subject.persona</code> must be either:<ul>
+<li><code>subject.persona</code> must be either:</li>
 <li>An agent persona (<code>travel-agent</code>, <code>office-manager</code>, <code>booking-assistant</code>, <code>ai-agent</code>)</li>
 <li>OR match <code>owner.persona</code></li>
 </ul>
