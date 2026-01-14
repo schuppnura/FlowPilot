@@ -1038,10 +1038,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#agent-personas" class="md-nav__link">
+  <a href="#delegation-personas" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Agent Personas
+        Delegation Personas
       
     </span>
   </a>
@@ -1161,10 +1161,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#sqlite-local-development" class="md-nav__link">
+  <a href="#firestore-gcp-production" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SQLite (Local Development)
+        Firestore (GCP Production)
       
     </span>
   </a>
@@ -1172,10 +1172,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#firestore-gcp-production" class="md-nav__link">
+  <a href="#sqlite-local-development" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Firestore (GCP Production)
+        SQLite (Local Development)
       
     </span>
   </a>
@@ -2324,7 +2324,7 @@
 <a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="p">}</span>
 </code></pre></div>
 <h2 id="supported-persona-titles">Supported Persona Titles</h2>
-<p>FlowPilot defines the following persona titles:</p>
+<p>FlowPilot defines the following persona titles for the "Travel" use case:</p>
 <h3 id="end-user-personas">End-User Personas</h3>
 <ul>
 <li><strong><code>traveler</code></strong> - End users who book travel for themselves<ul>
@@ -2334,7 +2334,7 @@
 </ul>
 </li>
 </ul>
-<h3 id="agent-personas">Agent Personas</h3>
+<h3 id="delegation-personas">Delegation Personas</h3>
 <ul>
 <li>
 <p><strong><code>travel-agent</code></strong> - Professional travel agents</p>
@@ -2444,22 +2444,13 @@
 <h2 id="technical-implementation">Technical Implementation</h2>
 <h3 id="storage-backends">Storage Backends</h3>
 <p>FlowPilot supports two storage backends for personas:</p>
-<h4 id="sqlite-local-development">SQLite (Local Development)</h4>
-<ul>
-<li>Used by local Docker Compose stack with Keycloak</li>
-<li>In-memory or file-based SQLite database</li>
-<li>Schema defined in <code>personadb_sqlite.py</code></li>
-<li>Simple, zero-configuration setup</li>
-</ul>
 <h4 id="firestore-gcp-production">Firestore (GCP Production)</h4>
-<ul>
-<li>Used by Cloud Run deployment with Firebase Authentication</li>
-<li>Serverless, scalable NoSQL database</li>
-<li>Collection: <code>personas</code></li>
-<li>Document ID = <code>persona_id</code></li>
-<li>Requires composite indexes for efficient queries</li>
-</ul>
-<p><strong>Required Firestore Indexes:</strong></p>
+<p>Used by Cloud Run deployment with Firebase Authentication:
+- Serverless, scalable NoSQL database
+- Collection: <code>personas</code>
+- Document ID = <code>persona_id</code>
+- Requires composite indexes for efficient queries</p>
+<p>Required Firestore Indexes:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Index 1: user_sub + status + created_at (descending)</span>
 <a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>gcloud<span class="w"> </span>firestore<span class="w"> </span>indexes<span class="w"> </span>composite<span class="w"> </span>create<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span>--collection-group<span class="o">=</span>personas<span class="w"> </span><span class="se">\</span>
@@ -2475,19 +2466,29 @@
 <a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="w">  </span>--field-config<span class="w"> </span>field-path<span class="o">=</span>user_sub,order<span class="o">=</span>ascending<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="w">  </span>--field-config<span class="w"> </span>field-path<span class="o">=</span>created_at,order<span class="o">=</span>descending
 </code></pre></div>
+<h4 id="sqlite-local-development">SQLite (Local Development)</h4>
+<p>Used by local Docker Compose stack with Keycloak:
+- Serverless
+- In-memory or file-based SQLite database
+- Schema defined in <code>personadb_sqlite.py</code>
+- Simple, zero-configuration setup</p>
 <h3 id="service-architecture">Service Architecture</h3>
 <h4 id="user-profile-api">User-Profile-API</h4>
 <p><strong>Purpose:</strong> Persona lifecycle management (CRUD operations)</p>
-<p><strong>Endpoints:</strong>
-- <code>POST /v1/personas</code> - Create persona
-- <code>GET /v1/personas</code> - List user's personas
-- <code>GET /v1/personas/{persona_id}</code> - Get specific persona
-- <code>PUT /v1/personas/{persona_id}</code> - Update persona
-- <code>DELETE /v1/personas/{persona_id}</code> - Delete persona
-- <code>GET /v1/users/{user_sub}/personas</code> - List personas for any user (service accounts only)</p>
-<p><strong>Authorization:</strong>
-- User endpoints: JWT <code>sub</code> must match persona owner
-- Service endpoint: Requires service account token (Keycloak: <code>client_id=flowpilot-agent</code>, GCP: <code>gserviceaccount.com</code> in email)</p>
+<p><strong>Endpoints:</strong></p>
+<ul>
+<li><code>POST /v1/personas</code> - Create persona</li>
+<li><code>GET /v1/personas</code> - List user's personas</li>
+<li><code>GET /v1/personas/{persona_id}</code> - Get specific persona</li>
+<li><code>PUT /v1/personas/{persona_id}</code> - Update persona</li>
+<li><code>DELETE /v1/personas/{persona_id}</code> - Delete persona</li>
+<li><code>GET /v1/users/{user_sub}/personas</code> - List personas for any user (service accounts only)</li>
+</ul>
+<p><strong>Authorization:</strong></p>
+<ul>
+<li>User endpoints: JWT <code>sub</code> must match persona owner</li>
+<li>Service endpoint: Requires service account token (Keycloak: <code>client_id=flowpilot-agent</code>, GCP: <code>gserviceaccount.com</code> in email)</li>
+</ul>
 <p><strong>Code Location:</strong> <code>flowpilot-services/user-profile-api/</code></p>
 <h4 id="authz-api">AuthZ-API</h4>
 <p><strong>Purpose:</strong> Fetches persona data for authorization decisions (acts as Policy Information Point)</p>
@@ -2500,10 +2501,12 @@
 <li>Augment <code>resource.properties.owner</code> with autobook attributes for OPA</li>
 </ol>
 <p><strong>Code Location:</strong> <code>flowpilot-services/authz-api/authz_core.py</code></p>
-<p><strong>Key Functions:</strong>
-- <code>fetch_persona_from_api(persona_id)</code> - Fetch by ID
-- <code>fetch_persona_by_user_and_title(user_sub, persona_title)</code> - Fetch by user and title
-- <code>build_opa_input()</code> - Augment OPA input with persona data</p>
+<p><strong>Key Functions:</strong></p>
+<ul>
+<li><code>fetch_persona_from_api(persona_id)</code> - Fetch by ID</li>
+<li><code>fetch_persona_by_user_and_title(user_sub, persona_title)</code> - Fetch by user and title</li>
+<li><code>build_opa_input()</code> - Augment OPA input with persona data</li>
+</ul>
 <h3 id="opa-integration">OPA Integration</h3>
 <p>Persona data flows into OPA as part of the <code>resource.properties.owner</code> object:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="p">{</span>
@@ -2600,13 +2603,13 @@
 <h3 id="api-validation-rules">API Validation Rules</h3>
 <p>The user-profile-api enforces these constraints:</p>
 <ul>
-<li><strong>Title:</strong> Must be one of the allowed persona titles (configurable via <code>ALLOWED_PERSONA_TITLES</code> env var)</li>
-<li><strong>Scope:</strong> Must be a non-empty array of action strings</li>
-<li><strong>Valid_from/Valid_till:</strong> Must be valid ISO 8601 timestamps</li>
-<li><strong>Status:</strong> Must be one of: <code>"active"</code>, <code>"inactive"</code>, <code>"suspended"</code>, <code>"expired"</code></li>
-<li><strong>Autobook_price:</strong> Must be a non-negative integer</li>
-<li><strong>Autobook_leadtime:</strong> Must be a non-negative integer</li>
-<li><strong>Autobook_risklevel:</strong> Must be an integer between 0 and 100</li>
+<li><code>title</code> must be one of the allowed persona titles (configurable via <code>ALLOWED_PERSONA_TITLES</code> env var)</li>
+<li><code>scope</code> must be a non-empty array of action strings</li>
+<li><code>valid_from</code> &amp; <code>valid_till</code> must be valid ISO 8601 timestamps</li>
+<li><code>status</code> must be one of: <code>"active"</code>, <code>"inactive"</code>, <code>"suspended"</code>, <code>"expired"</code></li>
+<li><code>autobook_price</code> must be a non-negative integer</li>
+<li><code>autobook_leadtime</code> must be a non-negative integer</li>
+<li><code>autobook_risklevel</code> must be an integer between 0 and 100</li>
 </ul>
 <h2 id="provisioning-personas">Provisioning Personas</h2>
 <h3 id="local-development-keycloak">Local Development (Keycloak)</h3>
