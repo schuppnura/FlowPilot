@@ -1009,10 +1009,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-5-persona-validation" class="md-nav__link">
+  <a href="#step-5-persona-type-validation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 5: Persona Validation
+        Step 5: Persona Type Validation
       
     </span>
   </a>
@@ -1020,41 +1020,13 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-6-persona-lifecycle-checks" class="md-nav__link">
+  <a href="#step-6-persona-validity-check" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 6: Persona Lifecycle Checks
+        Step 6: Persona Validity Check
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Step 6: Persona Lifecycle Checks">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#persona-status-check" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Persona Status Check
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#persona-temporal-validity-check" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Persona Temporal Validity Check
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
         
@@ -2490,16 +2462,17 @@ To achieve this, the authz-api:</p>
 <h3 id="step-3-decisions-gates">Step 3: Decisions Gates</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">allow_execute</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="n">authorized_principal</span><span class="w">  </span><span class="c1"># Anti-spoofing and delegation check</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span><span class="n">persona_valid</span><span class="w">         </span><span class="c1"># Persona check</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span><span class="n">has_consent</span><span class="w">          </span><span class="c1"># User consent</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">  </span><span class="n">acceptable_risk</span><span class="w">      </span><span class="c1"># Risk threshold</span>
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">  </span><span class="n">within_cost_limit</span><span class="w">    </span><span class="c1"># Cost ceiling</span>
-<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">  </span><span class="n">sufficient_advance</span><span class="w">   </span><span class="c1"># Lead time requirement</span>
-<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="p">}</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span><span class="n">appropriate_persona</span><span class="w">  </span><span class="c1"># Persona type check (agent vs owner personas)</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span><span class="n">valid_persona</span><span class="w">        </span><span class="c1"># Persona must be active and within valid time range</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">  </span><span class="n">has_consent</span><span class="w">          </span><span class="c1"># User consent</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">  </span><span class="n">acceptable_risk</span><span class="w">      </span><span class="c1"># Risk threshold</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">  </span><span class="n">within_cost_limit</span><span class="w">    </span><span class="c1"># Cost ceiling</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">  </span><span class="n">sufficient_advance</span><span class="w">   </span><span class="c1"># Lead time requirement</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="p">}</span>
 </code></pre></div>
 <p><strong>What this does:</strong></p>
 <ul>
-<li>Defines 6 gates that <strong>all must pass</strong> for execution</li>
+<li>Defines 7 gates that <strong>all must pass</strong> for execution</li>
 <li>Each gate is a separate rule evaluated independently</li>
 <li>If any gate fails, <code>allow_execute</code> is false</li>
 </ul>
@@ -2557,11 +2530,11 @@ To achieve this, the authz-api:</p>
 <p>This checks if:
 - Delegation exists (<code>valid == true</code>)
 - Delegation grants the requested action (e.g., <code>execute</code>)</p>
-<h3 id="step-5-persona-validation">Step 5: Persona Validation</h3>
+<h3 id="step-5-persona-type-validation">Step 5: Persona Type Validation</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">valid_agent_personas</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="p">{</span><span class="s2">&quot;travel-agent&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;ai-agent&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;office-manager&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;booking-assistant&quot;</span><span class="p">}</span>
 <a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
 <a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="c1"># Owner executing directly</span>
-<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">persona_valid</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">appropriate_persona</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">subject</span><span class="p">.</span><span class="n">persona</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">&quot;ai-agent&quot;</span>
 <a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">  </span><span class="n">principal_id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">subject</span><span class="p">.</span><span class="n">id</span>
 <a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="w">  </span><span class="n">owner_id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">id</span>
@@ -2571,7 +2544,7 @@ To achieve this, the authz-api:</p>
 <a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="p">}</span>
 <a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>
 <a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a><span class="c1"># Owner executing via AI-agent</span>
-<a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a><span class="n">persona_valid</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a><span class="n">appropriate_persona</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">subject</span><span class="p">.</span><span class="n">persona</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;ai-agent&quot;</span>
 <a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a><span class="w">  </span><span class="n">principal_id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">principal</span><span class="p">.</span><span class="n">id</span>
 <a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a><span class="w">  </span><span class="n">owner_id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">id</span>
@@ -2582,7 +2555,7 @@ To achieve this, the authz-api:</p>
 <a id="__codelineno-10-22" name="__codelineno-10-22" href="#__codelineno-10-22"></a><span class="p">}</span>
 <a id="__codelineno-10-23" name="__codelineno-10-23" href="#__codelineno-10-23"></a>
 <a id="__codelineno-10-24" name="__codelineno-10-24" href="#__codelineno-10-24"></a><span class="c1"># Human user delegated by owner, or other delegated user (in a chain of delegation)</span>
-<a id="__codelineno-10-25" name="__codelineno-10-25" href="#__codelineno-10-25"></a><span class="n">persona_valid</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-10-25" name="__codelineno-10-25" href="#__codelineno-10-25"></a><span class="n">appropriate_persona</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-10-26" name="__codelineno-10-26" href="#__codelineno-10-26"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">subject</span><span class="p">.</span><span class="n">persona</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">&quot;ai-agent&quot;</span>
 <a id="__codelineno-10-27" name="__codelineno-10-27" href="#__codelineno-10-27"></a><span class="w">  </span><span class="n">principal_id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">subject</span><span class="p">.</span><span class="n">id</span>
 <a id="__codelineno-10-28" name="__codelineno-10-28" href="#__codelineno-10-28"></a><span class="w">  </span><span class="n">owner_id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">id</span>
@@ -2592,7 +2565,7 @@ To achieve this, the authz-api:</p>
 <a id="__codelineno-10-32" name="__codelineno-10-32" href="#__codelineno-10-32"></a><span class="p">}</span>
 <a id="__codelineno-10-33" name="__codelineno-10-33" href="#__codelineno-10-33"></a>
 <a id="__codelineno-10-34" name="__codelineno-10-34" href="#__codelineno-10-34"></a><span class="c1"># AI-agent activated by delegated user</span>
-<a id="__codelineno-10-35" name="__codelineno-10-35" href="#__codelineno-10-35"></a><span class="n">persona_valid</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-10-35" name="__codelineno-10-35" href="#__codelineno-10-35"></a><span class="n">appropriate_persona</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-10-36" name="__codelineno-10-36" href="#__codelineno-10-36"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">subject</span><span class="p">.</span><span class="n">persona</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;ai-agent&quot;</span>
 <a id="__codelineno-10-37" name="__codelineno-10-37" href="#__codelineno-10-37"></a><span class="w">  </span><span class="n">principal_id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">principal</span><span class="p">.</span><span class="n">id</span>
 <a id="__codelineno-10-38" name="__codelineno-10-38" href="#__codelineno-10-38"></a><span class="w">  </span><span class="n">owner_id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">id</span>
@@ -2604,9 +2577,10 @@ To achieve this, the authz-api:</p>
 </code></pre></div>
 <p><strong>What this does:</strong></p>
 <ul>
-<li>Validates that the user's business role (persona) is appropriate</li>
+<li>Validates that the user's business role (persona type) is appropriate for the action</li>
 <li>Delegated users must have agent personas (<code>travel-agent</code>, etc.)</li>
 <li>Owners must match their own persona</li>
+<li>This checks the <strong>type</strong> of persona, not its validity status or time range</li>
 </ul>
 <p><strong>Authz-API role:</strong></p>
 <ul>
@@ -2615,49 +2589,43 @@ To achieve this, the authz-api:</p>
 <li>Includes both <code>subject.persona</code> and enriched <code>owner</code> object in OPA input</li>
 </ul>
 <p><strong>Important:</strong> The <code>owner.persona</code> field contains the persona <strong>title</strong> (e.g., "traveler"), while the full persona data (with autobook attributes, status, and temporal validity) is fetched from user-profile-api and merged into <code>resource.properties.owner</code>.</p>
-<h3 id="step-6-persona-lifecycle-checks">Step 6: Persona Lifecycle Checks</h3>
-<p>In addition to persona matching, the policy enforces two additional persona-level gates:</p>
-<h4 id="persona-status-check">Persona Status Check</h4>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">owner_persona_active</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="c1"># If no persona_status field, assume active (backward compatibility)</span>
-<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span><span class="k">not</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">persona_status</span>
-<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="p">}</span>
-<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>
-<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="n">owner_persona_active</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">  </span><span class="c1"># Persona status must be &quot;active&quot;</span>
-<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">persona_status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;active&quot;</span>
-<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="p">}</span>
+<h3 id="step-6-persona-validity-check">Step 6: Persona Validity Check</h3>
+<p>In addition to checking the persona <strong>type</strong> is appropriate, the policy enforces that the owner's persona is currently valid. This combines status and temporal checks:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">valid_persona</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="c1"># Persona status must be &quot;active&quot;</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">persona_status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;active&quot;</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">  </span><span class="c1"># Parse persona validity timestamps</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">  </span><span class="n">valid_from_str</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">persona_valid_from</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">  </span><span class="n">valid_till_str</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">persona_valid_till</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="w">  </span><span class="c1"># Both timestamps must be present and valid</span>
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="w">  </span><span class="n">valid_from_str</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="w">  </span><span class="n">valid_till_str</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a>
+<a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="w">  </span><span class="c1"># Parse timestamps to nanoseconds</span>
+<a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="w">  </span><span class="n">valid_from</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="n">time</span><span class="p">.</span><span class="n">parse_rfc3339_ns</span><span class="p">(</span><span class="n">valid_from_str</span><span class="p">)</span>
+<a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="w">  </span><span class="n">valid_till</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="n">time</span><span class="p">.</span><span class="n">parse_rfc3339_ns</span><span class="p">(</span><span class="n">valid_till_str</span><span class="p">)</span>
+<a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a><span class="w">  </span><span class="n">now</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="n">time</span><span class="p">.</span><span class="n">now_ns</span><span class="p">()</span>
+<a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a>
+<a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a><span class="w">  </span><span class="c1"># Current time must be within valid range</span>
+<a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a><span class="w">  </span><span class="n">now</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">valid_from</span>
+<a id="__codelineno-11-20" name="__codelineno-11-20" href="#__codelineno-11-20"></a><span class="w">  </span><span class="n">now</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">valid_till</span>
+<a id="__codelineno-11-21" name="__codelineno-11-21" href="#__codelineno-11-21"></a><span class="p">}</span>
 </code></pre></div>
-<p>Ensures the owner's persona is in "active" status. Personas can be:</p>
+<p>This rule ensures:</p>
+<ol>
+<li><strong>Status is "active"</strong> - Persona is not suspended, inactive, or expired</li>
+<li><strong>Within time range</strong> - Current time is between <code>valid_from</code> and <code>valid_till</code></li>
+<li><strong>No backward compatibility</strong> - Both status and timestamps are <strong>required</strong></li>
+</ol>
+<p>Possible persona statuses:</p>
 <ul>
-<li><code>active</code> - Normal operational state</li>
+<li><code>active</code> - Normal operational state (only valid status)</li>
 <li><code>inactive</code> - Temporarily disabled</li>
 <li><code>suspended</code> - Administratively suspended  </li>
 <li><code>expired</code> - Past validity period</li>
 </ul>
-<h4 id="persona-temporal-validity-check">Persona Temporal Validity Check</h4>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">owner_persona_valid_time</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span><span class="c1"># If no temporal fields, assume valid</span>
-<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">  </span><span class="k">not</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">persona_valid_from</span>
-<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">  </span><span class="k">not</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">persona_valid_till</span>
-<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="p">}</span>
-<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>
-<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="n">owner_persona_valid_time</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="w">  </span><span class="c1"># Parse and check timestamps</span>
-<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="w">  </span><span class="n">valid_from_str</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">persona_valid_from</span>
-<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="w">  </span><span class="n">valid_till_str</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">persona_valid_till</span>
-<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a><span class="w">  </span><span class="n">valid_from_str</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
-<a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a><span class="w">  </span><span class="n">valid_till_str</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
-<a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a>
-<a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a><span class="w">  </span><span class="n">valid_from</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="n">time</span><span class="p">.</span><span class="n">parse_rfc3339_ns</span><span class="p">(</span><span class="n">valid_from_str</span><span class="p">)</span>
-<a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a><span class="w">  </span><span class="n">valid_till</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="n">time</span><span class="p">.</span><span class="n">parse_rfc3339_ns</span><span class="p">(</span><span class="n">valid_till_str</span><span class="p">)</span>
-<a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a><span class="w">  </span><span class="n">now</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="n">time</span><span class="p">.</span><span class="n">now_ns</span><span class="p">()</span>
-<a id="__codelineno-12-17" name="__codelineno-12-17" href="#__codelineno-12-17"></a>
-<a id="__codelineno-12-18" name="__codelineno-12-18" href="#__codelineno-12-18"></a><span class="w">  </span><span class="n">now</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">valid_from</span>
-<a id="__codelineno-12-19" name="__codelineno-12-19" href="#__codelineno-12-19"></a><span class="w">  </span><span class="n">now</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">valid_till</span>
-<a id="__codelineno-12-20" name="__codelineno-12-20" href="#__codelineno-12-20"></a><span class="p">}</span>
-</code></pre></div>
-<p>Checks if current time is within the persona's validity period (<code>valid_from</code> to <code>valid_till</code>).</p>
 <p><strong>Use cases:</strong></p>
 <ul>
 <li>Time-limited personas (temporary roles, seasonal access)</li>
@@ -2672,9 +2640,9 @@ To achieve this, the authz-api:</p>
 <li>Merges into <code>resource.properties.owner</code> for OPA evaluation</li>
 </ul>
 <h3 id="step-7-user-consent-check">Step 7: User Consent Check</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">has_consent</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">autobook_consent</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="k">true</span>
-<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">has_consent</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">autobook_consent</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="k">true</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="p">}</span>
 </code></pre></div>
 <p><strong>What this does:</strong></p>
 <ul>
@@ -2691,21 +2659,21 @@ To achieve this, the authz-api:</p>
 <h3 id="step-8-user-preferences-check">Step 8: User Preferences Check</h3>
 <p>A user can set constraits to the AI-agent about when it can act autonomously.</p>
 <p>In the use case of "travel", this reflects the risk a traveler is willing to take in terms of cost, transport risk, and time to change their mind.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">within_cost_limit</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span><span class="n">planned_price</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">planned_price</span>
-<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">  </span><span class="n">planned_price</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">autobook_price</span>
-<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="p">}</span>
-<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="n">acceptable_risk</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="w">  </span><span class="n">risk</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">airline_risk_score</span>
-<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="w">  </span><span class="n">risk</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">autobook_risklevel</span>
-<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="p">}</span>
-<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a><span class="n">sufficient_advance</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="w">  </span><span class="n">departure_date_str</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">departure_date</span>
-<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a><span class="w">  </span><span class="n">departure_date</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="n">time</span><span class="p">.</span><span class="n">parse_rfc3339_ns</span><span class="p">(</span><span class="n">departure_date_str</span><span class="p">)</span>
-<a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a><span class="w">  </span><span class="n">now</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="n">time</span><span class="p">.</span><span class="n">now_ns</span><span class="p">()</span>
-<a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a><span class="w">  </span><span class="n">delta_days</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="p">(</span><span class="n">departure_date</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">now</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">1000000000</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">60</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">60</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">24</span>
-<a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a><span class="w">  </span><span class="n">delta_days</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">autobook_leadtime</span>
-<a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">within_cost_limit</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="n">planned_price</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">planned_price</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span><span class="n">planned_price</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">autobook_price</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="p">}</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="n">acceptable_risk</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="w">  </span><span class="n">risk</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">airline_risk_score</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="w">  </span><span class="n">risk</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">autobook_risklevel</span>
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="p">}</span>
+<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="n">sufficient_advance</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a><span class="w">  </span><span class="n">departure_date_str</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">departure_date</span>
+<a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a><span class="w">  </span><span class="n">departure_date</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="n">time</span><span class="p">.</span><span class="n">parse_rfc3339_ns</span><span class="p">(</span><span class="n">departure_date_str</span><span class="p">)</span>
+<a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a><span class="w">  </span><span class="n">now</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="n">time</span><span class="p">.</span><span class="n">now_ns</span><span class="p">()</span>
+<a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a><span class="w">  </span><span class="n">delta_days</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="p">(</span><span class="n">departure_date</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">now</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">1000000000</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">60</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">60</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">24</span>
+<a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a><span class="w">  </span><span class="n">delta_days</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">autobook_leadtime</span>
+<a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a><span class="p">}</span>
 </code></pre></div>
 <p><strong>What this does:</strong></p>
 <ul>
@@ -2729,94 +2697,90 @@ To achieve this, the authz-api:</p>
 </ul>
 <h3 id="step-9-deny-reason-codes">Step 9: Deny Reason Codes</h3>
 <p>The policy provides a structured reason code for every denial scenario. Reason codes follow the gate evaluation order:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># 1. Principal spoofing (no delegation)</span>
-<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="n">reasons</span><span class="p">[</span><span class="n">code</span><span class="p">]</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span>
-<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">  </span><span class="n">principal_id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">subject</span><span class="p">.</span><span class="n">id</span>
-<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="w">  </span><span class="n">owner_id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">id</span>
-<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="w">  </span><span class="n">principal_id</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">owner_id</span>
-<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="w">  </span><span class="k">not</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">delegation</span><span class="p">.</span><span class="n">valid</span>
-<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="w">  </span><span class="n">code</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="s2">&quot;auto_book.principal_spoofing&quot;</span>
-<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="p">}</span>
-<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>
-<a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="c1"># 2. Insufficient delegation permissions</span>
-<a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a><span class="n">reasons</span><span class="p">[</span><span class="n">code</span><span class="p">]</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span>
-<a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a><span class="w">  </span><span class="n">principal_id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">subject</span><span class="p">.</span><span class="n">id</span>
-<a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a><span class="w">  </span><span class="n">owner_id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">id</span>
-<a id="__codelineno-15-16" name="__codelineno-15-16" href="#__codelineno-15-16"></a><span class="w">  </span><span class="n">principal_id</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">owner_id</span>
-<a id="__codelineno-15-17" name="__codelineno-15-17" href="#__codelineno-15-17"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">delegation</span><span class="p">.</span><span class="n">valid</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="k">true</span>
-<a id="__codelineno-15-18" name="__codelineno-15-18" href="#__codelineno-15-18"></a><span class="w">  </span><span class="k">not</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">delegation</span><span class="p">.</span><span class="n">delegated_actions</span>
-<a id="__codelineno-15-19" name="__codelineno-15-19" href="#__codelineno-15-19"></a><span class="w">  </span><span class="n">code</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="s2">&quot;auto_book.insufficient_delegation_permissions&quot;</span>
-<a id="__codelineno-15-20" name="__codelineno-15-20" href="#__codelineno-15-20"></a><span class="p">}</span>
-<a id="__codelineno-15-21" name="__codelineno-15-21" href="#__codelineno-15-21"></a>
-<a id="__codelineno-15-22" name="__codelineno-15-22" href="#__codelineno-15-22"></a><span class="c1"># 3. Persona mismatch</span>
-<a id="__codelineno-15-23" name="__codelineno-15-23" href="#__codelineno-15-23"></a><span class="n">reasons</span><span class="p">[</span><span class="n">code</span><span class="p">]</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-15-24" name="__codelineno-15-24" href="#__codelineno-15-24"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span>
-<a id="__codelineno-15-25" name="__codelineno-15-25" href="#__codelineno-15-25"></a><span class="w">  </span><span class="n">code</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="s2">&quot;auto_book.persona_mismatch&quot;</span>
-<a id="__codelineno-15-26" name="__codelineno-15-26" href="#__codelineno-15-26"></a><span class="w">  </span><span class="n">authorized_principal</span>
-<a id="__codelineno-15-27" name="__codelineno-15-27" href="#__codelineno-15-27"></a><span class="w">  </span><span class="k">not</span><span class="w"> </span><span class="n">persona_valid</span>
-<a id="__codelineno-15-28" name="__codelineno-15-28" href="#__codelineno-15-28"></a><span class="p">}</span>
-<a id="__codelineno-15-29" name="__codelineno-15-29" href="#__codelineno-15-29"></a>
-<a id="__codelineno-15-30" name="__codelineno-15-30" href="#__codelineno-15-30"></a><span class="c1"># 4. Persona inactive/suspended</span>
-<a id="__codelineno-15-31" name="__codelineno-15-31" href="#__codelineno-15-31"></a><span class="n">reasons</span><span class="p">[</span><span class="n">code</span><span class="p">]</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-15-32" name="__codelineno-15-32" href="#__codelineno-15-32"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span>
-<a id="__codelineno-15-33" name="__codelineno-15-33" href="#__codelineno-15-33"></a><span class="w">  </span><span class="n">code</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="s2">&quot;auto_book.persona_inactive&quot;</span>
-<a id="__codelineno-15-34" name="__codelineno-15-34" href="#__codelineno-15-34"></a><span class="w">  </span><span class="n">authorized_principal</span>
-<a id="__codelineno-15-35" name="__codelineno-15-35" href="#__codelineno-15-35"></a><span class="w">  </span><span class="n">persona_valid</span>
-<a id="__codelineno-15-36" name="__codelineno-15-36" href="#__codelineno-15-36"></a><span class="w">  </span><span class="k">not</span><span class="w"> </span><span class="n">owner_persona_active</span>
-<a id="__codelineno-15-37" name="__codelineno-15-37" href="#__codelineno-15-37"></a><span class="p">}</span>
-<a id="__codelineno-15-38" name="__codelineno-15-38" href="#__codelineno-15-38"></a>
-<a id="__codelineno-15-39" name="__codelineno-15-39" href="#__codelineno-15-39"></a><span class="c1"># 5. Persona expired or not yet active</span>
-<a id="__codelineno-15-40" name="__codelineno-15-40" href="#__codelineno-15-40"></a><span class="n">reasons</span><span class="p">[</span><span class="n">code</span><span class="p">]</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-15-41" name="__codelineno-15-41" href="#__codelineno-15-41"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span>
-<a id="__codelineno-15-42" name="__codelineno-15-42" href="#__codelineno-15-42"></a><span class="w">  </span><span class="n">code</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="s2">&quot;auto_book.persona_expired&quot;</span>
-<a id="__codelineno-15-43" name="__codelineno-15-43" href="#__codelineno-15-43"></a><span class="w">  </span><span class="n">authorized_principal</span>
-<a id="__codelineno-15-44" name="__codelineno-15-44" href="#__codelineno-15-44"></a><span class="w">  </span><span class="n">persona_valid</span>
-<a id="__codelineno-15-45" name="__codelineno-15-45" href="#__codelineno-15-45"></a><span class="w">  </span><span class="n">owner_persona_active</span>
-<a id="__codelineno-15-46" name="__codelineno-15-46" href="#__codelineno-15-46"></a><span class="w">  </span><span class="k">not</span><span class="w"> </span><span class="n">owner_persona_valid_time</span>
-<a id="__codelineno-15-47" name="__codelineno-15-47" href="#__codelineno-15-47"></a><span class="p">}</span>
-<a id="__codelineno-15-48" name="__codelineno-15-48" href="#__codelineno-15-48"></a>
-<a id="__codelineno-15-49" name="__codelineno-15-49" href="#__codelineno-15-49"></a><span class="c1"># 6. No autobook consent</span>
-<a id="__codelineno-15-50" name="__codelineno-15-50" href="#__codelineno-15-50"></a><span class="n">reasons</span><span class="p">[</span><span class="n">code</span><span class="p">]</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-15-51" name="__codelineno-15-51" href="#__codelineno-15-51"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span>
-<a id="__codelineno-15-52" name="__codelineno-15-52" href="#__codelineno-15-52"></a><span class="w">  </span><span class="n">code</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="s2">&quot;auto_book.no_consent&quot;</span>
-<a id="__codelineno-15-53" name="__codelineno-15-53" href="#__codelineno-15-53"></a><span class="w">  </span><span class="n">authorized_principal</span>
-<a id="__codelineno-15-54" name="__codelineno-15-54" href="#__codelineno-15-54"></a><span class="w">  </span><span class="n">persona_valid</span>
-<a id="__codelineno-15-55" name="__codelineno-15-55" href="#__codelineno-15-55"></a><span class="w">  </span><span class="n">owner_persona_active</span>
-<a id="__codelineno-15-56" name="__codelineno-15-56" href="#__codelineno-15-56"></a><span class="w">  </span><span class="n">owner_persona_valid_time</span>
-<a id="__codelineno-15-57" name="__codelineno-15-57" href="#__codelineno-15-57"></a><span class="w">  </span><span class="k">not</span><span class="w"> </span><span class="n">has_consent</span>
-<a id="__codelineno-15-58" name="__codelineno-15-58" href="#__codelineno-15-58"></a><span class="p">}</span>
-<a id="__codelineno-15-59" name="__codelineno-15-59" href="#__codelineno-15-59"></a>
-<a id="__codelineno-15-60" name="__codelineno-15-60" href="#__codelineno-15-60"></a><span class="c1"># 7. Airline risk too high</span>
-<a id="__codelineno-15-61" name="__codelineno-15-61" href="#__codelineno-15-61"></a><span class="n">reasons</span><span class="p">[</span><span class="n">code</span><span class="p">]</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-15-62" name="__codelineno-15-62" href="#__codelineno-15-62"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span>
-<a id="__codelineno-15-63" name="__codelineno-15-63" href="#__codelineno-15-63"></a><span class="w">  </span><span class="n">code</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="s2">&quot;auto_book.airline_risk_too_high&quot;</span>
-<a id="__codelineno-15-64" name="__codelineno-15-64" href="#__codelineno-15-64"></a><span class="w">  </span><span class="n">authorized_principal</span>
-<a id="__codelineno-15-65" name="__codelineno-15-65" href="#__codelineno-15-65"></a><span class="w">  </span><span class="n">has_consent</span>
-<a id="__codelineno-15-66" name="__codelineno-15-66" href="#__codelineno-15-66"></a><span class="w">  </span><span class="k">not</span><span class="w"> </span><span class="n">acceptable_risk</span>
-<a id="__codelineno-15-67" name="__codelineno-15-67" href="#__codelineno-15-67"></a><span class="p">}</span>
-<a id="__codelineno-15-68" name="__codelineno-15-68" href="#__codelineno-15-68"></a>
-<a id="__codelineno-15-69" name="__codelineno-15-69" href="#__codelineno-15-69"></a><span class="c1"># 8. Cost limit exceeded</span>
-<a id="__codelineno-15-70" name="__codelineno-15-70" href="#__codelineno-15-70"></a><span class="n">reasons</span><span class="p">[</span><span class="n">code</span><span class="p">]</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-15-71" name="__codelineno-15-71" href="#__codelineno-15-71"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span>
-<a id="__codelineno-15-72" name="__codelineno-15-72" href="#__codelineno-15-72"></a><span class="w">  </span><span class="n">code</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="s2">&quot;auto_book.cost_limit_exceeded&quot;</span>
-<a id="__codelineno-15-73" name="__codelineno-15-73" href="#__codelineno-15-73"></a><span class="w">  </span><span class="n">authorized_principal</span>
-<a id="__codelineno-15-74" name="__codelineno-15-74" href="#__codelineno-15-74"></a><span class="w">  </span><span class="n">has_consent</span>
-<a id="__codelineno-15-75" name="__codelineno-15-75" href="#__codelineno-15-75"></a><span class="w">  </span><span class="n">acceptable_risk</span>
-<a id="__codelineno-15-76" name="__codelineno-15-76" href="#__codelineno-15-76"></a><span class="w">  </span><span class="k">not</span><span class="w"> </span><span class="n">within_cost_limit</span>
-<a id="__codelineno-15-77" name="__codelineno-15-77" href="#__codelineno-15-77"></a><span class="p">}</span>
-<a id="__codelineno-15-78" name="__codelineno-15-78" href="#__codelineno-15-78"></a>
-<a id="__codelineno-15-79" name="__codelineno-15-79" href="#__codelineno-15-79"></a><span class="c1"># 9. Insufficient advance notice</span>
-<a id="__codelineno-15-80" name="__codelineno-15-80" href="#__codelineno-15-80"></a><span class="n">reasons</span><span class="p">[</span><span class="n">code</span><span class="p">]</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-15-81" name="__codelineno-15-81" href="#__codelineno-15-81"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span>
-<a id="__codelineno-15-82" name="__codelineno-15-82" href="#__codelineno-15-82"></a><span class="w">  </span><span class="n">code</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="s2">&quot;auto_book.insufficient_advance_notice&quot;</span>
-<a id="__codelineno-15-83" name="__codelineno-15-83" href="#__codelineno-15-83"></a><span class="w">  </span><span class="n">authorized_principal</span>
-<a id="__codelineno-15-84" name="__codelineno-15-84" href="#__codelineno-15-84"></a><span class="w">  </span><span class="n">has_consent</span>
-<a id="__codelineno-15-85" name="__codelineno-15-85" href="#__codelineno-15-85"></a><span class="w">  </span><span class="n">acceptable_risk</span>
-<a id="__codelineno-15-86" name="__codelineno-15-86" href="#__codelineno-15-86"></a><span class="w">  </span><span class="n">within_cost_limit</span>
-<a id="__codelineno-15-87" name="__codelineno-15-87" href="#__codelineno-15-87"></a><span class="w">  </span><span class="k">not</span><span class="w"> </span><span class="n">sufficient_advance</span>
-<a id="__codelineno-15-88" name="__codelineno-15-88" href="#__codelineno-15-88"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># 1. Principal spoofing (no delegation)</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="n">reasons</span><span class="p">[</span><span class="n">code</span><span class="p">]</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">  </span><span class="n">principal_id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">subject</span><span class="p">.</span><span class="n">id</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">  </span><span class="n">owner_id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">id</span>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="w">  </span><span class="n">principal_id</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">owner_id</span>
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="w">  </span><span class="k">not</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">delegation</span><span class="p">.</span><span class="n">valid</span>
+<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="w">  </span><span class="n">code</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="s2">&quot;auto_book.principal_spoofing&quot;</span>
+<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a><span class="p">}</span>
+<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a>
+<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a><span class="c1"># 2. Insufficient delegation permissions</span>
+<a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a><span class="n">reasons</span><span class="p">[</span><span class="n">code</span><span class="p">]</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span>
+<a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a><span class="w">  </span><span class="n">principal_id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">subject</span><span class="p">.</span><span class="n">id</span>
+<a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a><span class="w">  </span><span class="n">owner_id</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">id</span>
+<a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a><span class="w">  </span><span class="n">principal_id</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">owner_id</span>
+<a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">delegation</span><span class="p">.</span><span class="n">valid</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="k">true</span>
+<a id="__codelineno-14-18" name="__codelineno-14-18" href="#__codelineno-14-18"></a><span class="w">  </span><span class="k">not</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">delegation</span><span class="p">.</span><span class="n">delegated_actions</span>
+<a id="__codelineno-14-19" name="__codelineno-14-19" href="#__codelineno-14-19"></a><span class="w">  </span><span class="n">code</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="s2">&quot;auto_book.insufficient_delegation_permissions&quot;</span>
+<a id="__codelineno-14-20" name="__codelineno-14-20" href="#__codelineno-14-20"></a><span class="p">}</span>
+<a id="__codelineno-14-21" name="__codelineno-14-21" href="#__codelineno-14-21"></a>
+<a id="__codelineno-14-22" name="__codelineno-14-22" href="#__codelineno-14-22"></a><span class="c1"># 3. Persona type mismatch</span>
+<a id="__codelineno-14-23" name="__codelineno-14-23" href="#__codelineno-14-23"></a><span class="n">reasons</span><span class="p">[</span><span class="n">code</span><span class="p">]</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-14-24" name="__codelineno-14-24" href="#__codelineno-14-24"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span>
+<a id="__codelineno-14-25" name="__codelineno-14-25" href="#__codelineno-14-25"></a><span class="w">  </span><span class="n">code</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="s2">&quot;auto_book.persona_mismatch&quot;</span>
+<a id="__codelineno-14-26" name="__codelineno-14-26" href="#__codelineno-14-26"></a><span class="w">  </span><span class="n">authorized_principal</span>
+<a id="__codelineno-14-27" name="__codelineno-14-27" href="#__codelineno-14-27"></a><span class="w">  </span><span class="k">not</span><span class="w"> </span><span class="n">appropriate_persona</span>
+<a id="__codelineno-14-28" name="__codelineno-14-28" href="#__codelineno-14-28"></a><span class="p">}</span>
+<a id="__codelineno-14-29" name="__codelineno-14-29" href="#__codelineno-14-29"></a>
+<a id="__codelineno-14-30" name="__codelineno-14-30" href="#__codelineno-14-30"></a><span class="c1"># 4. Persona invalid (status not active or outside time range)</span>
+<a id="__codelineno-14-31" name="__codelineno-14-31" href="#__codelineno-14-31"></a><span class="n">reasons</span><span class="p">[</span><span class="n">code</span><span class="p">]</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-14-32" name="__codelineno-14-32" href="#__codelineno-14-32"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span>
+<a id="__codelineno-14-33" name="__codelineno-14-33" href="#__codelineno-14-33"></a><span class="w">  </span><span class="n">code</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="s2">&quot;auto_book.persona_invalid&quot;</span>
+<a id="__codelineno-14-34" name="__codelineno-14-34" href="#__codelineno-14-34"></a><span class="w">  </span><span class="n">authorized_principal</span>
+<a id="__codelineno-14-35" name="__codelineno-14-35" href="#__codelineno-14-35"></a><span class="w">  </span><span class="n">appropriate_persona</span>
+<a id="__codelineno-14-36" name="__codelineno-14-36" href="#__codelineno-14-36"></a><span class="w">  </span><span class="k">not</span><span class="w"> </span><span class="n">valid_persona</span>
+<a id="__codelineno-14-37" name="__codelineno-14-37" href="#__codelineno-14-37"></a><span class="p">}</span>
+<a id="__codelineno-14-38" name="__codelineno-14-38" href="#__codelineno-14-38"></a>
+<a id="__codelineno-14-39" name="__codelineno-14-39" href="#__codelineno-14-39"></a><span class="c1"># 5. No autobook consent</span>
+<a id="__codelineno-14-40" name="__codelineno-14-40" href="#__codelineno-14-40"></a><span class="n">reasons</span><span class="p">[</span><span class="n">code</span><span class="p">]</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-14-41" name="__codelineno-14-41" href="#__codelineno-14-41"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span>
+<a id="__codelineno-14-42" name="__codelineno-14-42" href="#__codelineno-14-42"></a><span class="w">  </span><span class="n">code</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="s2">&quot;auto_book.no_consent&quot;</span>
+<a id="__codelineno-14-43" name="__codelineno-14-43" href="#__codelineno-14-43"></a><span class="w">  </span><span class="n">authorized_principal</span>
+<a id="__codelineno-14-44" name="__codelineno-14-44" href="#__codelineno-14-44"></a><span class="w">  </span><span class="n">appropriate_persona</span>
+<a id="__codelineno-14-45" name="__codelineno-14-45" href="#__codelineno-14-45"></a><span class="w">  </span><span class="n">valid_persona</span>
+<a id="__codelineno-14-46" name="__codelineno-14-46" href="#__codelineno-14-46"></a><span class="w">  </span><span class="k">not</span><span class="w"> </span><span class="n">has_consent</span>
+<a id="__codelineno-14-47" name="__codelineno-14-47" href="#__codelineno-14-47"></a><span class="p">}</span>
+<a id="__codelineno-14-48" name="__codelineno-14-48" href="#__codelineno-14-48"></a>
+<a id="__codelineno-14-49" name="__codelineno-14-49" href="#__codelineno-14-49"></a><span class="c1"># 6. Airline risk too high</span>
+<a id="__codelineno-14-50" name="__codelineno-14-50" href="#__codelineno-14-50"></a><span class="c1"># 6. Airline risk too high</span>
+<a id="__codelineno-14-51" name="__codelineno-14-51" href="#__codelineno-14-51"></a><span class="n">reasons</span><span class="p">[</span><span class="n">code</span><span class="p">]</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-14-52" name="__codelineno-14-52" href="#__codelineno-14-52"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span>
+<a id="__codelineno-14-53" name="__codelineno-14-53" href="#__codelineno-14-53"></a><span class="w">  </span><span class="n">code</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="s2">&quot;auto_book.airline_risk_too_high&quot;</span>
+<a id="__codelineno-14-54" name="__codelineno-14-54" href="#__codelineno-14-54"></a><span class="w">  </span><span class="n">authorized_principal</span>
+<a id="__codelineno-14-55" name="__codelineno-14-55" href="#__codelineno-14-55"></a><span class="w">  </span><span class="n">appropriate_persona</span>
+<a id="__codelineno-14-56" name="__codelineno-14-56" href="#__codelineno-14-56"></a><span class="w">  </span><span class="n">valid_persona</span>
+<a id="__codelineno-14-57" name="__codelineno-14-57" href="#__codelineno-14-57"></a><span class="w">  </span><span class="n">has_consent</span>
+<a id="__codelineno-14-58" name="__codelineno-14-58" href="#__codelineno-14-58"></a><span class="w">  </span><span class="k">not</span><span class="w"> </span><span class="n">acceptable_risk</span>
+<a id="__codelineno-14-59" name="__codelineno-14-59" href="#__codelineno-14-59"></a><span class="p">}</span>
+<a id="__codelineno-14-60" name="__codelineno-14-60" href="#__codelineno-14-60"></a>
+<a id="__codelineno-14-61" name="__codelineno-14-61" href="#__codelineno-14-61"></a><span class="c1"># 7. Cost limit exceeded</span>
+<a id="__codelineno-14-62" name="__codelineno-14-62" href="#__codelineno-14-62"></a><span class="n">reasons</span><span class="p">[</span><span class="n">code</span><span class="p">]</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-14-63" name="__codelineno-14-63" href="#__codelineno-14-63"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span>
+<a id="__codelineno-14-64" name="__codelineno-14-64" href="#__codelineno-14-64"></a><span class="w">  </span><span class="n">code</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="s2">&quot;auto_book.cost_limit_exceeded&quot;</span>
+<a id="__codelineno-14-65" name="__codelineno-14-65" href="#__codelineno-14-65"></a><span class="w">  </span><span class="n">authorized_principal</span>
+<a id="__codelineno-14-66" name="__codelineno-14-66" href="#__codelineno-14-66"></a><span class="w">  </span><span class="n">appropriate_persona</span>
+<a id="__codelineno-14-67" name="__codelineno-14-67" href="#__codelineno-14-67"></a><span class="w">  </span><span class="n">valid_persona</span>
+<a id="__codelineno-14-68" name="__codelineno-14-68" href="#__codelineno-14-68"></a><span class="w">  </span><span class="n">has_consent</span>
+<a id="__codelineno-14-69" name="__codelineno-14-69" href="#__codelineno-14-69"></a><span class="w">  </span><span class="n">acceptable_risk</span>
+<a id="__codelineno-14-70" name="__codelineno-14-70" href="#__codelineno-14-70"></a><span class="w">  </span><span class="k">not</span><span class="w"> </span><span class="n">within_cost_limit</span>
+<a id="__codelineno-14-71" name="__codelineno-14-71" href="#__codelineno-14-71"></a><span class="p">}</span>
+<a id="__codelineno-14-72" name="__codelineno-14-72" href="#__codelineno-14-72"></a>
+<a id="__codelineno-14-73" name="__codelineno-14-73" href="#__codelineno-14-73"></a><span class="c1"># 8. Insufficient advance notice</span>
+<a id="__codelineno-14-74" name="__codelineno-14-74" href="#__codelineno-14-74"></a><span class="n">reasons</span><span class="p">[</span><span class="n">code</span><span class="p">]</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-14-75" name="__codelineno-14-75" href="#__codelineno-14-75"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span>
+<a id="__codelineno-14-76" name="__codelineno-14-76" href="#__codelineno-14-76"></a><span class="w">  </span><span class="n">code</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="s2">&quot;auto_book.insufficient_advance_notice&quot;</span>
+<a id="__codelineno-14-77" name="__codelineno-14-77" href="#__codelineno-14-77"></a><span class="w">  </span><span class="n">authorized_principal</span>
+<a id="__codelineno-14-78" name="__codelineno-14-78" href="#__codelineno-14-78"></a><span class="w">  </span><span class="n">appropriate_persona</span>
+<a id="__codelineno-14-79" name="__codelineno-14-79" href="#__codelineno-14-79"></a><span class="w">  </span><span class="n">valid_persona</span>
+<a id="__codelineno-14-80" name="__codelineno-14-80" href="#__codelineno-14-80"></a><span class="w">  </span><span class="n">has_consent</span>
+<a id="__codelineno-14-81" name="__codelineno-14-81" href="#__codelineno-14-81"></a><span class="w">  </span><span class="n">acceptable_risk</span>
+<a id="__codelineno-14-82" name="__codelineno-14-82" href="#__codelineno-14-82"></a><span class="w">  </span><span class="n">within_cost_limit</span>
+<a id="__codelineno-14-83" name="__codelineno-14-83" href="#__codelineno-14-83"></a><span class="w">  </span><span class="k">not</span><span class="w"> </span><span class="n">sufficient_advance</span>
+<a id="__codelineno-14-84" name="__codelineno-14-84" href="#__codelineno-14-84"></a><span class="p">}</span>
 </code></pre></div>
 <p><strong>Reason Code Categories:</strong></p>
 <table>
@@ -2840,18 +2804,13 @@ To achieve this, the authz-api:</p>
 </tr>
 <tr>
 <td><code>auto_book.persona_mismatch</code></td>
-<td>Subject persona doesn't match requirements</td>
-<td>Persona validation</td>
+<td>Subject persona type doesn't match requirements</td>
+<td>Persona type validation</td>
 </tr>
 <tr>
-<td><code>auto_book.persona_inactive</code></td>
-<td>Owner's persona status is not active</td>
-<td>Persona status</td>
-</tr>
-<tr>
-<td><code>auto_book.persona_expired</code></td>
-<td>Current time outside persona validity range</td>
-<td>Persona temporal</td>
+<td><code>auto_book.persona_invalid</code></td>
+<td>Persona status not active OR outside validity time range</td>
+<td>Persona validity</td>
 </tr>
 <tr>
 <td><code>auto_book.no_consent</code></td>
@@ -2891,66 +2850,66 @@ To achieve this, the authz-api:</p>
 </ul>
 <h2 id="authzen-protocol">AuthZEN Protocol</h2>
 <p>Here's what the authz-api sends to OPA (enriched from PEP's AuthZEN request):</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="p">{</span>
-<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;api_request&quot;</span><span class="p">,</span>
-<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-01-06T13:14:01.042085+00:00&quot;</span><span class="p">,</span>
-<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="w">  </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;POST&quot;</span><span class="p">,</span>
-<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="w">  </span><span class="nt">&quot;path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;OPA /v1/data/auto_book/allow&quot;</span><span class="p">,</span>
-<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="w">  </span><span class="nt">&quot;request_body&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="w">    </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a><span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;agent&quot;</span><span class="p">,</span>
-<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a><span class="w">      </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c08d6b1a-10bd-4a02-9d5b-a28a0ff3bc53&quot;</span><span class="p">,</span>
-<a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a><span class="w">      </span><span class="nt">&quot;persona&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ai-agent&quot;</span>
-<a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a><span class="w">    </span><span class="p">},</span>
-<a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a><span class="w">    </span><span class="nt">&quot;action&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-16-13" name="__codelineno-16-13" href="#__codelineno-16-13"></a><span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span>
-<a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a><span class="w">    </span><span class="p">},</span>
-<a id="__codelineno-16-15" name="__codelineno-16-15" href="#__codelineno-16-15"></a><span class="w">    </span><span class="nt">&quot;resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-16-16" name="__codelineno-16-16" href="#__codelineno-16-16"></a><span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;workflow_item&quot;</span><span class="p">,</span>
-<a id="__codelineno-16-17" name="__codelineno-16-17" href="#__codelineno-16-17"></a><span class="w">      </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;i_31ea5dc0&quot;</span><span class="p">,</span>
-<a id="__codelineno-16-18" name="__codelineno-16-18" href="#__codelineno-16-18"></a><span class="w">      </span><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-16-19" name="__codelineno-16-19" href="#__codelineno-16-19"></a><span class="w">        </span><span class="nt">&quot;domain&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;flowpilot&quot;</span><span class="p">,</span>
-<a id="__codelineno-16-20" name="__codelineno-16-20" href="#__codelineno-16-20"></a><span class="w">        </span><span class="nt">&quot;workflow_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;w_0f7411ba&quot;</span><span class="p">,</span>
-<a id="__codelineno-16-21" name="__codelineno-16-21" href="#__codelineno-16-21"></a><span class="w">        </span><span class="nt">&quot;workflow_item_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;i_31ea5dc0&quot;</span><span class="p">,</span>
-<a id="__codelineno-16-22" name="__codelineno-16-22" href="#__codelineno-16-22"></a><span class="w">        </span><span class="nt">&quot;workflow_item_kind&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;transport&quot;</span><span class="p">,</span>
-<a id="__codelineno-16-23" name="__codelineno-16-23" href="#__codelineno-16-23"></a><span class="w">        </span><span class="nt">&quot;planned_price&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">4000.0</span><span class="p">,</span>
-<a id="__codelineno-16-24" name="__codelineno-16-24" href="#__codelineno-16-24"></a><span class="w">        </span><span class="nt">&quot;departure_date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-02-01T00:00:00Z&quot;</span><span class="p">,</span>
-<a id="__codelineno-16-25" name="__codelineno-16-25" href="#__codelineno-16-25"></a><span class="w">        </span><span class="nt">&quot;airline_risk_score&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">2.0</span><span class="p">,</span>
-<a id="__codelineno-16-26" name="__codelineno-16-26" href="#__codelineno-16-26"></a><span class="w">        </span><span class="nt">&quot;owner&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-16-27" name="__codelineno-16-27" href="#__codelineno-16-27"></a><span class="w">          </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user&quot;</span><span class="p">,</span>
-<a id="__codelineno-16-28" name="__codelineno-16-28" href="#__codelineno-16-28"></a><span class="w">          </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;d91fb602-29f2-43d0-8878-4d646f442967&quot;</span><span class="p">,</span>
-<a id="__codelineno-16-29" name="__codelineno-16-29" href="#__codelineno-16-29"></a><span class="w">          </span><span class="nt">&quot;persona&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;traveler&quot;</span><span class="p">,</span>
-<a id="__codelineno-16-30" name="__codelineno-16-30" href="#__codelineno-16-30"></a><span class="w">          </span><span class="nt">&quot;persona_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b9678f30-f4b0-4033-82db-846357311165&quot;</span><span class="p">,</span>
-<a id="__codelineno-16-31" name="__codelineno-16-31" href="#__codelineno-16-31"></a><span class="w">          </span><span class="nt">&quot;persona_status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;active&quot;</span><span class="p">,</span>
-<a id="__codelineno-16-32" name="__codelineno-16-32" href="#__codelineno-16-32"></a><span class="w">          </span><span class="nt">&quot;persona_valid_from&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2024-01-01T00:00:00Z&quot;</span><span class="p">,</span>
-<a id="__codelineno-16-33" name="__codelineno-16-33" href="#__codelineno-16-33"></a><span class="w">          </span><span class="nt">&quot;persona_valid_till&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-12-31T23:59:59Z&quot;</span><span class="p">,</span>
-<a id="__codelineno-16-34" name="__codelineno-16-34" href="#__codelineno-16-34"></a><span class="w">          </span><span class="nt">&quot;autobook_consent&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<a id="__codelineno-16-35" name="__codelineno-16-35" href="#__codelineno-16-35"></a><span class="w">          </span><span class="nt">&quot;autobook_price&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10000</span><span class="p">,</span>
-<a id="__codelineno-16-36" name="__codelineno-16-36" href="#__codelineno-16-36"></a><span class="w">          </span><span class="nt">&quot;autobook_leadtime&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span>
-<a id="__codelineno-16-37" name="__codelineno-16-37" href="#__codelineno-16-37"></a><span class="w">          </span><span class="nt">&quot;autobook_risklevel&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span>
-<a id="__codelineno-16-38" name="__codelineno-16-38" href="#__codelineno-16-38"></a><span class="w">        </span><span class="p">}</span>
-<a id="__codelineno-16-39" name="__codelineno-16-39" href="#__codelineno-16-39"></a><span class="w">      </span><span class="p">}</span>
-<a id="__codelineno-16-40" name="__codelineno-16-40" href="#__codelineno-16-40"></a><span class="w">    </span><span class="p">},</span>
-<a id="__codelineno-16-41" name="__codelineno-16-41" href="#__codelineno-16-41"></a><span class="w">    </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-16-42" name="__codelineno-16-42" href="#__codelineno-16-42"></a><span class="w">      </span><span class="nt">&quot;delegation&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-16-43" name="__codelineno-16-43" href="#__codelineno-16-43"></a><span class="w">        </span><span class="nt">&quot;valid&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<a id="__codelineno-16-44" name="__codelineno-16-44" href="#__codelineno-16-44"></a><span class="w">        </span><span class="nt">&quot;delegation_chain&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<a id="__codelineno-16-45" name="__codelineno-16-45" href="#__codelineno-16-45"></a><span class="w">          </span><span class="s2">&quot;d91fb602-29f2-43d0-8878-4d646f442967&quot;</span><span class="p">,</span>
-<a id="__codelineno-16-46" name="__codelineno-16-46" href="#__codelineno-16-46"></a><span class="w">          </span><span class="s2">&quot;30dc31a0-2061-43c7-aa2a-7f7760936fc9&quot;</span><span class="p">,</span>
-<a id="__codelineno-16-47" name="__codelineno-16-47" href="#__codelineno-16-47"></a><span class="w">          </span><span class="s2">&quot;89eb5366-bab3-46e4-b8e1-abc5f2ea4631&quot;</span>
-<a id="__codelineno-16-48" name="__codelineno-16-48" href="#__codelineno-16-48"></a><span class="w">        </span><span class="p">],</span>
-<a id="__codelineno-16-49" name="__codelineno-16-49" href="#__codelineno-16-49"></a><span class="w">        </span><span class="nt">&quot;delegated_actions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<a id="__codelineno-16-50" name="__codelineno-16-50" href="#__codelineno-16-50"></a><span class="w">          </span><span class="s2">&quot;execute&quot;</span>
-<a id="__codelineno-16-51" name="__codelineno-16-51" href="#__codelineno-16-51"></a><span class="w">        </span><span class="p">]</span>
-<a id="__codelineno-16-52" name="__codelineno-16-52" href="#__codelineno-16-52"></a><span class="w">      </span><span class="p">},</span>
-<a id="__codelineno-16-53" name="__codelineno-16-53" href="#__codelineno-16-53"></a><span class="w">      </span><span class="nt">&quot;principal&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-16-54" name="__codelineno-16-54" href="#__codelineno-16-54"></a><span class="w">        </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user&quot;</span><span class="p">,</span>
-<a id="__codelineno-16-55" name="__codelineno-16-55" href="#__codelineno-16-55"></a><span class="w">        </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;89eb5366-bab3-46e4-b8e1-abc5f2ea4631&quot;</span><span class="p">,</span>
-<a id="__codelineno-16-56" name="__codelineno-16-56" href="#__codelineno-16-56"></a><span class="w">        </span><span class="nt">&quot;persona&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;travel-agent&quot;</span>
-<a id="__codelineno-16-57" name="__codelineno-16-57" href="#__codelineno-16-57"></a><span class="w">      </span><span class="p">}</span>
-<a id="__codelineno-16-58" name="__codelineno-16-58" href="#__codelineno-16-58"></a><span class="w">    </span><span class="p">}</span>
-<a id="__codelineno-16-59" name="__codelineno-16-59" href="#__codelineno-16-59"></a><span class="w">  </span><span class="p">}</span>
-<a id="__codelineno-16-60" name="__codelineno-16-60" href="#__codelineno-16-60"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="p">{</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;api_request&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-01-06T13:14:01.042085+00:00&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">  </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;POST&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="w">  </span><span class="nt">&quot;path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;OPA /v1/data/auto_book/allow&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="w">  </span><span class="nt">&quot;request_body&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="w">    </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;agent&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="w">      </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c08d6b1a-10bd-4a02-9d5b-a28a0ff3bc53&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="w">      </span><span class="nt">&quot;persona&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ai-agent&quot;</span>
+<a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="w">    </span><span class="p">},</span>
+<a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a><span class="w">    </span><span class="nt">&quot;action&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a><span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span>
+<a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a><span class="w">    </span><span class="p">},</span>
+<a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a><span class="w">    </span><span class="nt">&quot;resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-15-16" name="__codelineno-15-16" href="#__codelineno-15-16"></a><span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;workflow_item&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-17" name="__codelineno-15-17" href="#__codelineno-15-17"></a><span class="w">      </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;i_31ea5dc0&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-18" name="__codelineno-15-18" href="#__codelineno-15-18"></a><span class="w">      </span><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-15-19" name="__codelineno-15-19" href="#__codelineno-15-19"></a><span class="w">        </span><span class="nt">&quot;domain&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;flowpilot&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-20" name="__codelineno-15-20" href="#__codelineno-15-20"></a><span class="w">        </span><span class="nt">&quot;workflow_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;w_0f7411ba&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-21" name="__codelineno-15-21" href="#__codelineno-15-21"></a><span class="w">        </span><span class="nt">&quot;workflow_item_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;i_31ea5dc0&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-22" name="__codelineno-15-22" href="#__codelineno-15-22"></a><span class="w">        </span><span class="nt">&quot;workflow_item_kind&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;transport&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-23" name="__codelineno-15-23" href="#__codelineno-15-23"></a><span class="w">        </span><span class="nt">&quot;planned_price&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">4000.0</span><span class="p">,</span>
+<a id="__codelineno-15-24" name="__codelineno-15-24" href="#__codelineno-15-24"></a><span class="w">        </span><span class="nt">&quot;departure_date&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-02-01T00:00:00Z&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-25" name="__codelineno-15-25" href="#__codelineno-15-25"></a><span class="w">        </span><span class="nt">&quot;airline_risk_score&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">2.0</span><span class="p">,</span>
+<a id="__codelineno-15-26" name="__codelineno-15-26" href="#__codelineno-15-26"></a><span class="w">        </span><span class="nt">&quot;owner&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-15-27" name="__codelineno-15-27" href="#__codelineno-15-27"></a><span class="w">          </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-28" name="__codelineno-15-28" href="#__codelineno-15-28"></a><span class="w">          </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;d91fb602-29f2-43d0-8878-4d646f442967&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-29" name="__codelineno-15-29" href="#__codelineno-15-29"></a><span class="w">          </span><span class="nt">&quot;persona&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;traveler&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-30" name="__codelineno-15-30" href="#__codelineno-15-30"></a><span class="w">          </span><span class="nt">&quot;persona_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b9678f30-f4b0-4033-82db-846357311165&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-31" name="__codelineno-15-31" href="#__codelineno-15-31"></a><span class="w">          </span><span class="nt">&quot;persona_status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;active&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-32" name="__codelineno-15-32" href="#__codelineno-15-32"></a><span class="w">          </span><span class="nt">&quot;persona_valid_from&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2024-01-01T00:00:00Z&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-33" name="__codelineno-15-33" href="#__codelineno-15-33"></a><span class="w">          </span><span class="nt">&quot;persona_valid_till&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-12-31T23:59:59Z&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-34" name="__codelineno-15-34" href="#__codelineno-15-34"></a><span class="w">          </span><span class="nt">&quot;autobook_consent&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-15-35" name="__codelineno-15-35" href="#__codelineno-15-35"></a><span class="w">          </span><span class="nt">&quot;autobook_price&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10000</span><span class="p">,</span>
+<a id="__codelineno-15-36" name="__codelineno-15-36" href="#__codelineno-15-36"></a><span class="w">          </span><span class="nt">&quot;autobook_leadtime&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span>
+<a id="__codelineno-15-37" name="__codelineno-15-37" href="#__codelineno-15-37"></a><span class="w">          </span><span class="nt">&quot;autobook_risklevel&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span>
+<a id="__codelineno-15-38" name="__codelineno-15-38" href="#__codelineno-15-38"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-15-39" name="__codelineno-15-39" href="#__codelineno-15-39"></a><span class="w">      </span><span class="p">}</span>
+<a id="__codelineno-15-40" name="__codelineno-15-40" href="#__codelineno-15-40"></a><span class="w">    </span><span class="p">},</span>
+<a id="__codelineno-15-41" name="__codelineno-15-41" href="#__codelineno-15-41"></a><span class="w">    </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-15-42" name="__codelineno-15-42" href="#__codelineno-15-42"></a><span class="w">      </span><span class="nt">&quot;delegation&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-15-43" name="__codelineno-15-43" href="#__codelineno-15-43"></a><span class="w">        </span><span class="nt">&quot;valid&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-15-44" name="__codelineno-15-44" href="#__codelineno-15-44"></a><span class="w">        </span><span class="nt">&quot;delegation_chain&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-15-45" name="__codelineno-15-45" href="#__codelineno-15-45"></a><span class="w">          </span><span class="s2">&quot;d91fb602-29f2-43d0-8878-4d646f442967&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-46" name="__codelineno-15-46" href="#__codelineno-15-46"></a><span class="w">          </span><span class="s2">&quot;30dc31a0-2061-43c7-aa2a-7f7760936fc9&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-47" name="__codelineno-15-47" href="#__codelineno-15-47"></a><span class="w">          </span><span class="s2">&quot;89eb5366-bab3-46e4-b8e1-abc5f2ea4631&quot;</span>
+<a id="__codelineno-15-48" name="__codelineno-15-48" href="#__codelineno-15-48"></a><span class="w">        </span><span class="p">],</span>
+<a id="__codelineno-15-49" name="__codelineno-15-49" href="#__codelineno-15-49"></a><span class="w">        </span><span class="nt">&quot;delegated_actions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-15-50" name="__codelineno-15-50" href="#__codelineno-15-50"></a><span class="w">          </span><span class="s2">&quot;execute&quot;</span>
+<a id="__codelineno-15-51" name="__codelineno-15-51" href="#__codelineno-15-51"></a><span class="w">        </span><span class="p">]</span>
+<a id="__codelineno-15-52" name="__codelineno-15-52" href="#__codelineno-15-52"></a><span class="w">      </span><span class="p">},</span>
+<a id="__codelineno-15-53" name="__codelineno-15-53" href="#__codelineno-15-53"></a><span class="w">      </span><span class="nt">&quot;principal&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-15-54" name="__codelineno-15-54" href="#__codelineno-15-54"></a><span class="w">        </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-55" name="__codelineno-15-55" href="#__codelineno-15-55"></a><span class="w">        </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;89eb5366-bab3-46e4-b8e1-abc5f2ea4631&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-56" name="__codelineno-15-56" href="#__codelineno-15-56"></a><span class="w">        </span><span class="nt">&quot;persona&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;travel-agent&quot;</span>
+<a id="__codelineno-15-57" name="__codelineno-15-57" href="#__codelineno-15-57"></a><span class="w">      </span><span class="p">}</span>
+<a id="__codelineno-15-58" name="__codelineno-15-58" href="#__codelineno-15-58"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-15-59" name="__codelineno-15-59" href="#__codelineno-15-59"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-15-60" name="__codelineno-15-60" href="#__codelineno-15-60"></a><span class="p">}</span>
 </code></pre></div>
 <h3 id="data-sources-for-opa-input">Data Sources for OPA Input</h3>
 <table>
@@ -3036,155 +2995,155 @@ To achieve this, the authz-api:</p>
 </table>
 <h2 id="testing-policies">Testing Policies</h2>
 <h3 id="test-opa-directly">Test OPA Directly</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8181/v1/data/auto_book/allow<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
-<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="s1">    &quot;input&quot;: {</span>
-<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="s1">      &quot;subject&quot;: {&quot;id&quot;: &quot;30dc31a0-2061-43c7-aa2a-7f7760936fc9&quot;, &quot;persona&quot;: &quot;ai-agent&quot;},</span>
-<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="s1">      &quot;action&quot;: {&quot;name&quot;: &quot;execute&quot;},</span>
-<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="s1">      &quot;resource&quot;: {</span>
-<a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a><span class="s1">        &quot;properties&quot;: {</span>
-<a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a><span class="s1">          &quot;planned_price&quot;: 500,</span>
-<a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a><span class="s1">          &quot;departure_date&quot;: &quot;2026-01-30T00:00:00Z&quot;,</span>
-<a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a><span class="s1">          &quot;airline_risk_score&quot;: 7,</span>
-<a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a><span class="s1">          &quot;owner&quot;: {</span>
-<a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a><span class="s1">            &quot;id&quot;: &quot;user-123&quot;,</span>
-<a id="__codelineno-17-14" name="__codelineno-17-14" href="#__codelineno-17-14"></a><span class="s1">            &quot;persona&quot;: &quot;traveler&quot;,</span>
-<a id="__codelineno-17-15" name="__codelineno-17-15" href="#__codelineno-17-15"></a><span class="s1">            &quot;autobook_consent&quot;: true,</span>
-<a id="__codelineno-17-16" name="__codelineno-17-16" href="#__codelineno-17-16"></a><span class="s1">            &quot;autobook_price&quot;: 1500,</span>
-<a id="__codelineno-17-17" name="__codelineno-17-17" href="#__codelineno-17-17"></a><span class="s1">            &quot;autobook_leadtime&quot;: 7,</span>
-<a id="__codelineno-17-18" name="__codelineno-17-18" href="#__codelineno-17-18"></a><span class="s1">            &quot;autobook_risklevel&quot;: 10</span>
-<a id="__codelineno-17-19" name="__codelineno-17-19" href="#__codelineno-17-19"></a><span class="s1">          }</span>
-<a id="__codelineno-17-20" name="__codelineno-17-20" href="#__codelineno-17-20"></a><span class="s1">        }</span>
-<a id="__codelineno-17-21" name="__codelineno-17-21" href="#__codelineno-17-21"></a><span class="s1">      },</span>
-<a id="__codelineno-17-22" name="__codelineno-17-22" href="#__codelineno-17-22"></a><span class="s1">      &quot;context&quot;: {</span>
-<a id="__codelineno-17-23" name="__codelineno-17-23" href="#__codelineno-17-23"></a><span class="s1">        &quot;delegation&quot;: {&quot;valid&quot;: false},</span>
-<a id="__codelineno-17-24" name="__codelineno-17-24" href="#__codelineno-17-24"></a><span class="s1">        &quot;principal&quot;: {&quot;id&quot;: &quot;user-123&quot;, &quot;persona&quot;: &quot;traveler&quot;}</span>
-<a id="__codelineno-17-25" name="__codelineno-17-25" href="#__codelineno-17-25"></a><span class="s1">      }</span>
-<a id="__codelineno-17-26" name="__codelineno-17-26" href="#__codelineno-17-26"></a><span class="s1">    }</span>
-<a id="__codelineno-17-27" name="__codelineno-17-27" href="#__codelineno-17-27"></a><span class="s1">  }&#39;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8181/v1/data/auto_book/allow<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="s1">    &quot;input&quot;: {</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="s1">      &quot;subject&quot;: {&quot;id&quot;: &quot;30dc31a0-2061-43c7-aa2a-7f7760936fc9&quot;, &quot;persona&quot;: &quot;ai-agent&quot;},</span>
+<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="s1">      &quot;action&quot;: {&quot;name&quot;: &quot;execute&quot;},</span>
+<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="s1">      &quot;resource&quot;: {</span>
+<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a><span class="s1">        &quot;properties&quot;: {</span>
+<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a><span class="s1">          &quot;planned_price&quot;: 500,</span>
+<a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a><span class="s1">          &quot;departure_date&quot;: &quot;2026-01-30T00:00:00Z&quot;,</span>
+<a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a><span class="s1">          &quot;airline_risk_score&quot;: 7,</span>
+<a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a><span class="s1">          &quot;owner&quot;: {</span>
+<a id="__codelineno-16-13" name="__codelineno-16-13" href="#__codelineno-16-13"></a><span class="s1">            &quot;id&quot;: &quot;user-123&quot;,</span>
+<a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a><span class="s1">            &quot;persona&quot;: &quot;traveler&quot;,</span>
+<a id="__codelineno-16-15" name="__codelineno-16-15" href="#__codelineno-16-15"></a><span class="s1">            &quot;autobook_consent&quot;: true,</span>
+<a id="__codelineno-16-16" name="__codelineno-16-16" href="#__codelineno-16-16"></a><span class="s1">            &quot;autobook_price&quot;: 1500,</span>
+<a id="__codelineno-16-17" name="__codelineno-16-17" href="#__codelineno-16-17"></a><span class="s1">            &quot;autobook_leadtime&quot;: 7,</span>
+<a id="__codelineno-16-18" name="__codelineno-16-18" href="#__codelineno-16-18"></a><span class="s1">            &quot;autobook_risklevel&quot;: 10</span>
+<a id="__codelineno-16-19" name="__codelineno-16-19" href="#__codelineno-16-19"></a><span class="s1">          }</span>
+<a id="__codelineno-16-20" name="__codelineno-16-20" href="#__codelineno-16-20"></a><span class="s1">        }</span>
+<a id="__codelineno-16-21" name="__codelineno-16-21" href="#__codelineno-16-21"></a><span class="s1">      },</span>
+<a id="__codelineno-16-22" name="__codelineno-16-22" href="#__codelineno-16-22"></a><span class="s1">      &quot;context&quot;: {</span>
+<a id="__codelineno-16-23" name="__codelineno-16-23" href="#__codelineno-16-23"></a><span class="s1">        &quot;delegation&quot;: {&quot;valid&quot;: false},</span>
+<a id="__codelineno-16-24" name="__codelineno-16-24" href="#__codelineno-16-24"></a><span class="s1">        &quot;principal&quot;: {&quot;id&quot;: &quot;user-123&quot;, &quot;persona&quot;: &quot;traveler&quot;}</span>
+<a id="__codelineno-16-25" name="__codelineno-16-25" href="#__codelineno-16-25"></a><span class="s1">      }</span>
+<a id="__codelineno-16-26" name="__codelineno-16-26" href="#__codelineno-16-26"></a><span class="s1">    }</span>
+<a id="__codelineno-16-27" name="__codelineno-16-27" href="#__codelineno-16-27"></a><span class="s1">  }&#39;</span>
 </code></pre></div>
 <h3 id="test-via-authz-api">Test via Authz-API</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="c1"># Get a Firebase ID token</span>
-<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="nv">TOKEN</span><span class="o">=</span><span class="s2">&quot;&lt;your-firebase-token&gt;&quot;</span>
-<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>
-<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8002/v1/evaluate<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
-<a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a><span class="s1">    &quot;subject&quot;: {&quot;id&quot;: &quot;ai-agent&quot;},</span>
-<a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a><span class="s1">    &quot;action&quot;: {&quot;name&quot;: &quot;execute&quot;},</span>
-<a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a><span class="s1">    &quot;resource&quot;: {</span>
-<a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a><span class="s1">      &quot;type&quot;: &quot;workflow_item&quot;,</span>
-<a id="__codelineno-18-12" name="__codelineno-18-12" href="#__codelineno-18-12"></a><span class="s1">      &quot;id&quot;: &quot;i_test&quot;,</span>
-<a id="__codelineno-18-13" name="__codelineno-18-13" href="#__codelineno-18-13"></a><span class="s1">      &quot;workflow_id&quot;: &quot;w_test&quot;</span>
-<a id="__codelineno-18-14" name="__codelineno-18-14" href="#__codelineno-18-14"></a><span class="s1">    },</span>
-<a id="__codelineno-18-15" name="__codelineno-18-15" href="#__codelineno-18-15"></a><span class="s1">    &quot;context&quot;: {</span>
-<a id="__codelineno-18-16" name="__codelineno-18-16" href="#__codelineno-18-16"></a><span class="s1">      &quot;principal&quot;: {&quot;id&quot;: &quot;&lt;your-user-id&gt;&quot;}</span>
-<a id="__codelineno-18-17" name="__codelineno-18-17" href="#__codelineno-18-17"></a><span class="s1">    }</span>
-<a id="__codelineno-18-18" name="__codelineno-18-18" href="#__codelineno-18-18"></a><span class="s1">  }&#39;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># Get a Firebase ID token</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="nv">TOKEN</span><span class="o">=</span><span class="s2">&quot;&lt;your-firebase-token&gt;&quot;</span>
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8002/v1/evaluate<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a><span class="s1">    &quot;subject&quot;: {&quot;id&quot;: &quot;ai-agent&quot;},</span>
+<a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a><span class="s1">    &quot;action&quot;: {&quot;name&quot;: &quot;execute&quot;},</span>
+<a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a><span class="s1">    &quot;resource&quot;: {</span>
+<a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a><span class="s1">      &quot;type&quot;: &quot;workflow_item&quot;,</span>
+<a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a><span class="s1">      &quot;id&quot;: &quot;i_test&quot;,</span>
+<a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a><span class="s1">      &quot;workflow_id&quot;: &quot;w_test&quot;</span>
+<a id="__codelineno-17-14" name="__codelineno-17-14" href="#__codelineno-17-14"></a><span class="s1">    },</span>
+<a id="__codelineno-17-15" name="__codelineno-17-15" href="#__codelineno-17-15"></a><span class="s1">    &quot;context&quot;: {</span>
+<a id="__codelineno-17-16" name="__codelineno-17-16" href="#__codelineno-17-16"></a><span class="s1">      &quot;principal&quot;: {&quot;id&quot;: &quot;&lt;your-user-id&gt;&quot;}</span>
+<a id="__codelineno-17-17" name="__codelineno-17-17" href="#__codelineno-17-17"></a><span class="s1">    }</span>
+<a id="__codelineno-17-18" name="__codelineno-17-18" href="#__codelineno-17-18"></a><span class="s1">  }&#39;</span>
 </code></pre></div>
 <h2 id="policy-development-workflow">Policy Development Workflow</h2>
 <h3 id="1-create-or-edit-policy">1. Create or Edit Policy</h3>
 <p><strong>Option A: Edit existing policy</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>vim<span class="w"> </span>infra/opa/policies/travel/policy.rego
-<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>vim<span class="w"> </span>infra/opa/policies/travel/manifest.yaml
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>vim<span class="w"> </span>infra/opa/policies/travel/policy.rego
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>vim<span class="w"> </span>infra/opa/policies/travel/manifest.yaml
 </code></pre></div>
 <p><strong>Option B: Create new policy</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>mkdir<span class="w"> </span>infra/opa/policies/newpolicy
-<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>
-<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="c1"># Create manifest</span>
-<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>cat<span class="w"> </span>&gt;<span class="w"> </span>infra/opa/policies/newpolicy/manifest.yaml<span class="w"> </span><span class="s">&lt;&lt;EOF</span>
-<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="s">name: newpolicy</span>
-<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a><span class="s">package: newpolicy_rules</span>
-<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a>
-<a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a><span class="s">resource_types:</span>
-<a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a><span class="s">  - new_resource_type</span>
-<a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a>
-<a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a><span class="s">attributes:</span>
-<a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a><span class="s">  - name: example_attr</span>
-<a id="__codelineno-20-13" name="__codelineno-20-13" href="#__codelineno-20-13"></a><span class="s">    type: integer</span>
-<a id="__codelineno-20-14" name="__codelineno-20-14" href="#__codelineno-20-14"></a><span class="s">    source: persona</span>
-<a id="__codelineno-20-15" name="__codelineno-20-15" href="#__codelineno-20-15"></a><span class="s">    default: 100</span>
-<a id="__codelineno-20-16" name="__codelineno-20-16" href="#__codelineno-20-16"></a><span class="s">    required: false</span>
-<a id="__codelineno-20-17" name="__codelineno-20-17" href="#__codelineno-20-17"></a><span class="s">    description: &quot;Example attribute&quot;</span>
-<a id="__codelineno-20-18" name="__codelineno-20-18" href="#__codelineno-20-18"></a><span class="s">EOF</span>
-<a id="__codelineno-20-19" name="__codelineno-20-19" href="#__codelineno-20-19"></a>
-<a id="__codelineno-20-20" name="__codelineno-20-20" href="#__codelineno-20-20"></a><span class="c1"># Create policy</span>
-<a id="__codelineno-20-21" name="__codelineno-20-21" href="#__codelineno-20-21"></a>vim<span class="w"> </span>infra/opa/policies/newpolicy/policy.rego
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>mkdir<span class="w"> </span>infra/opa/policies/newpolicy
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="c1"># Create manifest</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>cat<span class="w"> </span>&gt;<span class="w"> </span>infra/opa/policies/newpolicy/manifest.yaml<span class="w"> </span><span class="s">&lt;&lt;EOF</span>
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="s">name: newpolicy</span>
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="s">package: newpolicy_rules</span>
+<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a>
+<a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="s">resource_types:</span>
+<a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a><span class="s">  - new_resource_type</span>
+<a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a>
+<a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a><span class="s">attributes:</span>
+<a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a><span class="s">  - name: example_attr</span>
+<a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a><span class="s">    type: integer</span>
+<a id="__codelineno-19-14" name="__codelineno-19-14" href="#__codelineno-19-14"></a><span class="s">    source: persona</span>
+<a id="__codelineno-19-15" name="__codelineno-19-15" href="#__codelineno-19-15"></a><span class="s">    default: 100</span>
+<a id="__codelineno-19-16" name="__codelineno-19-16" href="#__codelineno-19-16"></a><span class="s">    required: false</span>
+<a id="__codelineno-19-17" name="__codelineno-19-17" href="#__codelineno-19-17"></a><span class="s">    description: &quot;Example attribute&quot;</span>
+<a id="__codelineno-19-18" name="__codelineno-19-18" href="#__codelineno-19-18"></a><span class="s">EOF</span>
+<a id="__codelineno-19-19" name="__codelineno-19-19" href="#__codelineno-19-19"></a>
+<a id="__codelineno-19-20" name="__codelineno-19-20" href="#__codelineno-19-20"></a><span class="c1"># Create policy</span>
+<a id="__codelineno-19-21" name="__codelineno-19-21" href="#__codelineno-19-21"></a>vim<span class="w"> </span>infra/opa/policies/newpolicy/policy.rego
 </code></pre></div>
 <h3 id="2-rebuild-and-restart-services">2. Rebuild and Restart Services</h3>
 <p><strong>For manifest changes:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="c1"># Rebuild authz-api (picks up new manifests)</span>
-<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>build<span class="w"> </span>flowpilot-authz-api
-<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>
-<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="c1"># Restart authz-api and OPA</span>
-<a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>flowpilot-authz-api<span class="w"> </span>opa
-<a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a>
-<a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a><span class="c1"># Verify policies loaded</span>
-<a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a>docker<span class="w"> </span>compose<span class="w"> </span>logs<span class="w"> </span>flowpilot-authz-api<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;Loaded.*policies&quot;</span>
-<a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a><span class="c1"># Expected: Loaded 3 policies: travel, nursing, newpolicy</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="c1"># Rebuild authz-api (picks up new manifests)</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>build<span class="w"> </span>flowpilot-authz-api
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="c1"># Restart authz-api and OPA</span>
+<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>flowpilot-authz-api<span class="w"> </span>opa
+<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>
+<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a><span class="c1"># Verify policies loaded</span>
+<a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>docker<span class="w"> </span>compose<span class="w"> </span>logs<span class="w"> </span>flowpilot-authz-api<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;Loaded.*policies&quot;</span>
+<a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a><span class="c1"># Expected: Loaded 3 policies: travel, nursing, newpolicy</span>
 </code></pre></div>
 <p><strong>For Rego-only changes:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="c1"># Just restart OPA (policies are mounted, auto-reloaded)</span>
-<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>restart<span class="w"> </span>opa
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="c1"># Just restart OPA (policies are mounted, auto-reloaded)</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>restart<span class="w"> </span>opa
 </code></pre></div>
 <h3 id="3-test-policy">3. Test Policy</h3>
 <p>Use curl to test OPA directly (as shown above)</p>
 <h3 id="4-test-policy-selection">4. Test Policy Selection</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="c1"># Test with resource type</span>
-<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8002/v1/evaluate<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
-<a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a><span class="s1">    &quot;resource&quot;: {&quot;type&quot;: &quot;workflow_item&quot;},</span>
-<a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a><span class="s1">    &quot;context&quot;: {&quot;principal&quot;: {&quot;id&quot;: &quot;user-123&quot;}}</span>
-<a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a><span class="s1">  }&#39;</span>
-<a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a>
-<a id="__codelineno-23-10" name="__codelineno-23-10" href="#__codelineno-23-10"></a><span class="c1"># Test with policy hint</span>
-<a id="__codelineno-23-11" name="__codelineno-23-11" href="#__codelineno-23-11"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8002/v1/evaluate<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-23-12" name="__codelineno-23-12" href="#__codelineno-23-12"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-23-13" name="__codelineno-23-13" href="#__codelineno-23-13"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-23-14" name="__codelineno-23-14" href="#__codelineno-23-14"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
-<a id="__codelineno-23-15" name="__codelineno-23-15" href="#__codelineno-23-15"></a><span class="s1">    &quot;resource&quot;: {&quot;type&quot;: &quot;workflow_item&quot;},</span>
-<a id="__codelineno-23-16" name="__codelineno-23-16" href="#__codelineno-23-16"></a><span class="s1">    &quot;context&quot;: {</span>
-<a id="__codelineno-23-17" name="__codelineno-23-17" href="#__codelineno-23-17"></a><span class="s1">      &quot;principal&quot;: {&quot;id&quot;: &quot;user-123&quot;},</span>
-<a id="__codelineno-23-18" name="__codelineno-23-18" href="#__codelineno-23-18"></a><span class="s1">      &quot;policy_hint&quot;: &quot;travel&quot;</span>
-<a id="__codelineno-23-19" name="__codelineno-23-19" href="#__codelineno-23-19"></a><span class="s1">    }</span>
-<a id="__codelineno-23-20" name="__codelineno-23-20" href="#__codelineno-23-20"></a><span class="s1">  }&#39;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="c1"># Test with resource type</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8002/v1/evaluate<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a><span class="s1">    &quot;resource&quot;: {&quot;type&quot;: &quot;workflow_item&quot;},</span>
+<a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a><span class="s1">    &quot;context&quot;: {&quot;principal&quot;: {&quot;id&quot;: &quot;user-123&quot;}}</span>
+<a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a><span class="s1">  }&#39;</span>
+<a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a>
+<a id="__codelineno-22-10" name="__codelineno-22-10" href="#__codelineno-22-10"></a><span class="c1"># Test with policy hint</span>
+<a id="__codelineno-22-11" name="__codelineno-22-11" href="#__codelineno-22-11"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8002/v1/evaluate<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-22-12" name="__codelineno-22-12" href="#__codelineno-22-12"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-22-13" name="__codelineno-22-13" href="#__codelineno-22-13"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-22-14" name="__codelineno-22-14" href="#__codelineno-22-14"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<a id="__codelineno-22-15" name="__codelineno-22-15" href="#__codelineno-22-15"></a><span class="s1">    &quot;resource&quot;: {&quot;type&quot;: &quot;workflow_item&quot;},</span>
+<a id="__codelineno-22-16" name="__codelineno-22-16" href="#__codelineno-22-16"></a><span class="s1">    &quot;context&quot;: {</span>
+<a id="__codelineno-22-17" name="__codelineno-22-17" href="#__codelineno-22-17"></a><span class="s1">      &quot;principal&quot;: {&quot;id&quot;: &quot;user-123&quot;},</span>
+<a id="__codelineno-22-18" name="__codelineno-22-18" href="#__codelineno-22-18"></a><span class="s1">      &quot;policy_hint&quot;: &quot;travel&quot;</span>
+<a id="__codelineno-22-19" name="__codelineno-22-19" href="#__codelineno-22-19"></a><span class="s1">    }</span>
+<a id="__codelineno-22-20" name="__codelineno-22-20" href="#__codelineno-22-20"></a><span class="s1">  }&#39;</span>
 </code></pre></div>
 <h3 id="5-test-integration">5. Test Integration</h3>
 <p>Test via authz-api to ensure enrichment, defaults, and validation work</p>
 <h3 id="6-run-regression-tests">6. Run Regression Tests</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>python3<span class="w"> </span>flowpilot-testing/regression_test_firebase.py
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>python3<span class="w"> </span>flowpilot-testing/regression_test_firebase.py
 </code></pre></div>
 <h2 id="common-policy-patterns">Common Policy Patterns</h2>
 <h3 id="pattern-1-fail-closed">Pattern 1: Fail-Closed</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="k">default</span><span class="w"> </span><span class="n">allow</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">false</span>
-<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>
-<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="n">allow</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a><span class="w">  </span><span class="c1"># Explicit conditions</span>
-<a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="k">default</span><span class="w"> </span><span class="n">allow</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">false</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>
+<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="n">allow</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="w">  </span><span class="c1"># Explicit conditions</span>
+<a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a><span class="p">}</span>
 </code></pre></div>
 <p>Always deny unless explicitly allowed.</p>
 <h3 id="pattern-2-multiple-allow-rules">Pattern 2: Multiple Allow Rules</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="n">allow</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">condition_a</span><span class="w"> </span><span class="p">}</span>
-<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="n">allow</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">condition_b</span><span class="w"> </span><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="n">allow</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">condition_a</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="n">allow</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">condition_b</span><span class="w"> </span><span class="p">}</span>
 </code></pre></div>
 <p>Any rule can grant access (OR logic).</p>
 <h3 id="pattern-3-gated-allow">Pattern 3: Gated Allow</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="n">allow</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="w">  </span><span class="n">gate_1</span>
-<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a><span class="w">  </span><span class="n">gate_2</span>
-<a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a><span class="w">  </span><span class="n">gate_3</span>
-<a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="n">allow</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="w">  </span><span class="n">gate_1</span>
+<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a><span class="w">  </span><span class="n">gate_2</span>
+<a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a><span class="w">  </span><span class="n">gate_3</span>
+<a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a><span class="p">}</span>
 </code></pre></div>
 <p>All gates must pass (AND logic).</p>
 <h3 id="pattern-4-reason-tracking">Pattern 4: Reason Tracking</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="n">reasons</span><span class="p">[</span><span class="n">code</span><span class="p">]</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a><span class="w">  </span><span class="k">not</span><span class="w"> </span><span class="n">some_condition</span>
-<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a><span class="w">  </span><span class="n">code</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="s2">&quot;policy.failure_reason&quot;</span>
-<a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="n">reasons</span><span class="p">[</span><span class="n">code</span><span class="p">]</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="w">  </span><span class="k">not</span><span class="w"> </span><span class="n">some_condition</span>
+<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a><span class="w">  </span><span class="n">code</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="s2">&quot;policy.failure_reason&quot;</span>
+<a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a><span class="p">}</span>
 </code></pre></div>
 <p>Provide structured denial reasons.</p>
 <h2 id="best-practices">Best Practices</h2>
@@ -3223,15 +3182,15 @@ To achieve this, the authz-api:</p>
 <h2 id="deployment">Deployment</h2>
 <h3 id="local-development">Local Development</h3>
 <p>Policies are mounted from filesystem with hot-reload:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="c1"># docker-compose.yml</span>
-<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a><span class="nt">opa</span><span class="p">:</span>
-<a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a><span class="w">  </span><span class="nt">volumes</span><span class="p">:</span>
-<a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./infra/opa/policies:/policies</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="c1"># docker-compose.yml</span>
+<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a><span class="nt">opa</span><span class="p">:</span>
+<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a><span class="w">  </span><span class="nt">volumes</span><span class="p">:</span>
+<a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./infra/opa/policies:/policies</span>
 </code></pre></div>
 <h3 id="production-gcp-cloud-run">Production (GCP Cloud Run)</h3>
 <p>Policies are <strong>baked into the OPA container image</strong>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="c"># infra/opa/Dockerfile</span>
-<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a><span class="k">COPY</span><span class="w"> </span>infra/opa/policies<span class="w"> </span>/policies
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="c"># infra/opa/Dockerfile</span>
+<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a><span class="k">COPY</span><span class="w"> </span>infra/opa/policies<span class="w"> </span>/policies
 </code></pre></div>
 <p>Having them baked in enables a strong version control based on a git repo. And with strong version control comes the ability for strong governance. The latter, hwoever, is a matter of process and organization, not a technical matter.</p>
 <p><strong>To update policies in production:</strong></p>
@@ -3241,9 +3200,9 @@ To achieve this, the authz-api:</p>
 <li>Push to Artifact Registry</li>
 <li>Deploy to Cloud Run</li>
 </ol>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>docker<span class="w"> </span>build<span class="w"> </span>-f<span class="w"> </span>infra/opa/Dockerfile<span class="w"> </span>-t<span class="w"> </span>us-central1-docker.pkg.dev/PROJECT/flowpilot/opa:latest<span class="w"> </span>.
-<a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a>docker<span class="w"> </span>push<span class="w"> </span>us-central1-docker.pkg.dev/PROJECT/flowpilot/opa:latest
-<a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a>gcloud<span class="w"> </span>run<span class="w"> </span>deploy<span class="w"> </span>flowpilot-opa<span class="w"> </span>--image<span class="w"> </span>us-central1-docker.pkg.dev/PROJECT/flowpilot/opa:latest
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>docker<span class="w"> </span>build<span class="w"> </span>-f<span class="w"> </span>infra/opa/Dockerfile<span class="w"> </span>-t<span class="w"> </span>us-central1-docker.pkg.dev/PROJECT/flowpilot/opa:latest<span class="w"> </span>.
+<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>docker<span class="w"> </span>push<span class="w"> </span>us-central1-docker.pkg.dev/PROJECT/flowpilot/opa:latest
+<a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a>gcloud<span class="w"> </span>run<span class="w"> </span>deploy<span class="w"> </span>flowpilot-opa<span class="w"> </span>--image<span class="w"> </span>us-central1-docker.pkg.dev/PROJECT/flowpilot/opa:latest
 </code></pre></div>
 
 

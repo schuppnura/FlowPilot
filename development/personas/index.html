@@ -2426,7 +2426,7 @@
 <p>The manifest defines:
 - <code>allowed_titles</code>: List of valid persona titles that can be created
 - <code>delegation_personas</code>: Rules for which personas can delegate actions to each other</p>
-<p>For the "travel" use case, FlowPilot defines the following persona titles:</p>
+<p>For the "travel" use case, FlowPilot defines the following <code>allowed_titles</code>:</p>
 <ul>
 <li>
 <p><code>traveler</code> - End users who book travel for themselves</p>
@@ -2522,9 +2522,9 @@
 <li><code>scope</code> must be a non-empty array of action strings</li>
 <li><code>valid_from</code> &amp; <code>valid_till</code> must be valid ISO 8601 timestamps</li>
 <li><code>status</code> must be one of: <code>"active"</code>, <code>"inactive"</code>, <code>"suspended"</code>, <code>"expired"</code></li>
-<li><code>autobook_price</code> must be a non-negative integer</li>
-<li><code>autobook_leadtime</code> must be a non-negative integer</li>
-<li><code>autobook_risklevel</code> must be an integer between 0 and 100</li>
+<li><code>autobook_price</code> is optional and must be an integer according to the policy manifest</li>
+<li><code>autobook_leadtime</code> is optional and must be an integer according to the policy manifest</li>
+<li><code>autobook_risklevel</code> is optional and must be an integer according to the policy manifest</li>
 </ul>
 <p><strong>Note:</strong> The service fails fast at startup if the policy manifest cannot be loaded, ensuring persona configuration is always consistent with authorization policies.</p>
 <h3 id="authz-api">AuthZ-API</h3>
