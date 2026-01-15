@@ -1835,11 +1835,6 @@
 <p><strong>Authentication &amp; Authorization</strong></p>
 <ul>
 <li>All API endpoints MUST require valid bearer tokens</li>
-<li>Token separation is enforced:</li>
-<li><strong>Firebase ID tokens</strong>: Used ONLY for token exchange endpoint (<code>/v1/token/exchange</code>)</li>
-<li><strong>FlowPilot access tokens</strong>: Pseudonymous tokens (sub only) for all user API calls</li>
-<li><strong>GCP identity tokens</strong>: Service-to-service authentication between backend services</li>
-<li>Each token type has distinct issuer and audience to prevent confusion</li>
 <li>Use production-grade secrets (not demo credentials)</li>
 <li>Rotate credentials regularly</li>
 <li>Implement proper token validation and expiry</li>
@@ -1881,10 +1876,10 @@
 </ul>
 <p><strong>Privacy &amp; Compliance</strong></p>
 <ul>
-<li>FlowPilot is designed with privacy-by-design principles</li>
-<li>No PII is exposed to LLMs</li>
-<li>Profile information is stored separately from domain data</li>
-<li>Ensure GDPR/privacy compliance for your jurisdiction</li>
+<li>The authorization model is designed with privacy-by-design principles</li>
+<li>Do not requests scopes such as 'profile' for the access token</li>
+<li>Do not expose PII to the back-end ai-agent and domain-services APIs </li>
+<li>Do not store PII with domain-services data</li>
 </ul>
 <h2 id="security-features">Security Features</h2>
 <p>FlowPilot implements several security best practices:</p>
@@ -1895,33 +1890,11 @@
 <li>Relationship-based access control (ReBAC) for delegation</li>
 <li>Explicit authorization checks for every operation</li>
 </ul>
-<p><strong>Authentication &amp; Token Architecture</strong></p>
+<p><strong>Authentication</strong></p>
 <ul>
-<li>OIDC with PKCE for desktop client authentication</li>
-<li>Three-tier token architecture for privacy and security:</li>
-<li><strong>Firebase ID tokens</strong> (authentication only):<ul>
-<li>Contain user PII (email, name) for UI display</li>
-<li>Used ONLY at token exchange endpoint</li>
-<li>Never passed to domain services</li>
-</ul>
-</li>
-<li><strong>FlowPilot access tokens</strong> (user authorization):<ul>
-<li>Pseudonymous tokens containing only <code>sub</code> (user UUID)</li>
-<li>Zero PII exposure to backend services</li>
-<li>Used for all user-initiated API calls</li>
-<li>Signed with FlowPilot private key</li>
-<li>Short-lived (15 minutes)</li>
-</ul>
-</li>
-<li><strong>GCP identity tokens</strong> (service authentication):<ul>
-<li>Service-to-service authentication between microservices</li>
-<li>Issued by GCP metadata server</li>
-<li>Different audience (<code>flowpilot-services</code>) prevents token confusion</li>
-<li>Verified using Google's public keys</li>
-</ul>
-</li>
-<li>Token type separation enforced by distinct issuer and audience validation</li>
-<li>Personas passed as request parameters, never embedded in tokens</li>
+<li>OIDC with PKCE for desktop client</li>
+<li>Bearer token authentication for service-to-service communication</li>
+<li>Keycloak as identity provider with realm isolation</li>
 </ul>
 <p><strong>Privacy by Design</strong></p>
 <ul>
@@ -1947,7 +1920,7 @@
 - Email: ciso@nura.pro
 - Response time: Within 48 hours</p>
 <hr />
-<p>Last updated: 2025-12-20</p>
+<p>Last updated: 2026-01-15</p>
 
 
 
