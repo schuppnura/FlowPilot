@@ -2878,7 +2878,7 @@ To achieve this, the authz-api:</p>
 <li>Fetches complete persona object from user-profile-api (includes autobook attributes, status, validity)</li>
 <li>Includes both <code>subject.persona</code> and enriched <code>owner</code> object in OPA input</li>
 </ul>
-<p><strong>Important:</strong> The <code>owner.persona</code> field contains the persona <strong>title</strong> (e.g., "traveler"), while the full persona data (with autobook attributes, status, and temporal validity) is fetched from user-profile-api and merged into <code>resource.properties.owner</code>.</p>
+<p><strong>Important:</strong> The <code>owner.persona</code> field contains the persona <strong>title</strong> (e.g., "traveler"), while the full persona data (with autobook attributes, status, and temporal validity) is fetched from user-profile-api and merged into <code>resource.properties.owner</code>. See <a href="../personas/">Personas Guide</a> for more details.</p>
 <h3 id="step-6-persona-validity-check">Step 6: Persona Validity Check</h3>
 <p>In addition to checking the persona <strong>type</strong> is appropriate, the policy enforces that the owner's persona is currently valid. This combines status and temporal checks:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">valid_persona</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
@@ -3371,7 +3371,7 @@ To achieve this, the authz-api:</p>
 <ol>
 <li><strong>Governance Checks</strong></li>
 <li>Validates all Rego files have correct syntax</li>
-<li>Warns if uncommitted changes exist (policies should be version controlled)</li>
+<li>Warns if uncommitted changes exist (policies MUST be version controlled)</li>
 <li>
 <p>Runs OPA unit tests if present</p>
 </li>

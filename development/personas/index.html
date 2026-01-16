@@ -2427,7 +2427,7 @@
 - user-profile-api: Validates that required attributes are PRESENT (not None) and sets a default value when not present. Does NOT validate ranges or policy-specific constraints
 - authz-api: Assumes user-profile-api did its job and is not bypassed. So it passes attributes to OPA without validation or defaulting
 - OPA policy: Performs ALL policy-specific validation (e.g., range checks) that is specific to the business use case</p>
-<p>This separation ensures the system is extensible to other policies and business use cases without hardcoding policy logic in the API layer. This makes the platform truly a generic SaaS service.</p>
+<p>This separation ensures the system is extensible to other policies and business use cases without hardcoding policy logic in the API layer. This makes the platform truly a generic SaaS service</p>
 <h3 id="manifest-structure">Manifest Structure</h3>
 <p>The manifest's <code>persona_config</code> section defines <code>status</code>, <code>title</code> and a series of custom attributes. For the "travel" use case, FlowPilot defined the following <code>status</code>, <code>title</code> and autobook attributes. The latter enable and steer autonomous AI booking. Their values are coerced automatically by the user-profile-api to the type specified. Their values are also set automatically in case they are optional and a default value is provided. A defualt value of <code>null</code> menas that the attribute will only be created when it explicitly has a value. </p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">persona_config</span><span class="p">:</span>
@@ -3006,7 +3006,6 @@
 <li><a href="../policies/">Policy Development Guide</a> - How OPA policies use persona data</li>
 <li><a href="../../architecture/authorization/">Authorization Architecture</a> - Overall authorization flow</li>
 <li><a href="../../api/user-profile/">API Reference: User Profile API</a> - Full API specification</li>
-<li><a href="delegations.md">Delegation Guide</a> - How personas interact with delegations</li>
 </ul>
 
 
