@@ -3368,66 +3368,42 @@ To achieve this, the authz-api:</p>
 <a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>./bin/deploy-opa-policy.sh<span class="w"> </span>--skip-tests<span class="w"> </span>--auto-approve
 </code></pre></div>
 <h3 id="what-the-script-does">What the Script Does</h3>
-<ol>
-<li>
 <p><strong>Governance Checks</strong></p>
-</li>
-<li>
-<p>Validates all Rego files have correct syntax</p>
-</li>
+<ul>
+<li>Validates all Rego files have correct syntax</li>
 <li>Warns if uncommitted changes exist (policies MUST be version controlled)</li>
-<li>
-<p>Runs OPA unit tests if present</p>
-</li>
-<li>
+<li>Runs OPA unit tests if present</li>
+</ul>
 <p><strong>Version Tagging</strong></p>
-</li>
-<li>
-<p>Uses git commit hash as version identifier (e.g., <code>a3f9d2c</code>)</p>
-</li>
+<ul>
+<li>Uses git commit hash as version identifier (e.g., <code>a3f9d2c</code>)</li>
 <li>Tags Docker image with version for traceability</li>
-<li>
-<p>Creates Cloud Run revision tag for easy access</p>
-</li>
-<li>
+<li>Creates Cloud Run revision tag for easy access</li>
+</ul>
 <p><strong>Safe Deployment</strong></p>
-</li>
-<li>
-<p>Deploys new revision without routing traffic (no user impact)</p>
-</li>
+<ul>
+<li>Deploys new revision without routing traffic (no user impact)</li>
 <li>Shifts traffic only after successful deployment</li>
-<li>
-<p>Monitors for errors during traffic shift</p>
-</li>
-<li>
+<li>Monitors for errors during traffic shift</li>
+</ul>
 <p><strong>Automated Testing</strong></p>
-</li>
-<li>
-<p>Runs 12 regression tests covering all authorization scenarios</p>
-</li>
+<ul>
+<li>Runs 12 regression tests covering all authorization scenarios</li>
 <li>Tests delegation, personas, autobook constraints, anti-spoofing</li>
-<li>
-<p>Validates new policy behavior matches expectations</p>
-</li>
-<li>
+<li>Validates new policy behavior matches expectations</li>
+</ul>
 <p><strong>Automatic Rollback</strong></p>
-</li>
-<li>
-<p>If tests fail, immediately restores previous policy</p>
-</li>
+<ul>
+<li>If tests fail, immediately restores previous policy</li>
 <li>No manual intervention needed for failed deployments</li>
-<li>
-<p>Complete rollback in &lt;10 seconds</p>
-</li>
-<li>
+<li>Complete rollback in &lt;10 seconds</li>
+</ul>
 <p><strong>Audit Trail</strong></p>
-</li>
-<li>
-<p>Logs every deployment attempt to <code>logs/opa-deployments.log</code></p>
-</li>
+<ul>
+<li>Logs every deployment attempt to <code>logs/opa-deployments.log</code></li>
 <li>Records: timestamp, version, outcome, rollback events</li>
 <li>Shows recent deployment history at end of each deployment</li>
-</ol>
+</ul>
 <h2 id="governance-controls">Governance Controls</h2>
 <h3 id="pre-deployment-controls">Pre-Deployment Controls</h3>
 <p><strong>Version Control Requirement</strong></p>
