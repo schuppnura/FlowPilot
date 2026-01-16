@@ -3369,8 +3369,12 @@ To achieve this, the authz-api:</p>
 </code></pre></div>
 <h3 id="what-the-script-does">What the Script Does</h3>
 <ol>
-<li><strong>Governance Checks</strong></li>
-<li>Validates all Rego files have correct syntax</li>
+<li>
+<p><strong>Governance Checks</strong></p>
+</li>
+<li>
+<p>Validates all Rego files have correct syntax</p>
+</li>
 <li>Warns if uncommitted changes exist (policies MUST be version controlled)</li>
 <li>
 <p>Runs OPA unit tests if present</p>
@@ -3378,7 +3382,9 @@ To achieve this, the authz-api:</p>
 <li>
 <p><strong>Version Tagging</strong></p>
 </li>
-<li>Uses git commit hash as version identifier (e.g., <code>a3f9d2c</code>)</li>
+<li>
+<p>Uses git commit hash as version identifier (e.g., <code>a3f9d2c</code>)</p>
+</li>
 <li>Tags Docker image with version for traceability</li>
 <li>
 <p>Creates Cloud Run revision tag for easy access</p>
@@ -3386,7 +3392,9 @@ To achieve this, the authz-api:</p>
 <li>
 <p><strong>Safe Deployment</strong></p>
 </li>
-<li>Deploys new revision without routing traffic (no user impact)</li>
+<li>
+<p>Deploys new revision without routing traffic (no user impact)</p>
+</li>
 <li>Shifts traffic only after successful deployment</li>
 <li>
 <p>Monitors for errors during traffic shift</p>
@@ -3394,7 +3402,9 @@ To achieve this, the authz-api:</p>
 <li>
 <p><strong>Automated Testing</strong></p>
 </li>
-<li>Runs 12 regression tests covering all authorization scenarios</li>
+<li>
+<p>Runs 12 regression tests covering all authorization scenarios</p>
+</li>
 <li>Tests delegation, personas, autobook constraints, anti-spoofing</li>
 <li>
 <p>Validates new policy behavior matches expectations</p>
@@ -3402,7 +3412,9 @@ To achieve this, the authz-api:</p>
 <li>
 <p><strong>Automatic Rollback</strong></p>
 </li>
-<li>If tests fail, immediately restores previous policy</li>
+<li>
+<p>If tests fail, immediately restores previous policy</p>
+</li>
 <li>No manual intervention needed for failed deployments</li>
 <li>
 <p>Complete rollback in &lt;10 seconds</p>
@@ -3410,49 +3422,69 @@ To achieve this, the authz-api:</p>
 <li>
 <p><strong>Audit Trail</strong></p>
 </li>
-<li>Logs every deployment attempt to <code>logs/opa-deployments.log</code></li>
+<li>
+<p>Logs every deployment attempt to <code>logs/opa-deployments.log</code></p>
+</li>
 <li>Records: timestamp, version, outcome, rollback events</li>
 <li>Shows recent deployment history at end of each deployment</li>
 </ol>
 <h2 id="governance-controls">Governance Controls</h2>
 <h3 id="pre-deployment-controls">Pre-Deployment Controls</h3>
-<p><strong>Version Control Requirement</strong>
-- All policy changes must be committed to git before deployment
-- Uncommitted changes trigger a warning and require confirmation
-- Ensures every production policy has a commit hash for traceability</p>
-<p><strong>Syntax Validation</strong>
-- OPA CLI validates all Rego files before deployment
-- Prevents syntax errors from reaching production
-- Fails fast if policies have parse errors</p>
-<p><strong>Unit Testing</strong> (optional but recommended)
-- If <code>policy_test.rego</code> files exist, they are automatically run
-- Tests validate policy logic before deployment
-- Example: Test that suspended personas are always denied</p>
+<p><strong>Version Control Requirement</strong></p>
+<ul>
+<li>All policy changes must be committed to git before deployment</li>
+<li>Uncommitted changes trigger a warning and require confirmation</li>
+<li>Ensures every production policy has a commit hash for traceability</li>
+</ul>
+<p><strong>Syntax Validation</strong></p>
+<ul>
+<li>OPA CLI validates all Rego files before deployment</li>
+<li>Prevents syntax errors from reaching production</li>
+<li>Fails fast if policies have parse errors</li>
+</ul>
+<p><strong>Unit Testing</strong> (optional but recommended)</p>
+<ul>
+<li>If <code>policy_test.rego</code> files exist, they are automatically run</li>
+<li>Tests validate policy logic before deployment</li>
+<li>Example: Test that suspended personas are always denied</li>
+</ul>
 <h3 id="deployment-controls">Deployment Controls</h3>
-<p><strong>Zero-Downtime Deployment</strong>
-- New policy revision deployed alongside old revision
-- Traffic shifted only after new revision is healthy
-- No service interruption during policy updates</p>
-<p><strong>Canary Testing</strong>
-- Script supports gradual traffic shifting (easily extensible)
-- Could deploy to 10% traffic, validate metrics, then 100%
-- Reduces blast radius of policy errors</p>
+<p><strong>Zero-Downtime Deployment</strong></p>
+<ul>
+<li>New policy revision deployed alongside old revision</li>
+<li>Traffic shifted only after new revision is healthy</li>
+<li>No service interruption during policy updates</li>
+</ul>
+<p><strong>Canary Testing</strong></p>
+<ul>
+<li>Script supports gradual traffic shifting (easily extensible)</li>
+<li>Could deploy to 10% traffic, validate metrics, then 100%</li>
+<li>Reduces blast radius of policy errors</li>
+</ul>
 <h3 id="post-deployment-controls">Post-Deployment Controls</h3>
-<p><strong>Automated Regression Testing</strong>
-- 12 comprehensive test scenarios run automatically
-- Covers positive and negative authorization cases
-- Tests run against production environment (GCP Cloud Run)</p>
-<p><strong>Automatic Rollback</strong>
-- Failed tests trigger immediate rollback
-- Previous policy restored within seconds
-- No human intervention required</p>
-<p><strong>Audit Logging</strong>
-- Every deployment logged with:
-    - Timestamp (UTC)
-    - Version tag (git commit hash)
-    - Outcome (success/failure/rollback)
-    - Revision identifier
-- Immutable audit trail for compliance</p>
+<p><strong>Automated Regression Testing</strong></p>
+<ul>
+<li>12 comprehensive test scenarios run automatically</li>
+<li>Covers positive and negative authorization cases</li>
+<li>Tests run against production environment (GCP Cloud Run)</li>
+</ul>
+<p><strong>Automatic Rollback</strong></p>
+<ul>
+<li>Failed tests trigger immediate rollback</li>
+<li>Previous policy restored within seconds</li>
+<li>No human intervention required</li>
+</ul>
+<p><strong>Audit Logging</strong></p>
+<ul>
+<li>Every deployment logged with:<ul>
+<li>Timestamp (UTC)</li>
+<li>Version tag (git commit hash)</li>
+<li>Outcome (success/failure/rollback)</li>
+<li>Revision identifier</li>
+</ul>
+</li>
+<li>Immutable audit trail for compliance</li>
+</ul>
 <h2 id="governance-best-practices">Governance Best Practices</h2>
 <h3 id="for-policy-authors">For Policy Authors</h3>
 <ol>
@@ -3521,8 +3553,12 @@ To achieve this, the authz-api:</p>
 </ol>
 <h3 id="for-compliancesecurity-teams">For Compliance/Security Teams</h3>
 <ol>
-<li><strong>Policy changes are traceable</strong></li>
-<li>Every production policy has a git commit hash</li>
+<li>
+<p><strong>Policy changes are traceable</strong></p>
+</li>
+<li>
+<p>Every production policy has a git commit hash</p>
+</li>
 <li><code>git log infra/opa/policies/</code> shows complete change history</li>
 <li>
 <p><code>git blame</code> shows who changed what and when</p>
@@ -3530,7 +3566,9 @@ To achieve this, the authz-api:</p>
 <li>
 <p><strong>Deployments are audited</strong></p>
 </li>
-<li>Complete audit trail in <code>logs/opa-deployments.log</code></li>
+<li>
+<p>Complete audit trail in <code>logs/opa-deployments.log</code></p>
+</li>
 <li>Includes: who deployed (via git author), when, what version</li>
 <li>
 <p>Rollback events are logged with reason</p>
@@ -3538,7 +3576,9 @@ To achieve this, the authz-api:</p>
 <li>
 <p><strong>Failed deployments can't reach production</strong></p>
 </li>
-<li>Syntax errors caught pre-deployment</li>
+<li>
+<p>Syntax errors caught pre-deployment</p>
+</li>
 <li>Behavioral regressions caught by automated tests</li>
 <li>
 <p>Automatic rollback prevents broken policies from staying live</p>
@@ -3546,7 +3586,9 @@ To achieve this, the authz-api:</p>
 <li>
 <p><strong>Rollback capability is tested</strong></p>
 </li>
-<li>Every deployment validates rollback works (via failed test scenario)</li>
+<li>
+<p>Every deployment validates rollback works (via failed test scenario)</p>
+</li>
 <li>Previous policy versions are retained in Cloud Run</li>
 <li>Instant rollback without code changes</li>
 </ol>
