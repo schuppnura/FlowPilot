@@ -644,6 +644,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#policy-governance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Policy Governance
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1918,8 +1929,8 @@
 <li><strong>FlowPilot access tokens</strong> - Pseudonymous tokens (UUID only), used for all backend API calls  </li>
 <li><strong>Service tokens</strong> - For internal service-to-service communication</li>
 </ol>
-<p>When your app authenticates a user with Firebase/Auth0/etc., you exchange the ID token for a pseudonymous FlowPilot access token via the <code>/v1/token/exchange</code> endpoint. This token contains only the user's UUID (<code>sub</code>) with zero PII, preventing personal information from proliferating across your backend services.</p>
-<p>Personas (business roles) are passed as request parameters selected by the user, not embedded in tokens. This allows users to switch personas without re-authentication and prevents token bloat.</p>
+<p>When your app authenticates a user with Firebase/Auth0/etc., you exchange the id-token for a pseudonymous FlowPilot access-token via the <code>/v1/token/exchange</code> endpoint. This access-token contains only the user's UUID (<code>sub</code>) with zero PII, preventing personal information from proliferating across your backend services.</p>
+<p>Persona titles (business roles) are passed as request parameters selected by the user, not embedded in tokens. This allows users to switch personas without re-authentication and prevents token bloat. The combintaion of a persona title and the user's <code>sub</code> uniquely identifies the persona record of the user.</p>
 <h2 id="quick-links">Quick Links</h2>
 <div class="grid cards">
 <ul>
@@ -1971,7 +1982,7 @@
 </ul>
 <h3 id="defense-in-depth-security">Defense-in-Depth Security</h3>
 <ul>
-<li>JWKS-based JWT validation (zero network calls per request)</li>
+<li>JWKS-based JWT validation</li>
 <li>4-layer input validation (Pydantic, path params, string sanitization, request size limits)</li>
 <li>Injection attack prevention</li>
 <li>Security headers on all responses</li>
@@ -1986,6 +1997,15 @@
 <li>Cloud Run deployment for GCP</li>
 <li>Docker Compose for local development</li>
 </ul>
+<h3 id="policy-governance">Policy Governance</h3>
+<p>FlowPilot demonstrates a <strong>GitOps-based policy governance model</strong> where:</p>
+<ol>
+<li><strong>Policies are code</strong> - OPA Rego policies live in version control</li>
+<li><strong>Changes are auditable</strong> - Every policy change has a git commit hash</li>
+<li><strong>Deployments are validated</strong> - Automated tests prevent broken policies from reaching production</li>
+<li><strong>Rollbacks are instant</strong> - Zero-downtime rollback to previous policy versions</li>
+<li><strong>History is preserved</strong> - Complete audit trail of all policy deployments</li>
+</ol>
 <h2 id="technology-stack">Technology Stack</h2>
 <ul>
 <li><strong>Backend</strong>: Python + FastAPI</li>
@@ -1997,6 +2017,8 @@
 <li><strong>Client</strong>: React (web app) / Swift (macOS desktop app) and ready for any other client tech</li>
 </ul>
 <h2 id="next-steps">Next Steps</h2>
+<p><strong>For Policy Governance, Auditors, Security/Privacy Officers:</strong> Start with the <a href="development/policy.md">Policy Guide</a> to understand how to develop and review policies with FlowPilot.</p>
+<p><strong>For Architects, Auditors, Back-end Developers:</strong> Start with the <a href="development/personas/">Personas Guide</a> to add FlowPilot to your application.</p>
 <p><strong>For App Developers:</strong> Start with the <a href="getting-started/integration/">Integration Guide</a> to add FlowPilot to your application.</p>
 <p><strong>For Platform Operators:</strong> See the <a href="deployment/gcp/">Self-Hosting Guide</a> if you want to run your own instance.</p>
 <p><strong>To Understand the Model:</strong> Read the <a href="architecture/overview/">Architecture Overview</a> and <a href="guides/personas.md">Personas Guide</a>.</p>
