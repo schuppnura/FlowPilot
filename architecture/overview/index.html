@@ -1962,16 +1962,16 @@
 </ul>
 <p>OPA itself uses AuthZEN-enriched input and does not need to manage identity, delegation graphs, or relationships.</p>
 <h3 id="4-bearer-tokens-with-personas-not-identity-payloads">4. Bearer Tokens with Personas, Not Identity Payloads</h3>
-<p>Access tokens intentionally carry minimal personal information.</p>
+<p>Access-tokens intentionally carry minimal personal information.</p>
 <p><strong>Tokens contain:</strong></p>
 <ul>
 <li><code>sub</code> - Stable, pseudonymous UUID</li>
-<li><code>persona</code> - Business role (e.g., traveler, travel-agent)</li>
 <li>Technical claims (issuer, expiry, crypto validation)</li>
 </ul>
 <p><strong>Tokens do NOT contain:</strong></p>
 <ul>
 <li>Names</li>
+<li>Usernames</li>
 <li>Email addresses</li>
 <li>Personal preferences</li>
 <li>Consent details</li>
@@ -2057,11 +2057,11 @@
 <h2 id="privacy-by-design">Privacy by Design</h2>
 <p>Privacy is not an afterthought; it is structural.</p>
 <ul>
-<li><strong>No PII in tokens</strong> - Only pseudonymous identifiers</li>
-<li><strong>No PII passed to AI agents</strong> - Only workflow context</li>
-<li><strong>Delegation graph uses identifiers only</strong> - No personal information</li>
-<li><strong>Profiles expose presence flags, not values</strong> - Consent without details</li>
-<li><strong>Authorization decisions are reproducible</strong> - Without identity data</li>
+<li>No PII in tokens - Only pseudonymous identifiers</li>
+<li>No PII passed to AI agents - Only workflow context</li>
+<li>Delegation graph uses identifiers only - No personal information</li>
+<li>Profiles expose presence flags, not values - Consent without details</li>
+<li>Authorization decisions are reproducible - Without identity data</li>
 </ul>
 <p><strong>The result:</strong></p>
 <ul>
@@ -2072,22 +2072,22 @@
 <h2 id="security-by-architecture">Security by Architecture</h2>
 <p>Security is enforced at multiple layers:</p>
 <ul>
-<li><strong>JWT validation</strong> - Signature, issuer, audience, exp, nbf, iat, typ</li>
-<li><strong>JWKS-based local validation</strong> - No network calls per request</li>
-<li><strong>Strict AuthZEN request validation</strong> - Schema enforcement</li>
-<li><strong>Delegation enforcement</strong> - Before policy evaluation</li>
-<li><strong>Full payload sanitization</strong> - Input validation at every boundary</li>
-<li><strong>Fail-closed behavior</strong> - Everywhere by default</li>
+<li>JWT validation - Signature, issuer, audience, exp, nbf, iat, typ</li>
+<li>JWKS-based local validation - No network calls per request</li>
+<li>Strict AuthZEN request validation - Schema enforcement</li>
+<li>Delegation enforcement - Before policy evaluation</li>
+<li>Full payload sanitization - Input validation at every boundary</li>
+<li>Fail-closed behavior - Everywhere by default</li>
 </ul>
 <p>The system assumes inputs are hostile by default.</p>
 <h2 id="why-this-matters">Why This Matters</h2>
 <p>Most "agentic" demos ignore authorization, privacy, and delegation until late.</p>
 <p>FlowPilot does the opposite:</p>
 <ul>
-<li><strong>Authorization is central</strong> - Not bolted on</li>
-<li><strong>Delegation is explicit</strong> - Not implicit or token-based</li>
-<li><strong>Policy is declarative</strong> - Not hard-coded</li>
-<li><strong>Identity data is minimized</strong> - By design</li>
+<li>Authorization is central - Not bolted on</li>
+<li>Delegation is explicit - Not implicit or token-based</li>
+<li>Policy is declarative - Not hard-coded</li>
+<li>Identity data is minimized - By design</li>
 </ul>
 <p>This repository is meant to be read, reasoned about, and adapted, not just run.</p>
 
