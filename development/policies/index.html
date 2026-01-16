@@ -18,7 +18,7 @@
         <link rel="prev" href="../../architecture/cors/">
       
       
-        <link rel="next" href="../testing/">
+        <link rel="next" href="../policies-governance/">
       
       
         
@@ -1096,10 +1096,160 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#security-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Considerations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Security Considerations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#principle-of-least-privilege" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Principle of Least Privilege
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#separation-of-duties" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Separation of Duties
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#immutable-audit-trail" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Immutable Audit Trail
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#secret-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secret Management
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Best Practices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Best Practices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#for-policy-manifest-authors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        For Policy Manifest Authors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#for-policy-authors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        For Policy Authors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#for-authz-api-developers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        For Authz-API Developers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#for-pep-developers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        For PEP Developers
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../policies-governance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Policy Governance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -2683,355 +2833,6 @@ To achieve this, the authz-api:</p>
 </tr>
 </tbody>
 </table>
-<h1 id="policy-governance-guide">Policy Governance Guide</h1>
-<p>This section describes FlowPilot's policy governance framework - how authorization policies are developed, validated, deployed, and audited in a production environment.</p>
-<p>FlowPilot demonstrates a <strong>GitOps-based policy governance model</strong> where:</p>
-<ol>
-<li><strong>Policies are code</strong> - OPA Rego policies live in version control</li>
-<li><strong>Changes are auditable</strong> - Every policy change has a git commit hash</li>
-<li><strong>Deployments are validated</strong> - Automated tests prevent broken policies from reaching production</li>
-<li><strong>Rollbacks are instant</strong> - Zero-downtime rollback to previous policy versions</li>
-<li><strong>History is preserved</strong> - Complete audit trail of all policy deployments</li>
-</ol>
-<h2 id="policy-deployment-lifecycle">Policy Deployment Lifecycle</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>┌─────────────────┐
-<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>│ 1. Development  │  Developer edits policy.rego
-<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>│                 │  Policy is validated locally
-<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>└────────┬────────┘
-<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>         │
-<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>         ▼
-<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>┌─────────────────┐
-<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>│ 2. Version      │  Changes committed to git
-<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>│    Control      │  Commit hash becomes version tag
-<a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a>└────────┬────────┘
-<a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a>         │
-<a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a>         ▼
-<a id="__codelineno-16-13" name="__codelineno-16-13" href="#__codelineno-16-13"></a>┌─────────────────┐
-<a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a>│ 3. Governance   │  Pre-deployment checks:
-<a id="__codelineno-16-15" name="__codelineno-16-15" href="#__codelineno-16-15"></a>│    Checks       │  • Syntax validation
-<a id="__codelineno-16-16" name="__codelineno-16-16" href="#__codelineno-16-16"></a>│                 │  • Unit tests (if present)
-<a id="__codelineno-16-17" name="__codelineno-16-17" href="#__codelineno-16-17"></a>│                 │  • Uncommitted changes check
-<a id="__codelineno-16-18" name="__codelineno-16-18" href="#__codelineno-16-18"></a>└────────┬────────┘
-<a id="__codelineno-16-19" name="__codelineno-16-19" href="#__codelineno-16-19"></a>         │
-<a id="__codelineno-16-20" name="__codelineno-16-20" href="#__codelineno-16-20"></a>         ▼
-<a id="__codelineno-16-21" name="__codelineno-16-21" href="#__codelineno-16-21"></a>┌─────────────────┐
-<a id="__codelineno-16-22" name="__codelineno-16-22" href="#__codelineno-16-22"></a>│ 4. Build        │  Docker image built with policy
-<a id="__codelineno-16-23" name="__codelineno-16-23" href="#__codelineno-16-23"></a>│                 │  Tagged with git commit hash
-<a id="__codelineno-16-24" name="__codelineno-16-24" href="#__codelineno-16-24"></a>└────────┬────────┘
-<a id="__codelineno-16-25" name="__codelineno-16-25" href="#__codelineno-16-25"></a>         │
-<a id="__codelineno-16-26" name="__codelineno-16-26" href="#__codelineno-16-26"></a>         ▼
-<a id="__codelineno-16-27" name="__codelineno-16-27" href="#__codelineno-16-27"></a>┌─────────────────┐
-<a id="__codelineno-16-28" name="__codelineno-16-28" href="#__codelineno-16-28"></a>│ 5. Deploy       │  New revision deployed (no traffic)
-<a id="__codelineno-16-29" name="__codelineno-16-29" href="#__codelineno-16-29"></a>│    (No Traffic) │  Previous revision still serves all traffic
-<a id="__codelineno-16-30" name="__codelineno-16-30" href="#__codelineno-16-30"></a>└────────┬────────┘
-<a id="__codelineno-16-31" name="__codelineno-16-31" href="#__codelineno-16-31"></a>         │
-<a id="__codelineno-16-32" name="__codelineno-16-32" href="#__codelineno-16-32"></a>         ▼
-<a id="__codelineno-16-33" name="__codelineno-16-33" href="#__codelineno-16-33"></a>┌─────────────────┐
-<a id="__codelineno-16-34" name="__codelineno-16-34" href="#__codelineno-16-34"></a>│ 6. Traffic      │  100% traffic shifted to new revision
-<a id="__codelineno-16-35" name="__codelineno-16-35" href="#__codelineno-16-35"></a>│    Shift        │  Zero-downtime cutover
-<a id="__codelineno-16-36" name="__codelineno-16-36" href="#__codelineno-16-36"></a>└────────┬────────┘
-<a id="__codelineno-16-37" name="__codelineno-16-37" href="#__codelineno-16-37"></a>         │
-<a id="__codelineno-16-38" name="__codelineno-16-38" href="#__codelineno-16-38"></a>         ▼
-<a id="__codelineno-16-39" name="__codelineno-16-39" href="#__codelineno-16-39"></a>┌─────────────────┐
-<a id="__codelineno-16-40" name="__codelineno-16-40" href="#__codelineno-16-40"></a>│ 7. Regression   │  Full test suite runs against new policy
-<a id="__codelineno-16-41" name="__codelineno-16-41" href="#__codelineno-16-41"></a>│    Tests        │  12 authorization scenarios validated
-<a id="__codelineno-16-42" name="__codelineno-16-42" href="#__codelineno-16-42"></a>└────────┬────────┘
-<a id="__codelineno-16-43" name="__codelineno-16-43" href="#__codelineno-16-43"></a>         │
-<a id="__codelineno-16-44" name="__codelineno-16-44" href="#__codelineno-16-44"></a>         ├─ PASS ──────────────┐
-<a id="__codelineno-16-45" name="__codelineno-16-45" href="#__codelineno-16-45"></a>         │                     │
-<a id="__codelineno-16-46" name="__codelineno-16-46" href="#__codelineno-16-46"></a>         │                     ▼
-<a id="__codelineno-16-47" name="__codelineno-16-47" href="#__codelineno-16-47"></a>         │            ┌─────────────────┐
-<a id="__codelineno-16-48" name="__codelineno-16-48" href="#__codelineno-16-48"></a>         │            │ 8. Success      │  Deployment complete
-<a id="__codelineno-16-49" name="__codelineno-16-49" href="#__codelineno-16-49"></a>         │            │                 │  Audit log updated
-<a id="__codelineno-16-50" name="__codelineno-16-50" href="#__codelineno-16-50"></a>         │            └─────────────────┘
-<a id="__codelineno-16-51" name="__codelineno-16-51" href="#__codelineno-16-51"></a>         │
-<a id="__codelineno-16-52" name="__codelineno-16-52" href="#__codelineno-16-52"></a>         └─ FAIL ──────────────┐
-<a id="__codelineno-16-53" name="__codelineno-16-53" href="#__codelineno-16-53"></a>                               │
-<a id="__codelineno-16-54" name="__codelineno-16-54" href="#__codelineno-16-54"></a>                               ▼
-<a id="__codelineno-16-55" name="__codelineno-16-55" href="#__codelineno-16-55"></a>                      ┌─────────────────┐
-<a id="__codelineno-16-56" name="__codelineno-16-56" href="#__codelineno-16-56"></a>                      │ 8. Auto-Rollback│  Traffic shifted back
-<a id="__codelineno-16-57" name="__codelineno-16-57" href="#__codelineno-16-57"></a>                      │                 │  Previous policy restored
-<a id="__codelineno-16-58" name="__codelineno-16-58" href="#__codelineno-16-58"></a>                      │                 │  Incident logged
-<a id="__codelineno-16-59" name="__codelineno-16-59" href="#__codelineno-16-59"></a>                      └─────────────────┘
-</code></pre></div>
-<h2 id="deployment-script">Deployment Script</h2>
-<h3 id="usage">Usage</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># Standard deployment (with all checks and tests)</span>
-<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>./bin/deploy-opa-policy.sh
-<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>
-<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="c1"># Skip regression tests (faster, less safe)</span>
-<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>./bin/deploy-opa-policy.sh<span class="w"> </span>--skip-tests
-<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>
-<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="c1"># Automated deployment (no prompts)</span>
-<a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>./bin/deploy-opa-policy.sh<span class="w"> </span>--auto-approve
-<a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>
-<a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a><span class="c1"># Combined flags</span>
-<a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>./bin/deploy-opa-policy.sh<span class="w"> </span>--skip-tests<span class="w"> </span>--auto-approve
-</code></pre></div>
-<h3 id="what-the-script-does">What the Script Does</h3>
-<p><strong>Governance Checks</strong></p>
-<ul>
-<li>Validates all Rego files have correct syntax</li>
-<li>Warns if uncommitted changes exist (policies MUST be version controlled)</li>
-<li>Runs OPA unit tests if present</li>
-</ul>
-<p><strong>Version Tagging</strong></p>
-<ul>
-<li>Uses git commit hash as version identifier (e.g., <code>a3f9d2c</code>)</li>
-<li>Tags Docker image with version for traceability</li>
-<li>Creates Cloud Run revision tag for easy access</li>
-</ul>
-<p><strong>Safe Deployment</strong></p>
-<ul>
-<li>Deploys new revision without routing traffic (no user impact)</li>
-<li>Shifts traffic only after successful deployment</li>
-<li>Monitors for errors during traffic shift</li>
-</ul>
-<p><strong>Automated Testing</strong></p>
-<ul>
-<li>Runs 12 regression tests covering all authorization scenarios</li>
-<li>Tests delegation, personas, autobook constraints, anti-spoofing</li>
-<li>Validates new policy behavior matches expectations</li>
-</ul>
-<p><strong>Automatic Rollback</strong></p>
-<ul>
-<li>If tests fail, immediately restores previous policy</li>
-<li>No manual intervention needed for failed deployments</li>
-<li>Complete rollback in &lt;10 seconds</li>
-</ul>
-<p><strong>Audit Trail</strong></p>
-<ul>
-<li>Logs every deployment attempt to <code>logs/opa-deployments.log</code></li>
-<li>Records: timestamp, version, outcome, rollback events</li>
-<li>Shows recent deployment history at end of each deployment</li>
-</ul>
-<h2 id="governance-controls">Governance Controls</h2>
-<h3 id="pre-deployment-controls">Pre-Deployment Controls</h3>
-<p><strong>Version Control Requirement</strong></p>
-<ul>
-<li>All policy changes must be committed to git before deployment</li>
-<li>Uncommitted changes trigger a warning and require confirmation</li>
-<li>Ensures every production policy has a commit hash for traceability</li>
-</ul>
-<p><strong>Syntax Validation</strong></p>
-<ul>
-<li>OPA CLI validates all Rego files before deployment</li>
-<li>Prevents syntax errors from reaching production</li>
-<li>Fails fast if policies have parse errors</li>
-</ul>
-<p><strong>Unit Testing</strong> (optional but recommended)</p>
-<ul>
-<li>If <code>policy_test.rego</code> files exist, they are automatically run</li>
-<li>Tests validate policy logic before deployment</li>
-<li>Example: Test that suspended personas are always denied</li>
-</ul>
-<h3 id="deployment-controls">Deployment Controls</h3>
-<p><strong>Zero-Downtime Deployment</strong></p>
-<ul>
-<li>New policy revision deployed alongside old revision</li>
-<li>Traffic shifted only after new revision is healthy</li>
-<li>No service interruption during policy updates</li>
-</ul>
-<p><strong>Canary Testing</strong></p>
-<ul>
-<li>Script supports gradual traffic shifting (easily extensible)</li>
-<li>Could deploy to 10% traffic, validate metrics, then 100%</li>
-<li>Reduces blast radius of policy errors</li>
-</ul>
-<h3 id="post-deployment-controls">Post-Deployment Controls</h3>
-<p><strong>Automated Regression Testing</strong></p>
-<ul>
-<li>12 comprehensive test scenarios run automatically</li>
-<li>Covers positive and negative authorization cases</li>
-<li>Tests run against production environment (GCP Cloud Run)</li>
-</ul>
-<p><strong>Automatic Rollback</strong></p>
-<ul>
-<li>Failed tests trigger immediate rollback</li>
-<li>Previous policy restored within seconds</li>
-<li>No human intervention required</li>
-</ul>
-<p><strong>Audit Logging</strong></p>
-<ul>
-<li>Every deployment logged with:<ul>
-<li>Timestamp (UTC)</li>
-<li>Version tag (git commit hash)</li>
-<li>Outcome (success/failure/rollback)</li>
-<li>Revision identifier</li>
-</ul>
-</li>
-<li>Immutable audit trail for compliance</li>
-</ul>
-<h2 id="governance-best-practices">Governance Best Practices</h2>
-<h3 id="for-policy-authors">For Policy Authors</h3>
-<p><strong>Always commit before deploying</strong>
-   <div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>git<span class="w"> </span>add<span class="w"> </span>infra/opa/policies/
-<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;policy: add persona validity time checks&quot;</span>
-<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>./bin/deploy-opa-policy.sh
-</code></pre></div></p>
-<p><strong>Write unit tests for complex logic</strong>
-   <div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="c1"># infra/opa/policies/travel/policy_test.rego</span>
-<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="n">test_suspended_persona_denied</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="w">  </span><span class="k">not</span><span class="w"> </span><span class="n">allow</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="nb">input</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="w">    </span><span class="s2">&quot;resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="s2">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="s2">&quot;owner&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="s2">&quot;persona_status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;suspended&quot;</span><span class="p">}}},</span>
-<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="w">    </span><span class="c1"># ... rest of input</span>
-<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="w">  </span><span class="p">}</span>
-<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="p">}</span>
-</code></pre></div></p>
-<p><strong>Test locally before deploying</strong>
-   <div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>opa<span class="w"> </span>check<span class="w"> </span>infra/opa/policies<span class="w"> </span>--strict
-<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>opa<span class="w"> </span><span class="nb">test</span><span class="w"> </span>infra/opa/policies<span class="w"> </span>-v
-</code></pre></div></p>
-<p><strong>Use descriptive commit messages</strong>
-   - Good: <code>policy: require active persona status, remove backward compat</code>
-   - Bad: <code>update policy</code></p>
-<h3 id="for-operations-teams">For Operations Teams</h3>
-<p><strong>Monitor the audit log</strong>
-   <div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>tail<span class="w"> </span>-f<span class="w"> </span>logs/opa-deployments.log
-</code></pre></div></p>
-<p><strong>Integrate with CI/CD</strong>
-   - Run <code>deploy-opa-policy.sh --auto-approve</code> in CI pipeline
-   - Trigger on merge to <code>main</code> branch
-   - Alert on failures</p>
-<p><strong>Set up alerting</strong>
-   - Alert on rollback events
-   - Alert on repeated deployment failures
-   - Monitor Cloud Run revision health</p>
-<p><strong>Review audit trail regularly</strong>
-   <div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="c1"># Show all deployments in last 7 days</span>
-<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>grep<span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>date<span class="w"> </span>-v-7d<span class="w"> </span>+%Y-%m-%d<span class="k">)</span><span class="s2">&quot;</span><span class="w"> </span>logs/opa-deployments.log
-<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>
-<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="c1"># Show all rollbacks</span>
-<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a>grep<span class="w"> </span><span class="s2">&quot;ROLLBACK&quot;</span><span class="w"> </span>logs/opa-deployments.log
-</code></pre></div></p>
-<h3 id="for-compliancesecurity-teams">For Compliance/Security Teams</h3>
-<p><strong>Policy changes are traceable</strong></p>
-<ul>
-<li>Every production policy has a git commit hash</li>
-<li><code>git log infra/opa/policies/</code> shows complete change history</li>
-<li><code>git blame</code> shows who changed what and when</li>
-</ul>
-<p><strong>Deployments are audited</strong></p>
-<ul>
-<li>Complete audit trail in <code>logs/opa-deployments.log</code></li>
-<li>Includes: who deployed (via git author), when, what version</li>
-<li>Rollback events are logged with reason</li>
-</ul>
-<p><strong>Failed deployments can't reach production</strong></p>
-<ul>
-<li>Syntax errors caught pre-deployment</li>
-<li>Behavioral regressions caught by automated tests</li>
-<li>Automatic rollback prevents broken policies from staying live</li>
-</ul>
-<p><strong>Rollback capability is tested</strong></p>
-<ul>
-<li>Every deployment validates rollback works (via failed test scenario)</li>
-<li>Previous policy versions are retained in Cloud Run</li>
-<li>Instant rollback without code changes</li>
-</ul>
-<h2 id="example-deployment-session">Example Deployment Session</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>$<span class="w"> </span>./bin/deploy-opa-policy.sh
-<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>
-<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>═══════════════════════════════════════════════════════════
-<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="w">  </span>OPA<span class="w"> </span>Policy<span class="w"> </span>Deployment<span class="w"> </span>with<span class="w"> </span>Governance
-<a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>═══════════════════════════════════════════════════════════
-<a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>
-<a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a>ℹ<span class="w"> </span>Running<span class="w"> </span>governance<span class="w"> </span>checks...
-<a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a>ℹ<span class="w"> </span>Validating<span class="w"> </span>Rego<span class="w"> </span>syntax...
-<a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a>✓<span class="w"> </span>Syntax<span class="w"> </span>validation<span class="w"> </span>passed
-<a id="__codelineno-23-10" name="__codelineno-23-10" href="#__codelineno-23-10"></a>✓<span class="w"> </span>Governance<span class="w"> </span>checks<span class="w"> </span>passed
-<a id="__codelineno-23-11" name="__codelineno-23-11" href="#__codelineno-23-11"></a>ℹ<span class="w"> </span>Current<span class="w"> </span>active<span class="w"> </span>revision:<span class="w"> </span>flowpilot-opa-00009-gc5
-<a id="__codelineno-23-12" name="__codelineno-23-12" href="#__codelineno-23-12"></a>ℹ<span class="w"> </span>New<span class="w"> </span>version<span class="w"> </span>tag:<span class="w"> </span>b7f8a3c
-<a id="__codelineno-23-13" name="__codelineno-23-13" href="#__codelineno-23-13"></a>
-<a id="__codelineno-23-14" name="__codelineno-23-14" href="#__codelineno-23-14"></a>Proceed<span class="w"> </span>with<span class="w"> </span>deployment?<span class="w"> </span><span class="o">(</span>y/N<span class="o">)</span><span class="w"> </span>y
-<a id="__codelineno-23-15" name="__codelineno-23-15" href="#__codelineno-23-15"></a>
-<a id="__codelineno-23-16" name="__codelineno-23-16" href="#__codelineno-23-16"></a>ℹ<span class="w"> </span>Building<span class="w"> </span>OPA<span class="w"> </span>container<span class="w"> </span><span class="o">(</span>version:<span class="w"> </span>b7f8a3c<span class="o">)</span>...
-<a id="__codelineno-23-17" name="__codelineno-23-17" href="#__codelineno-23-17"></a>✓<span class="w"> </span>Build<span class="w"> </span>completed<span class="w"> </span>successfully
-<a id="__codelineno-23-18" name="__codelineno-23-18" href="#__codelineno-23-18"></a>✓<span class="w"> </span>Image<span class="w"> </span>tagged:<span class="w"> </span>b7f8a3c
-<a id="__codelineno-23-19" name="__codelineno-23-19" href="#__codelineno-23-19"></a>ℹ<span class="w"> </span>Deploying<span class="w"> </span>new<span class="w"> </span>revision<span class="w"> </span><span class="o">(</span>no<span class="w"> </span>traffic<span class="o">)</span>...
-<a id="__codelineno-23-20" name="__codelineno-23-20" href="#__codelineno-23-20"></a>✓<span class="w"> </span>Revision<span class="w"> </span>deployed<span class="w"> </span><span class="o">(</span>no<span class="w"> </span>traffic<span class="o">)</span>
-<a id="__codelineno-23-21" name="__codelineno-23-21" href="#__codelineno-23-21"></a>ℹ<span class="w"> </span>New<span class="w"> </span>revision:<span class="w"> </span>flowpilot-opa-00010-xj2
-<a id="__codelineno-23-22" name="__codelineno-23-22" href="#__codelineno-23-22"></a>ℹ<span class="w"> </span>Shifting<span class="w"> </span><span class="m">100</span>%<span class="w"> </span>traffic<span class="w"> </span>to<span class="w"> </span>flowpilot-opa-00010-xj2...
-<a id="__codelineno-23-23" name="__codelineno-23-23" href="#__codelineno-23-23"></a>✓<span class="w"> </span>Traffic<span class="w"> </span>shifted<span class="w"> </span>to<span class="w"> </span>flowpilot-opa-00010-xj2
-<a id="__codelineno-23-24" name="__codelineno-23-24" href="#__codelineno-23-24"></a>
-<a id="__codelineno-23-25" name="__codelineno-23-25" href="#__codelineno-23-25"></a>ℹ<span class="w"> </span>Waiting<span class="w"> </span><span class="m">5</span><span class="w"> </span>seconds<span class="w"> </span><span class="k">for</span><span class="w"> </span>service<span class="w"> </span>to<span class="w"> </span>stabilize...
-<a id="__codelineno-23-26" name="__codelineno-23-26" href="#__codelineno-23-26"></a>ℹ<span class="w"> </span>Running<span class="w"> </span>regression<span class="w"> </span>tests<span class="w"> </span>against<span class="w"> </span>deployed<span class="w"> </span>service...
-<a id="__codelineno-23-27" name="__codelineno-23-27" href="#__codelineno-23-27"></a><span class="o">======================================================================</span>
-<a id="__codelineno-23-28" name="__codelineno-23-28" href="#__codelineno-23-28"></a>FlowPilot<span class="w"> </span>Regression<span class="w"> </span>Test<span class="w"> </span>Suite<span class="w"> </span>-<span class="w"> </span>Firebase/Cloud<span class="w"> </span><span class="nv">Run</span>
-<a id="__codelineno-23-29" name="__codelineno-23-29" href="#__codelineno-23-29"></a><span class="o">======================================================================</span>
-<a id="__codelineno-23-30" name="__codelineno-23-30" href="#__codelineno-23-30"></a><span class="o">[</span>...<span class="w"> </span><span class="m">12</span><span class="w"> </span>tests<span class="w"> </span>run<span class="w"> </span>...<span class="o">]</span>
-<a id="__codelineno-23-31" name="__codelineno-23-31" href="#__codelineno-23-31"></a>✓<span class="w"> </span>All<span class="w"> </span>regression<span class="w"> </span>tests<span class="w"> </span>passed
-<a id="__codelineno-23-32" name="__codelineno-23-32" href="#__codelineno-23-32"></a>
-<a id="__codelineno-23-33" name="__codelineno-23-33" href="#__codelineno-23-33"></a>═══════════════════════════════════════════════════════════
-<a id="__codelineno-23-34" name="__codelineno-23-34" href="#__codelineno-23-34"></a>✓<span class="w"> </span>Deployment<span class="w"> </span>successful!
-<a id="__codelineno-23-35" name="__codelineno-23-35" href="#__codelineno-23-35"></a>═══════════════════════════════════════════════════════════
-<a id="__codelineno-23-36" name="__codelineno-23-36" href="#__codelineno-23-36"></a>
-<a id="__codelineno-23-37" name="__codelineno-23-37" href="#__codelineno-23-37"></a>Version:<span class="w">          </span>b7f8a3c
-<a id="__codelineno-23-38" name="__codelineno-23-38" href="#__codelineno-23-38"></a>Revision:<span class="w">         </span>flowpilot-opa-00010-xj2
-<a id="__codelineno-23-39" name="__codelineno-23-39" href="#__codelineno-23-39"></a>Previous:<span class="w">         </span>flowpilot-opa-00009-gc5
-<a id="__codelineno-23-40" name="__codelineno-23-40" href="#__codelineno-23-40"></a>Service<span class="w"> </span>URL:<span class="w">      </span>https://flowpilot-opa-737191827545.us-central1.run.app
-<a id="__codelineno-23-41" name="__codelineno-23-41" href="#__codelineno-23-41"></a>
-<a id="__codelineno-23-42" name="__codelineno-23-42" href="#__codelineno-23-42"></a>Tagged<span class="w"> </span>URL:<span class="w">       </span>https://vb7f8a3c---flowpilot-opa-737191827545.us-central1.run.app
-<a id="__codelineno-23-43" name="__codelineno-23-43" href="#__codelineno-23-43"></a>
-<a id="__codelineno-23-44" name="__codelineno-23-44" href="#__codelineno-23-44"></a>Recent<span class="w"> </span>deployment<span class="w"> </span><span class="nb">history</span><span class="w"> </span><span class="o">(</span>last<span class="w"> </span><span class="m">5</span><span class="o">)</span>:
-<a id="__codelineno-23-45" name="__codelineno-23-45" href="#__codelineno-23-45"></a><span class="w">  </span><span class="o">[</span><span class="m">2026</span>-01-15T11:20:15Z<span class="o">]</span><span class="w"> </span>DEPLOY_START:<span class="w"> </span>Deploying<span class="w"> </span>version<span class="w"> </span>a3f9d2c
-<a id="__codelineno-23-46" name="__codelineno-23-46" href="#__codelineno-23-46"></a><span class="w">  </span><span class="o">[</span><span class="m">2026</span>-01-15T11:20:45Z<span class="o">]</span><span class="w"> </span>DEPLOY_SUCCESS:<span class="w"> </span>Version<span class="w"> </span>a3f9d2c<span class="w"> </span>deployed<span class="w"> </span>as<span class="w"> </span>flowpilot-opa-00009-gc5
-<a id="__codelineno-23-47" name="__codelineno-23-47" href="#__codelineno-23-47"></a><span class="w">  </span><span class="o">[</span><span class="m">2026</span>-01-15T11:35:12Z<span class="o">]</span><span class="w"> </span>DEPLOY_START:<span class="w"> </span>Deploying<span class="w"> </span>version<span class="w"> </span>b7f8a3c
-<a id="__codelineno-23-48" name="__codelineno-23-48" href="#__codelineno-23-48"></a><span class="w">  </span><span class="o">[</span><span class="m">2026</span>-01-15T11:36:02Z<span class="o">]</span><span class="w"> </span>DEPLOY_SUCCESS:<span class="w"> </span>Version<span class="w"> </span>b7f8a3c<span class="w"> </span>deployed<span class="w"> </span>as<span class="w"> </span>flowpilot-opa-00010-xj2
-<a id="__codelineno-23-49" name="__codelineno-23-49" href="#__codelineno-23-49"></a>
-<a id="__codelineno-23-50" name="__codelineno-23-50" href="#__codelineno-23-50"></a>To<span class="w"> </span>rollback<span class="w"> </span><span class="k">if</span><span class="w"> </span>needed:
-<a id="__codelineno-23-51" name="__codelineno-23-51" href="#__codelineno-23-51"></a><span class="w">  </span>gcloud<span class="w"> </span>run<span class="w"> </span>services<span class="w"> </span>update-traffic<span class="w"> </span>flowpilot-opa<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-23-52" name="__codelineno-23-52" href="#__codelineno-23-52"></a><span class="w">    </span>--region<span class="o">=</span>us-central1<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-23-53" name="__codelineno-23-53" href="#__codelineno-23-53"></a><span class="w">    </span>--to-revisions<span class="o">=</span>flowpilot-opa-00009-gc5<span class="o">=</span><span class="m">100</span>
-</code></pre></div>
-<h2 id="extending-the-governance-controls">Extending the Governance Controls</h2>
-<h3 id="adding-manual-approval-gate">Adding Manual Approval Gate</h3>
-<p>For production environments, add a manual approval step:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="c1"># 1. Deploy to staging (no traffic)</span>
-<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>./bin/deploy-opa-policy.sh<span class="w"> </span>--skip-tests
-<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>
-<a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="c1"># 2. Manual testing/review</span>
-<a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a>
-<a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a><span class="c1"># 3. Shift traffic after approval</span>
-<a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a>gcloud<span class="w"> </span>run<span class="w"> </span>services<span class="w"> </span>update-traffic<span class="w"> </span>flowpilot-opa<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a><span class="w">  </span>--region<span class="o">=</span>us-central1<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-24-9" name="__codelineno-24-9" href="#__codelineno-24-9"></a><span class="w">  </span>--to-revisions<span class="o">=</span>flowpilot-opa-00010-xj2<span class="o">=</span><span class="m">100</span>
-</code></pre></div>
-<h3 id="adding-slack-notifications">Adding Slack Notifications</h3>
-<p>Integrate with Slack for deployment notifications:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="c1"># Add to audit_log function</span>
-<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="nv">$SLACK_WEBHOOK_URL</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s2">&quot;{\&quot;text\&quot;:\&quot;OPA Policy deployed: </span><span class="si">${</span><span class="nv">VERSION_TAG</span><span class="si">}</span><span class="s2">\&quot;}&quot;</span>
-</code></pre></div>
-<h3 id="adding-policy-signing">Adding Policy Signing</h3>
-<p>Sign policies with GPG for tamper-proof deployments:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="c1"># Before deployment</span>
-<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>git<span class="w"> </span>tag<span class="w"> </span>-s<span class="w"> </span><span class="s2">&quot;policy-v</span><span class="si">${</span><span class="nv">VERSION_TAG</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;Release </span><span class="si">${</span><span class="nv">VERSION_TAG</span><span class="si">}</span><span class="s2">&quot;</span>
-<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>git<span class="w"> </span>verify-tag<span class="w"> </span><span class="s2">&quot;policy-v</span><span class="si">${</span><span class="nv">VERSION_TAG</span><span class="si">}</span><span class="s2">&quot;</span>
-</code></pre></div>
-<h3 id="adding-change-approval-workflow">Adding Change Approval Workflow</h3>
-<p>Require PR approvals before merging policy changes:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="c1"># .github/CODEOWNERS</span>
-<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="l l-Scalar l-Scalar-Plain">infra/opa/policies/ @security-team @policy-reviewers</span>
-</code></pre></div>
-<h2 id="periodically-review-compliance-artifacts">Periodically Review Compliance Artifacts</h2>
-<p>The governance framework produces these compliance artifacts:</p>
-<p><strong>Audit Log</strong> (<code>logs/opa-deployments.log</code>)
-- Immutable record of all deployments
-- Includes timestamps, versions, outcomes</p>
-<p><strong>Git History</strong> (<code>git log infra/opa/policies/</code>)
-- Complete change history
-- Author, timestamp, rationale (commit message)</p>
-<p><strong>Tagged Container Images</strong>
-- Every deployed policy has tagged image
-- Can redeploy exact historical version</p>
-<p><strong>Test Results</strong>
-- Regression test output proves policy behavior
-- Captures before/after for each deployment</p>
-<p><strong>Rollback Records</strong>
-- Automatic rollbacks are logged
-- Shows governance controls prevented bad deployments</p>
 <h2 id="security-considerations">Security Considerations</h2>
 <h3 id="principle-of-least-privilege">Principle of Least Privilege</h3>
 <p>Only authorized personnel should have:
@@ -3064,7 +2865,7 @@ To achieve this, the authz-api:</p>
 <li><strong>List resource types</strong> - Include all resource types the policy handles</li>
 <li><strong>Version carefully</strong> - Plan for policy evolution (future versioning support)</li>
 </ol>
-<h3 id="for-policy-authors_1">For Policy Authors</h3>
+<h3 id="for-policy-authors">For Policy Authors</h3>
 <ol>
 <li><strong>Fail-closed</strong> - Default to deny</li>
 <li><strong>Explicit rules</strong> - Make allow conditions clear</li>
@@ -3086,16 +2887,6 @@ To achieve this, the authz-api:</p>
 <li><strong>Include context</strong> - Provide principal when subject ≠ owner</li>
 <li><strong>Enforce decisions</strong> - Always respect authz-api response</li>
 </ol>
-<h2 id="summary">Summary</h2>
-<p>FlowPilot's policy governance demonstrates:</p>
-<p>✅ Version Control - All policies in git with commit hashes<br />
-✅ Pre-Deployment Validation - Syntax checks and unit tests<br />
-✅ Zero-Downtime Deployment - No service interruption<br />
-✅ Automated Testing - 12 scenarios validate policy behavior<br />
-✅ Automatic Rollback - Failed tests trigger instant rollback<br />
-✅ Audit Trail - Complete deployment history logged<br />
-✅ Rollback Capability - Previous versions always available  </p>
-<p>This governance model ensures authorization policies can be changed safely and confidently in production environments</p>
 
 
 

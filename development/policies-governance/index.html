@@ -15,6 +15,10 @@
         <link rel="canonical" href="https://flowpilot.dev/development/policies-governance/">
       
       
+        <link rel="prev" href="../policies/">
+      
+      
+        <link rel="next" href="../testing/">
       
       
         
@@ -25,7 +29,7 @@
     
     
       
-        <title>Policy Governance Guide - FlowPilot Documentation</title>
+        <title>Policy Governance - FlowPilot Documentation</title>
       
     
     
@@ -110,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Policy Governance Guide
+              Policy Governance
             
           </span>
         </div>
@@ -260,10 +264,12 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
+      <li class="md-tabs__item md-tabs__item--active">
         <a href="../policies/" class="md-tabs__link">
           
   
@@ -683,28 +689,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
-        
-          
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
             
   
   
@@ -722,7 +731,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -756,6 +765,325 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Policy Governance
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Policy Governance
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#policy-deployment-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Policy Deployment Lifecycle
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deployment-script" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deployment Script
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deployment Script">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-the-script-does" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the Script Does
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#governance-controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Governance Controls
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Governance Controls">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pre-deployment-controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pre-Deployment Controls
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deployment-controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deployment Controls
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-deployment-controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Post-Deployment Controls
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#governance-best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Governance Best Practices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Governance Best Practices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#for-policy-authors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        For Policy Authors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#for-operations-teams" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        For Operations Teams
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#for-compliancesecurity-teams" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        For Compliance/Security Teams
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-deployment-session" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example Deployment Session
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extending-the-governance-controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extending the Governance Controls
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Extending the Governance Controls">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#adding-manual-approval-gate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding Manual Approval Gate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adding-slack-notifications" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding Slack Notifications
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adding-policy-signing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding Policy Signing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adding-change-approval-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding Change Approval Workflow
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#periodically-review-compliance-artifacts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Periodically Review Compliance Artifacts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
