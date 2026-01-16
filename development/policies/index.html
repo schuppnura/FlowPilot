@@ -1152,7 +1152,12 @@
   
 </li>
         
-          <li class="md-nav__item">
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#governance-controls" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1201,8 +1206,8 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#governance-best-practices" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1251,8 +1256,8 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#example-deployment-session" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1262,24 +1267,24 @@
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#extending-the-governance-model" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#extending-the-governance-controls" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Extending the Governance Model
+        Extending the Governance Controls
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Extending the Governance Model">
+    <nav class="md-nav" aria-label="Extending the Governance Controls">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#add-manual-approval-gate" class="md-nav__link">
+  <a href="#adding-manual-approval-gate" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Add Manual Approval Gate
+        Adding Manual Approval Gate
       
     </span>
   </a>
@@ -1287,10 +1292,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#add-slack-notifications" class="md-nav__link">
+  <a href="#adding-slack-notifications" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Add Slack Notifications
+        Adding Slack Notifications
       
     </span>
   </a>
@@ -1298,10 +1303,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#add-policy-signing" class="md-nav__link">
+  <a href="#adding-policy-signing" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Add Policy Signing
+        Adding Policy Signing
       
     </span>
   </a>
@@ -1309,10 +1314,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#add-change-approval-workflow" class="md-nav__link">
+  <a href="#adding-change-approval-workflow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Add Change Approval Workflow
+        Adding Change Approval Workflow
       
     </span>
   </a>
@@ -1323,20 +1328,15 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#compliance-artifacts" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#periodically-review-compliance-artifacts" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Compliance Artifacts
+        Periodically Review Compliance Artifacts
       
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -3404,8 +3404,8 @@ To achieve this, the authz-api:</p>
 <li>Records: timestamp, version, outcome, rollback events</li>
 <li>Shows recent deployment history at end of each deployment</li>
 </ul>
-<h3 id="governance-controls">Governance Controls</h3>
-<h4 id="pre-deployment-controls">Pre-Deployment Controls</h4>
+<h2 id="governance-controls">Governance Controls</h2>
+<h3 id="pre-deployment-controls">Pre-Deployment Controls</h3>
 <p><strong>Version Control Requirement</strong></p>
 <ul>
 <li>All policy changes must be committed to git before deployment</li>
@@ -3424,7 +3424,7 @@ To achieve this, the authz-api:</p>
 <li>Tests validate policy logic before deployment</li>
 <li>Example: Test that suspended personas are always denied</li>
 </ul>
-<h4 id="deployment-controls">Deployment Controls</h4>
+<h3 id="deployment-controls">Deployment Controls</h3>
 <p><strong>Zero-Downtime Deployment</strong></p>
 <ul>
 <li>New policy revision deployed alongside old revision</li>
@@ -3437,7 +3437,7 @@ To achieve this, the authz-api:</p>
 <li>Could deploy to 10% traffic, validate metrics, then 100%</li>
 <li>Reduces blast radius of policy errors</li>
 </ul>
-<h4 id="post-deployment-controls">Post-Deployment Controls</h4>
+<h3 id="post-deployment-controls">Post-Deployment Controls</h3>
 <p><strong>Automated Regression Testing</strong></p>
 <ul>
 <li>12 comprehensive test scenarios run automatically</li>
@@ -3461,8 +3461,8 @@ To achieve this, the authz-api:</p>
 </li>
 <li>Immutable audit trail for compliance</li>
 </ul>
-<h3 id="governance-best-practices">Governance Best Practices</h3>
-<h4 id="for-policy-authors">For Policy Authors</h4>
+<h2 id="governance-best-practices">Governance Best Practices</h2>
+<h3 id="for-policy-authors">For Policy Authors</h3>
 <p><strong>Always commit before deploying</strong>
    <div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>git<span class="w"> </span>add<span class="w"> </span>infra/opa/policies/
 <a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;policy: add persona validity time checks&quot;</span>
@@ -3484,7 +3484,7 @@ To achieve this, the authz-api:</p>
 <p><strong>Use descriptive commit messages</strong>
    - Good: <code>policy: require active persona status, remove backward compat</code>
    - Bad: <code>update policy</code></p>
-<h4 id="for-operations-teams">For Operations Teams</h4>
+<h3 id="for-operations-teams">For Operations Teams</h3>
 <p><strong>Monitor the audit log</strong>
    <div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>tail<span class="w"> </span>-f<span class="w"> </span>logs/opa-deployments.log
 </code></pre></div></p>
@@ -3503,7 +3503,7 @@ To achieve this, the authz-api:</p>
 <a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="c1"># Show all rollbacks</span>
 <a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a>grep<span class="w"> </span><span class="s2">&quot;ROLLBACK&quot;</span><span class="w"> </span>logs/opa-deployments.log
 </code></pre></div></p>
-<h4 id="for-compliancesecurity-teams">For Compliance/Security Teams</h4>
+<h3 id="for-compliancesecurity-teams">For Compliance/Security Teams</h3>
 <p><strong>Policy changes are traceable</strong></p>
 <ul>
 <li>Every production policy has a git commit hash</li>
@@ -3528,7 +3528,7 @@ To achieve this, the authz-api:</p>
 <li>Previous policy versions are retained in Cloud Run</li>
 <li>Instant rollback without code changes</li>
 </ul>
-<h3 id="example-deployment-session">Example Deployment Session</h3>
+<h2 id="example-deployment-session">Example Deployment Session</h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>$<span class="w"> </span>./bin/deploy-opa-policy.sh
 <a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>
 <a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>═══════════════════════════════════════════════════════════
@@ -3583,8 +3583,8 @@ To achieve this, the authz-api:</p>
 <a id="__codelineno-23-52" name="__codelineno-23-52" href="#__codelineno-23-52"></a><span class="w">    </span>--region<span class="o">=</span>us-central1<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-23-53" name="__codelineno-23-53" href="#__codelineno-23-53"></a><span class="w">    </span>--to-revisions<span class="o">=</span>flowpilot-opa-00009-gc5<span class="o">=</span><span class="m">100</span>
 </code></pre></div>
-<h3 id="extending-the-governance-model">Extending the Governance Model</h3>
-<h4 id="add-manual-approval-gate">Add Manual Approval Gate</h4>
+<h2 id="extending-the-governance-controls">Extending the Governance Controls</h2>
+<h3 id="adding-manual-approval-gate">Adding Manual Approval Gate</h3>
 <p>For production environments, add a manual approval step:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="c1"># 1. Deploy to staging (no traffic)</span>
 <a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>./bin/deploy-opa-policy.sh<span class="w"> </span>--skip-tests
@@ -3596,41 +3596,41 @@ To achieve this, the authz-api:</p>
 <a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a><span class="w">  </span>--region<span class="o">=</span>us-central1<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-24-9" name="__codelineno-24-9" href="#__codelineno-24-9"></a><span class="w">  </span>--to-revisions<span class="o">=</span>flowpilot-opa-00010-xj2<span class="o">=</span><span class="m">100</span>
 </code></pre></div>
-<h4 id="add-slack-notifications">Add Slack Notifications</h4>
+<h3 id="adding-slack-notifications">Adding Slack Notifications</h3>
 <p>Integrate with Slack for deployment notifications:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="c1"># Add to audit_log function</span>
 <a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="nv">$SLACK_WEBHOOK_URL</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s2">&quot;{\&quot;text\&quot;:\&quot;OPA Policy deployed: </span><span class="si">${</span><span class="nv">VERSION_TAG</span><span class="si">}</span><span class="s2">\&quot;}&quot;</span>
 </code></pre></div>
-<h4 id="add-policy-signing">Add Policy Signing</h4>
+<h3 id="adding-policy-signing">Adding Policy Signing</h3>
 <p>Sign policies with GPG for tamper-proof deployments:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="c1"># Before deployment</span>
 <a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>git<span class="w"> </span>tag<span class="w"> </span>-s<span class="w"> </span><span class="s2">&quot;policy-v</span><span class="si">${</span><span class="nv">VERSION_TAG</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;Release </span><span class="si">${</span><span class="nv">VERSION_TAG</span><span class="si">}</span><span class="s2">&quot;</span>
 <a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>git<span class="w"> </span>verify-tag<span class="w"> </span><span class="s2">&quot;policy-v</span><span class="si">${</span><span class="nv">VERSION_TAG</span><span class="si">}</span><span class="s2">&quot;</span>
 </code></pre></div>
-<h4 id="add-change-approval-workflow">Add Change Approval Workflow</h4>
+<h3 id="adding-change-approval-workflow">Adding Change Approval Workflow</h3>
 <p>Require PR approvals before merging policy changes:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="c1"># .github/CODEOWNERS</span>
 <a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="l l-Scalar l-Scalar-Plain">infra/opa/policies/ @security-team @policy-reviewers</span>
 </code></pre></div>
-<h3 id="compliance-artifacts">Compliance Artifacts</h3>
+<h2 id="periodically-review-compliance-artifacts">Periodically Review Compliance Artifacts</h2>
 <p>The governance framework produces these compliance artifacts:</p>
 <p><strong>Audit Log</strong> (<code>logs/opa-deployments.log</code>)
-   - Immutable record of all deployments
-   - Includes timestamps, versions, outcomes</p>
+- Immutable record of all deployments
+- Includes timestamps, versions, outcomes</p>
 <p><strong>Git History</strong> (<code>git log infra/opa/policies/</code>)
-   - Complete change history
-   - Author, timestamp, rationale (commit message)</p>
+- Complete change history
+- Author, timestamp, rationale (commit message)</p>
 <p><strong>Tagged Container Images</strong>
-   - Every deployed policy has tagged image
-   - Can redeploy exact historical version</p>
+- Every deployed policy has tagged image
+- Can redeploy exact historical version</p>
 <p><strong>Test Results</strong>
-   - Regression test output proves policy behavior
-   - Captures before/after for each deployment</p>
+- Regression test output proves policy behavior
+- Captures before/after for each deployment</p>
 <p><strong>Rollback Records</strong>
-   - Automatic rollbacks are logged
-   - Shows governance controls prevented bad deployments</p>
+- Automatic rollbacks are logged
+- Shows governance controls prevented bad deployments</p>
 <h2 id="security-considerations">Security Considerations</h2>
 <h3 id="principle-of-least-privilege">Principle of Least Privilege</h3>
 <p>Only authorized personnel should have:
@@ -3654,13 +3654,13 @@ To achieve this, the authz-api:</p>
 - These should be rotated regularly</p>
 <h2 id="summary">Summary</h2>
 <p>FlowPilot's policy governance demonstrates:</p>
-<p>✅ <strong>Version Control</strong> - All policies in git with commit hashes<br />
-✅ <strong>Pre-Deployment Validation</strong> - Syntax checks and unit tests<br />
-✅ <strong>Zero-Downtime Deployment</strong> - No service interruption<br />
-✅ <strong>Automated Testing</strong> - 12 scenarios validate policy behavior<br />
-✅ <strong>Automatic Rollback</strong> - Failed tests trigger instant rollback<br />
-✅ <strong>Audit Trail</strong> - Complete deployment history logged<br />
-✅ <strong>Rollback Capability</strong> - Previous versions always available  </p>
+<p>✅ Version Control - All policies in git with commit hashes<br />
+✅ Pre-Deployment Validation - Syntax checks and unit tests<br />
+✅ Zero-Downtime Deployment - No service interruption<br />
+✅ Automated Testing - 12 scenarios validate policy behavior<br />
+✅ Automatic Rollback - Failed tests trigger instant rollback<br />
+✅ Audit Trail - Complete deployment history logged<br />
+✅ Rollback Capability - Previous versions always available  </p>
 <p>This governance model ensures authorization policies can be changed safely and confidently in production environments</p>
 <h2 id="testing-policies">Testing Policies</h2>
 <h3 id="test-opa-directly">Test OPA Directly</h3>
