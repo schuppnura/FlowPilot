@@ -21,7 +21,7 @@
          <lastmod>2026-01-16</lastmod>
     </url>
     <url>
-         <loc>https://flowpilot.dev/api/user-profile/</loc>
+         <loc>https://flowpilot.dev/api/persona/</loc>
          <lastmod>2026-01-16</lastmod>
     </url>
     <url>
@@ -90,6 +90,10 @@
     </url>
     <url>
          <loc>https://flowpilot.dev/development/delegations/</loc>
+         <lastmod>2026-01-16</lastmod>
+    </url>
+    <url>
+         <loc>https://flowpilot.dev/development/personas-technical/</loc>
          <lastmod>2026-01-16</lastmod>
     </url>
     <url>

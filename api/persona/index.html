@@ -7,12 +7,12 @@
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
 <meta content="Authorization architecture for agentic workflows" name="description"/>
 <meta content="FlowPilot Team" name="author"/>
-<link href="https://flowpilot.dev/api/user-profile/" rel="canonical"/>
+<link href="https://flowpilot.dev/api/persona/" rel="canonical"/>
 <link href="../delegation/" rel="prev"/>
 <link href="../ai-agent/" rel="next"/>
 <link href="../../assets/images/favicon.png" rel="icon"/>
 <meta content="mkdocs-1.6.1, mkdocs-material-9.7.1" name="generator"/>
-<title>User Profile API - FlowPilot Documentation</title>
+<title>Persona API - FlowPilot Documentation</title>
 <link href="../../assets/stylesheets/main.484c7ddc.min.css" rel="stylesheet"/>
 <link href="../../assets/stylesheets/palette.ab4e12ef.min.css" rel="stylesheet"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
@@ -25,7 +25,7 @@
 <input autocomplete="off" class="md-toggle" data-md-toggle="search" id="__search" type="checkbox"/>
 <label class="md-overlay" for="__drawer"></label>
 <div data-md-component="skip">
-<a class="md-skip" href="#user-profile-api">
+<a class="md-skip" href="#persona-api">
           Skip to content
         </a>
 </div>
@@ -49,7 +49,7 @@
 <div class="md-header__topic" data-md-component="header-topic">
 <span class="md-ellipsis">
             
-              User Profile API
+              Persona API
             
           </span>
 </div>
@@ -152,7 +152,7 @@
         </a>
 </li>
 <li class="md-tabs__item">
-<a class="md-tabs__link" href="../../development/personas/">
+<a class="md-tabs__link" href="../../development/user-profiles.md">
           
   
   
@@ -528,6 +528,18 @@
           </label>
 <ul class="md-nav__list" data-md-scrollfix="">
 <li class="md-nav__item">
+<a class="md-nav__link" href="../../development/user-profiles.md">
+<span class="md-ellipsis">
+    
+  
+    User Profile Management
+  
+
+    
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
 <a class="md-nav__link" href="../../development/personas/">
 <span class="md-ellipsis">
     
@@ -619,7 +631,7 @@
 <span class="md-ellipsis">
     
   
-    User Profile API
+    Persona API
   
 
     
@@ -630,7 +642,7 @@
 <span class="md-ellipsis">
     
   
-    User Profile API
+    Persona API
   
 
     
@@ -1177,11 +1189,11 @@
 </div>
 <div class="md-content" data-md-component="content">
 <article class="md-content__inner md-typeset">
-<h1 id="user-profile-api">User Profile API</h1>
-<p>The User Profile API provides persona lifecycle management for FlowPilot's authorization system.</p>
+<h1 id="persona-api">Persona API</h1>
+<p>The Persona API provides persona lifecycle management for FlowPilot's authorization system.</p>
 <h2 id="overview">Overview</h2>
 <p><strong>Base URL (Local):</strong> <code>http://localhost:8006</code><br/>
-<strong>Base URL (GCP):</strong> <code>https://flowpilot-user-profile-api-737191827545.us-central1.run.app</code></p>
+<strong>Base URL (GCP):</strong> <code>https://flowpilot-persona-api-737191827545.us-central1.run.app</code></p>
 <h3 id="responsibilities">Responsibilities</h3>
 <ul>
 <li>Persona lifecycle management (CRUD operations)</li>
@@ -1343,7 +1355,7 @@
 <p><strong>Response:</strong> Same format as <code>GET /v1/personas</code></p>
 <p><strong>Use Case:</strong> AuthZ-API uses this endpoint to fetch persona data for authorization decisions</p>
 <h2 id="openapi-specification">OpenAPI Specification</h2>
-<p><iframe class="swagger-ui-iframe" frameborder="0" id="4d6e2d48" onload="this.style.display = 'block'; this.style.overflow = 'hidden'; this.style.width = '100%';" src="swagger-4d6e2d48.html" style="display:none;" width="100%"></iframe></p>
+<p><iframe class="swagger-ui-iframe" frameborder="0" id="3a7b3b40" onload="this.style.display = 'block'; this.style.overflow = 'hidden'; this.style.width = '100%';" src="swagger-3a7b3b40.html" style="display:none;" width="100%"></iframe></p>
 <h2 id="example-usage">Example Usage</h2>
 <h3 id="list-users-by-persona-title_1">List Users by Persona Title</h3>
 <div class="highlight"><pre><span></span><code><a href="#__codelineno-8-1" id="__codelineno-8-1" name="__codelineno-8-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>GET<span class="w"> </span><span class="s2">"http://localhost:8006/v1/users/by-persona?title=travel-agent"</span><span class="w"> </span><span class="se">\</span>

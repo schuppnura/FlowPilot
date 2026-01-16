@@ -310,7 +310,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../personas/" class="md-tabs__link">
+        <a href="../user-profiles.md" class="md-tabs__link">
           
   
   
@@ -1639,6 +1639,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../user-profiles.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Profile Management
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../personas/" class="md-nav__link">
         
   
@@ -1840,14 +1868,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/user-profile/" class="md-nav__link">
+      <a href="../../api/persona/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    User Profile API
+    Persona API
   
 
     
@@ -2511,7 +2539,7 @@ To achieve this, the authz-api:</p>
 <p>The authz-api applies <strong>defaults</strong> and <strong>validates</strong> attributes before calling OPA:</p>
 <p><strong>Default Application:</strong></p>
 <ol>
-<li>Fetch persona from user-profile-api</li>
+<li>Fetch persona from persona-api</li>
 <li>Apply defaults for missing persona attributes</li>
 <li>Extract resource attributes from request</li>
 <li>Apply defaults for missing resource attributes</li>
@@ -2686,10 +2714,10 @@ To achieve this, the authz-api:</p>
 <p><strong>Authz-API role:</strong></p>
 <ul>
 <li>Extracts <code>persona</code> from JWT custom claims</li>
-<li>Fetches complete persona object from user-profile-api (includes autobook attributes, status, validity)</li>
+<li>Fetches complete persona object from persona-api (includes autobook attributes, status, validity)</li>
 <li>Includes both <code>subject.persona</code> and enriched <code>owner</code> object in OPA input</li>
 </ul>
-<p><strong>Important:</strong> The <code>owner.persona</code> field contains the persona <strong>title</strong> (e.g., "traveler"), while the full persona data (with autobook attributes, status, and temporal validity) is fetched from user-profile-api and merged into <code>resource.properties.owner</code>. See <a href="../personas/">Personas Guide</a> for more details.</p>
+<p><strong>Important:</strong> The <code>owner.persona</code> field contains the persona <strong>title</strong> (e.g., "traveler"), while the full persona data (with autobook attributes, status, and temporal validity) is fetched from persona-api and merged into <code>resource.properties.owner</code>. See <a href="../personas/">Personas Guide</a> for more details.</p>
 <h3 id="step-6-persona-validity-check">Step 6: Persona Validity Check</h3>
 <p>In addition to checking the persona <strong>type</strong> is appropriate, the policy enforces that the owner's persona is currently valid. This combines status and temporal checks:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">valid_persona</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
@@ -2735,7 +2763,7 @@ To achieve this, the authz-api:</p>
 </ul>
 <p><strong>Authz-API role for persona attributes:</strong></p>
 <ul>
-<li>Queries user-profile-api: <code>GET /v1/users/{user_sub}/personas?status=active</code></li>
+<li>Queries persona-api: <code>GET /v1/users/{user_sub}/personas?status=active</code></li>
 <li>Finds persona matching <code>owner.persona</code> title</li>
 <li>Extracts: <code>persona_status</code>, <code>valid_from</code>, <code>valid_till</code>, and all <code>autobook_*</code> fields</li>
 <li>Merges into <code>resource.properties.owner</code> for OPA evaluation</li>
@@ -2752,7 +2780,7 @@ To achieve this, the authz-api:</p>
 </ul>
 <p><strong>Authz-API role:</strong></p>
 <ul>
-<li>Fetches persona from user-profile-api</li>
+<li>Fetches persona from persona-api</li>
 <li>Extracts <code>autobook_consent</code> boolean from persona record</li>
 <li>Includes in <code>resource.properties.owner.autobook_consent</code></li>
 </ul>

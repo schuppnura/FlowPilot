@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: FlowPilot User Profile API
+  title: FlowPilot Persona API
   version: "1.0.0"
   description: >
     User profile management service providing abstraction over Firebase/Firestore.
@@ -14,9 +14,9 @@ info:
 servers:
   - url: http://127.0.0.1:8006
     description: Local development access
-  - url: http://flowpilot-user-profile-api:8000
+  - url: http://flowpilot-persona-api:8000
     description: Docker network (internal)
-  - url: https://flowpilot-user-profile-api-737191827545.us-central1.run.app
+  - url: https://flowpilot-persona-api-737191827545.us-central1.run.app
     description: GCP Cloud Run (production)
 security:
   - BearerAuth: []
@@ -375,7 +375,7 @@ components:
           example: ok
         service:
           type: string
-          example: flowpilot-user-profile-api
+          example: flowpilot-persona-api
       required:
         - status
 

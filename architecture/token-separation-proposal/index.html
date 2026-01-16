@@ -310,7 +310,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../development/personas/" class="md-tabs__link">
+        <a href="../../development/user-profiles.md" class="md-tabs__link">
           
   
   
@@ -1462,6 +1462,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../development/user-profiles.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Profile Management
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../development/personas/" class="md-nav__link">
         
   
@@ -1663,14 +1691,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/user-profile/" class="md-nav__link">
+      <a href="../../api/persona/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    User Profile API
+    Persona API
   
 
     
@@ -2385,7 +2413,7 @@
 <a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">evaluate_authorization_request</span><span class="p">(</span><span class="n">authzen_request</span><span class="p">):</span>
 <a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="c1"># Extract ONLY sub from token</span>
 <a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="n">principal_id</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;principal&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">)</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="c1"># Fetch full persona from user-profile-api using sub</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="c1"># Fetch full persona from persona-api using sub</span>
 <a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="n">owner_persona</span> <span class="o">=</span> <span class="n">fetch_persona_from_api</span><span class="p">(</span><span class="n">owner_persona_id</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Current behavior is CORRECT</strong> - services only use <code>sub</code>, never email/name.</p>
@@ -2411,7 +2439,7 @@
 <a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>    <span class="c1"># Validate Firebase token (already done by dependency)</span>
 <a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a>    <span class="n">firebase_sub</span> <span class="o">=</span> <span class="n">token_claims</span><span class="p">[</span><span class="s2">&quot;sub&quot;</span><span class="p">]</span>
 <a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a>
-<a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a>    <span class="c1"># Fetch persona from user-profile-api</span>
+<a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a>    <span class="c1"># Fetch persona from persona-api</span>
 <a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a>    <span class="n">personas</span> <span class="o">=</span> <span class="n">fetch_user_personas</span><span class="p">(</span><span class="n">firebase_sub</span><span class="p">)</span>
 <a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a>    <span class="n">persona_titles</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">personas</span><span class="p">]</span>
 <a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a>

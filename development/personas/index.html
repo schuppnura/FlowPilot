@@ -310,7 +310,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+        <a href="../user-profiles.md" class="md-tabs__link">
           
   
   
@@ -1168,6 +1168,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../user-profiles.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Profile Management
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -1991,14 +2019,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/user-profile/" class="md-nav__link">
+      <a href="../../api/persona/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    User Profile API
+    Persona API
   
 
     
@@ -2679,12 +2707,12 @@
 - Centralized updates - Change persona configuration in one place
 - Policy alignment - Persona titles and statuses automatically match OPA policy expectations, which is use case specific</p>
 <p><strong>Important Note</strong> on validation and defaulting responsibility
-- user-profile-api: Validates that required attributes are PRESENT (not None) and sets a default value when not present. Does NOT validate ranges or policy-specific constraints
-- authz-api: Assumes user-profile-api did its job and is not bypassed. So it passes attributes to OPA without validation or defaulting
+- persona-api: Validates that required attributes are PRESENT (not None) and sets a default value when not present. Does NOT validate ranges or policy-specific constraints
+- authz-api: Assumes persona-api did its job and is not bypassed. So it passes attributes to OPA without validation or defaulting
 - OPA policy: Performs ALL policy-specific validation (e.g., range checks) that is specific to the business use case</p>
 <p>This separation ensures the system is extensible to other policies and business use cases without hardcoding policy logic in the API layer. This makes the platform truly a generic SaaS service</p>
 <h3 id="manifest-structure">Manifest Structure</h3>
-<p>The manifest's <code>persona_config</code> section defines <code>status</code>, <code>title</code> and a series of custom attributes. For the "travel" use case, FlowPilot defined the following <code>status</code>, <code>title</code> and autobook attributes. The latter enable and steer autonomous AI booking. Their values are coerced automatically by the user-profile-api to the type specified. Their values are also defaulted in case they are optional and a default value is provided. A default value of <code>null</code> means that the attribute will only be created when it explicitly has a value. </p>
+<p>The manifest's <code>persona_config</code> section defines <code>status</code>, <code>title</code> and a series of custom attributes. For the "travel" use case, FlowPilot defined the following <code>status</code>, <code>title</code> and autobook attributes. The latter enable and steer autonomous AI booking. Their values are validated and normalized by the persona-api and coerced to the type specified. Their values are also defaulted in case they are optional and a default value is provided. A default value of <code>null</code> means that the attribute will only be created when it explicitly has a value.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">persona_config</span><span class="p">:</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="c1"># Allowed persona status values (lifecycle states)</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">persona_statuses</span><span class="p">:</span>
@@ -2765,7 +2793,7 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>manifest.yaml (SOURCE OF TRUTH)
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>     ↓
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>     ├─→ Python Services (via persona_config.py)
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>     │   ├─→ user-profile-api (validates titles &amp; statuses)
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>     │   ├─→ persona-api (validates titles &amp; statuses)
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>     │   └─→ authz-api (loads attribute schema)
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>     │
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>     └─→ [generation script] → persona_config.json
@@ -2810,7 +2838,7 @@
 <li>User endpoints: JWT <code>sub</code> must match persona owner</li>
 <li>Service endpoint: Requires service account token (Keycloak: <code>client_id=flowpilot-agent</code>, GCP: <code>gserviceaccount.com</code> in email)</li>
 </ul>
-<p>Code Location: <code>flowpilot-services/user-profile-api/</code></p>
+<p>Code Location: <code>flowpilot-services/persona-api/</code></p>
 <p>Validation Rules:</p>
 <ul>
 <li><code>title</code> must be one of the allowed persona titles defined in <code>persona_config.persona_titles</code> in the policy manifest</li>
@@ -2831,7 +2859,7 @@
 <ol>
 <li>Domain-services-api receives request with Carlo's token</li>
 <li>Authz-api extracts <code>sub=carlo-uuid</code> from JWT</li>
-<li>Authz-api fetches Carlo's "traveler" persona from user-profile-api</li>
+<li>Authz-api fetches Carlo's "traveler" persona from persona-api</li>
 <li>OPA evaluates:<ul>
 <li><code>authorized_principal</code>: ✓ (owner == principal)</li>
 <li><code>persona_valid</code>: ✓ (traveler == traveler)</li>
@@ -2910,7 +2938,7 @@
 <p>Resolution: Martine must switch to her "traveler" persona when executing her own workflows.</p>
 <h2 id="persona-lifecycle">Persona Lifecycle</h2>
 <h3 id="1-creation">1. Creation</h3>
-<p>Personas are created via the user-profile-api POST /v1/personas endpoint.</p>
+<p>Personas are created via the persona-api POST /v1/personas endpoint.</p>
 <p><strong>Request:</strong>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="err">POST /v1/personas</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="err">Authorization: Bearer &lt;user-token&gt;</span>
@@ -3023,7 +3051,7 @@
 <p>Use the <code>seed_firebase_users.py</code> script:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nv">FIREBASE_API_KEY</span><span class="o">=</span>&lt;your-api-key&gt;<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>python3<span class="w"> </span>flowpilot-provisioning/seed_firebase_users.py<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">  </span>--profile-api-url<span class="o">=</span>https://flowpilot-user-profile-api-737191827545.us-central1.run.app<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">  </span>--profile-api-url<span class="o">=</span>https://flowpilot-persona-api-737191827545.us-central1.run.app<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">  </span>--csv<span class="o">=</span>flowpilot-provisioning/users_seed.csv
 </code></pre></div>
 <h3 id="csv-format">CSV Format</h3>
@@ -3039,14 +3067,14 @@
 <ol>
 <li>Persona not created or provisioned</li>
 <li>Persona fetch fails (403, 404, timeout)</li>
-<li>Service account cannot access user-profile-api</li>
+<li>Service account cannot access persona-api</li>
 </ol>
 <p>Debug Steps:</p>
 <ol>
 <li>
 <p>Verify persona exists:
    <div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer &lt;user-token&gt;&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span>https://user-profile-api/v1/personas
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span>https://persona-api/v1/personas
 </code></pre></div></p>
 </li>
 <li>
@@ -3057,14 +3085,14 @@
 </code></pre></div></p>
 </li>
 <li>
-<p>Verify service account can access user-profile-api:
+<p>Verify service account can access persona-api:
    <div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># Get service token (GCP)</span>
 <a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Metadata-Flavor: Google&quot;</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">  </span><span class="s2">&quot;http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=flowpilot-services&quot;</span>
 <a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>
 <a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="c1"># Test access</span>
 <a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer &lt;service-token&gt;&quot;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="w">  </span>https://user-profile-api/v1/users/&lt;user-sub&gt;/personas
+<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="w">  </span>https://persona-api/v1/users/&lt;user-sub&gt;/personas
 </code></pre></div></p>
 </li>
 </ol>
@@ -3079,7 +3107,7 @@
 <ol>
 <li>
 <p>Update persona status:
-   <div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>PUT<span class="w"> </span>https://user-profile-api/v1/personas/&lt;persona-id&gt;<span class="w"> </span><span class="se">\</span>
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>PUT<span class="w"> </span>https://persona-api/v1/personas/&lt;persona-id&gt;<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer &lt;user-token&gt;&quot;</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;status&quot;: &quot;active&quot;}&#39;</span>
@@ -3087,7 +3115,7 @@
 </li>
 <li>
 <p>Update temporal validity:
-   <div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>PUT<span class="w"> </span>https://user-profile-api/v1/personas/&lt;persona-id&gt;<span class="w"> </span><span class="se">\</span>
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>PUT<span class="w"> </span>https://persona-api/v1/personas/&lt;persona-id&gt;<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer &lt;user-token&gt;&quot;</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
@@ -3148,7 +3176,7 @@
 <li>
 <p>Restart services to load new configuration:
    <div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="c1"># Local</span>
-<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>restart<span class="w"> </span>flowpilot-user-profile-api<span class="w"> </span>opa
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>docker<span class="w"> </span>compose<span class="w"> </span>restart<span class="w"> </span>flowpilot-persona-api<span class="w"> </span>opa
 <a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>
 <a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="c1"># GCP (auto-generates during build)</span>
 <a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a>./bin/deploy-all-services.sh
@@ -3197,7 +3225,7 @@
 <ul>
 <li><a href="../policies/">Policy Development Guide</a> - How OPA policies use persona data</li>
 <li><a href="../../architecture/authorization/">Authorization Architecture</a> - Overall authorization flow</li>
-<li><a href="../../api/user-profile/">API Reference: User Profile API</a> - Full API specification</li>
+<li><a href="../api/user-profile.md">API Reference: User Profile API</a> - Full API specification</li>
 </ul>
 
 
