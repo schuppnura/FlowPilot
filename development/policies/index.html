@@ -3463,15 +3463,11 @@ To achieve this, the authz-api:</p>
 </ul>
 <h2 id="governance-best-practices">Governance Best Practices</h2>
 <h3 id="for-policy-authors">For Policy Authors</h3>
-<ol>
-<li>
 <p><strong>Always commit before deploying</strong>
    <div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>git<span class="w"> </span>add<span class="w"> </span>infra/opa/policies/
 <a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;policy: add persona validity time checks&quot;</span>
 <a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>./bin/deploy-opa-policy.sh
 </code></pre></div></p>
-</li>
-<li>
 <p><strong>Write unit tests for complex logic</strong>
    <div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="c1"># infra/opa/policies/travel/policy_test.rego</span>
 <a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="n">test_suspended_persona_denied</span><span class="w"> </span><span class="p">{</span>
@@ -3481,43 +3477,25 @@ To achieve this, the authz-api:</p>
 <a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="w">  </span><span class="p">}</span>
 <a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="p">}</span>
 </code></pre></div></p>
-</li>
-<li>
 <p><strong>Test locally before deploying</strong>
    <div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>opa<span class="w"> </span>check<span class="w"> </span>infra/opa/policies<span class="w"> </span>--strict
 <a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>opa<span class="w"> </span><span class="nb">test</span><span class="w"> </span>infra/opa/policies<span class="w"> </span>-v
 </code></pre></div></p>
-</li>
-<li>
-<p><strong>Use descriptive commit messages</strong></p>
-</li>
-<li>Good: <code>policy: require active persona status, remove backward compat</code></li>
-<li>Bad: <code>update policy</code></li>
-</ol>
+<p><strong>Use descriptive commit messages</strong>
+   - Good: <code>policy: require active persona status, remove backward compat</code>
+   - Bad: <code>update policy</code></p>
 <h3 id="for-operations-teams">For Operations Teams</h3>
-<ol>
-<li>
 <p><strong>Monitor the audit log</strong>
    <div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>tail<span class="w"> </span>-f<span class="w"> </span>logs/opa-deployments.log
 </code></pre></div></p>
-</li>
-<li>
-<p><strong>Integrate with CI/CD</strong></p>
-</li>
-<li>Run <code>deploy-opa-policy.sh --auto-approve</code> in CI pipeline</li>
-<li>Trigger on merge to <code>main</code> branch</li>
-<li>
-<p>Alert on failures</p>
-</li>
-<li>
-<p><strong>Set up alerting</strong></p>
-</li>
-<li>Alert on rollback events</li>
-<li>Alert on repeated deployment failures</li>
-<li>
-<p>Monitor Cloud Run revision health</p>
-</li>
-<li>
+<p><strong>Integrate with CI/CD</strong>
+   - Run <code>deploy-opa-policy.sh --auto-approve</code> in CI pipeline
+   - Trigger on merge to <code>main</code> branch
+   - Alert on failures</p>
+<p><strong>Set up alerting</strong>
+   - Alert on rollback events
+   - Alert on repeated deployment failures
+   - Monitor Cloud Run revision health</p>
 <p><strong>Review audit trail regularly</strong>
    <div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="c1"># Show all deployments in last 7 days</span>
 <a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>grep<span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>date<span class="w"> </span>-v-7d<span class="w"> </span>+%Y-%m-%d<span class="k">)</span><span class="s2">&quot;</span><span class="w"> </span>logs/opa-deployments.log
@@ -3525,49 +3503,31 @@ To achieve this, the authz-api:</p>
 <a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="c1"># Show all rollbacks</span>
 <a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a>grep<span class="w"> </span><span class="s2">&quot;ROLLBACK&quot;</span><span class="w"> </span>logs/opa-deployments.log
 </code></pre></div></p>
-</li>
-</ol>
 <h3 id="for-compliancesecurity-teams">For Compliance/Security Teams</h3>
-<ol>
-<li>
 <p><strong>Policy changes are traceable</strong></p>
-</li>
-<li>
-<p>Every production policy has a git commit hash</p>
-</li>
+<ul>
+<li>Every production policy has a git commit hash</li>
 <li><code>git log infra/opa/policies/</code> shows complete change history</li>
-<li>
-<p><code>git blame</code> shows who changed what and when</p>
-</li>
-<li>
+<li><code>git blame</code> shows who changed what and when</li>
+</ul>
 <p><strong>Deployments are audited</strong></p>
-</li>
-<li>
-<p>Complete audit trail in <code>logs/opa-deployments.log</code></p>
-</li>
+<ul>
+<li>Complete audit trail in <code>logs/opa-deployments.log</code></li>
 <li>Includes: who deployed (via git author), when, what version</li>
-<li>
-<p>Rollback events are logged with reason</p>
-</li>
-<li>
+<li>Rollback events are logged with reason</li>
+</ul>
 <p><strong>Failed deployments can't reach production</strong></p>
-</li>
-<li>
-<p>Syntax errors caught pre-deployment</p>
-</li>
+<ul>
+<li>Syntax errors caught pre-deployment</li>
 <li>Behavioral regressions caught by automated tests</li>
-<li>
-<p>Automatic rollback prevents broken policies from staying live</p>
-</li>
-<li>
+<li>Automatic rollback prevents broken policies from staying live</li>
+</ul>
 <p><strong>Rollback capability is tested</strong></p>
-</li>
-<li>
-<p>Every deployment validates rollback works (via failed test scenario)</p>
-</li>
+<ul>
+<li>Every deployment validates rollback works (via failed test scenario)</li>
 <li>Previous policy versions are retained in Cloud Run</li>
 <li>Instant rollback without code changes</li>
-</ol>
+</ul>
 <h2 id="example-deployment-session">Example Deployment Session</h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>$<span class="w"> </span>./bin/deploy-opa-policy.sh
 <a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>
