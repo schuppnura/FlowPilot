@@ -1415,10 +1415,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#user-profile-api" class="md-nav__link">
+  <a href="#persona-api" class="md-nav__link">
     <span class="md-ellipsis">
       
-        User-Profile-API
+        Persona-API
       
     </span>
   </a>
@@ -1504,10 +1504,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-creation" class="md-nav__link">
+  <a href="#creation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Creation
+        Creation
       
     </span>
   </a>
@@ -1515,10 +1515,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-listing" class="md-nav__link">
+  <a href="#fetch" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Listing
+        Fetch
       
     </span>
   </a>
@@ -1526,10 +1526,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3-retrieval" class="md-nav__link">
+  <a href="#update" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Retrieval
+        Update
       
     </span>
   </a>
@@ -1537,10 +1537,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-update" class="md-nav__link">
+  <a href="#list" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Update
+        List
       
     </span>
   </a>
@@ -1548,10 +1548,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#5-deletion" class="md-nav__link">
+  <a href="#5-delete" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. Deletion
+        5. Delete
       
     </span>
   </a>
@@ -1632,10 +1632,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#local-development-keycloak" class="md-nav__link">
+  <a href="#gcp-production-firebase" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Local Development (Keycloak)
+        GCP Production (Firebase)
       
     </span>
   </a>
@@ -1643,10 +1643,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#gcp-production-firebase" class="md-nav__link">
+  <a href="#local-development-keycloak" class="md-nav__link">
     <span class="md-ellipsis">
       
-        GCP Production (Firebase)
+        Local Development (Keycloak)
       
     </span>
   </a>
@@ -2822,7 +2822,7 @@
 <a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="p">}</span>
 </code></pre></div>
 <h2 id="service-architecture">Service Architecture</h2>
-<h3 id="user-profile-api">User-Profile-API</h3>
+<h3 id="persona-api">Persona-API</h3>
 <p>Purpose: Persona lifecycle management (CRUD operations)</p>
 <p>Endpoints:</p>
 <ul>
@@ -2937,11 +2937,11 @@
 </ol>
 <p>Resolution: Martine must switch to her "traveler" persona when executing her own workflows.</p>
 <h2 id="persona-lifecycle">Persona Lifecycle</h2>
-<h3 id="1-creation">1. Creation</h3>
+<h3 id="creation">Creation</h3>
 <p>Personas are created via the persona-api POST /v1/personas endpoint.</p>
 <p><strong>Request:</strong>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="err">POST /v1/personas</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="err">Authorization: Bearer &lt;user-token&gt;</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="err">Authorization: Bearer &lt;access-token&gt;</span>
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="err">Content-Type: application/json</span>
 <a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
 <a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="err">{</span>
@@ -2974,37 +2974,38 @@
 <a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="p">}</span>
 </code></pre></div></p>
 <p><strong>Authorization:</strong> The user must be authenticated. The persona is created for the authenticated user (extracted from JWT <code>sub</code> claim).</p>
-<h3 id="2-listing">2. Listing</h3>
+<h3 id="fetch">Fetch</h3>
+<p>Fetch a specific persona by ID:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="err">GET /v1/personas/{persona_id}</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="err">Authorization: Bearer &lt;access-token&gt;</span>
+</code></pre></div>
+<p><strong>Authorization:</strong> The user must be authenticated. </p>
+<h3 id="update">Update</h3>
+<p>Modify persona attributes:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="err">PUT /v1/personas/{persona_id}</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="err">Authorization: Bearer &lt;access-token&gt;</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="err">Content-Type: application/json</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="err">{</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="err">  &quot;autobook_price&quot;: 8000,</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="err">  &quot;autobook_leadtime&quot;: 14,</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="err">  &quot;status&quot;: &quot;active&quot;</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="err">}</span>
+</code></pre></div>
+<p><strong>Authorization:</strong> The persona must belong to the authenticated user.</p>
+<h3 id="list">List</h3>
 <p>Users can list their own personas:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="err">GET /v1/personas?status=active</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="err">Authorization: Bearer &lt;user-token&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="err">GET /v1/personas?status=active</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="err">Authorization: Bearer &lt;access-token&gt;</span>
 </code></pre></div>
 <p><strong>Service accounts</strong> can list personas for any user:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="err">GET /v1/users/{user_sub}/personas?status=active</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="err">Authorization: Bearer &lt;service-token&gt;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="err">GET /v1/users/{user_sub}/personas?status=active</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="err">Authorization: Bearer &lt;service-token&gt;</span>
 </code></pre></div>
 <p>This endpoint is used by authz-api to fetch persona data for authorization decisions.</p>
-<h3 id="3-retrieval">3. Retrieval</h3>
-<p>Fetch a specific persona by ID:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="err">GET /v1/personas/{persona_id}</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="err">Authorization: Bearer &lt;user-token&gt;</span>
-</code></pre></div>
-<p><strong>Authorization:</strong> The persona must belong to the authenticated user.</p>
-<h3 id="4-update">4. Update</h3>
-<p>Modify persona attributes:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="err">PUT /v1/personas/{persona_id}</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="err">Authorization: Bearer &lt;user-token&gt;</span>
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="err">Content-Type: application/json</span>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="err">{</span>
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="err">  &quot;autobook_price&quot;: 8000,</span>
-<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="err">  &quot;autobook_leadtime&quot;: 14,</span>
-<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="err">  &quot;status&quot;: &quot;active&quot;</span>
-<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="err">}</span>
-</code></pre></div>
 <p>All fields are optional (partial update). Only provided fields are updated.</p>
 <p><strong>Authorization:</strong> The persona must belong to the authenticated user.</p>
-<h3 id="5-deletion">5. Deletion</h3>
+<h3 id="5-delete">5. Delete</h3>
 <p>Delete a persona:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="err">DELETE /v1/personas/{persona_id}</span>
 <a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="err">Authorization: Bearer &lt;user-token&gt;</span>
@@ -3042,17 +3043,17 @@
 - Schema defined in <code>personadb_sqlite.py</code>
 - Simple, zero-configuration setup</p>
 <h2 id="provisioning-personas">Provisioning Personas</h2>
-<h3 id="local-development-keycloak">Local Development (Keycloak)</h3>
-<p>Use the <code>seed_keycloak_users.py</code> script:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>python3<span class="w"> </span>flowpilot-provisioning/seed_keycloak_users.py<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span>--csv<span class="w"> </span>flowpilot-provisioning/users_seed.csv
-</code></pre></div>
 <h3 id="gcp-production-firebase">GCP Production (Firebase)</h3>
 <p>Use the <code>seed_firebase_users.py</code> script:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nv">FIREBASE_API_KEY</span><span class="o">=</span>&lt;your-api-key&gt;<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>python3<span class="w"> </span>flowpilot-provisioning/seed_firebase_users.py<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">  </span>--profile-api-url<span class="o">=</span>https://flowpilot-persona-api-737191827545.us-central1.run.app<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">  </span>--csv<span class="o">=</span>flowpilot-provisioning/users_seed.csv
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nv">FIREBASE_API_KEY</span><span class="o">=</span>&lt;your-api-key&gt;<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>python3<span class="w"> </span>flowpilot-provisioning/seed_firebase_users.py<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span>--profile-api-url<span class="o">=</span>https://flowpilot-persona-api-737191827545.us-central1.run.app<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">  </span>--csv<span class="o">=</span>flowpilot-provisioning/users_seed.csv
+</code></pre></div>
+<h3 id="local-development-keycloak">Local Development (Keycloak)</h3>
+<p>Use the <code>seed_keycloak_users.py</code> script:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>python3<span class="w"> </span>flowpilot-provisioning/seed_keycloak_users.py<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span>--csv<span class="w"> </span>flowpilot-provisioning/users_seed.csv
 </code></pre></div>
 <h3 id="csv-format">CSV Format</h3>
 <p>For test purposes, a provisioning script is provided that reads users and their personas from the <code>users_seed.csv</code> file:</p>
