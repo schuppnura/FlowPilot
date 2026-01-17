@@ -2369,8 +2369,8 @@
 <tbody>
 <tr>
 <td><code>persona_id</code></td>
-<td>UUID</td>
-<td>Unique identifier for the persona</td>
+<td>String</td>
+<td>Composite unique identifier: <code>{user_sub}_{title}</code> - enforces uniqueness at database level</td>
 </tr>
 <tr>
 <td><code>user_sub</code></td>
@@ -2419,6 +2419,7 @@
 </tr>
 </tbody>
 </table>
+<p><strong>Important:</strong> Each user can have only <strong>one persona per title</strong>. The <code>persona_id</code> is a composite key formed from <code>user_sub</code> and <code>title</code> (e.g., <code>PKbHpCqDnLcNywEo8pev8yQmoU43_traveler</code>). This enforces uniqueness at the database level and makes persona creation fully idempotent.</p>
 <p>In addition to the persona lifecycle management attributes, each persona can also have a number of custom attributes specific to the business use case. These are configured in the manifest (see below).</p>
 <h3 id="persona-configuration">Persona Configuration</h3>
 <p>The persona titles, statuses and custom attributes are defined in the policy manifest as the <strong>single source of truth</strong> for both authorization policies and profil/persona management.</p>
@@ -2529,7 +2530,7 @@
 - <strong>Never edit <code>persona_config.json</code> directly</strong> - it will be overwritten</p>
 <h3 id="example-persona-document">Example Persona Document</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">&quot;persona_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b9678f30-f4b0-4033-82db-846357311165&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">&quot;persona_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PKbHpCqDnLcNywEo8pev8yQmoU43_business-traveler&quot;</span><span class="p">,</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">&quot;user_sub&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PKbHpCqDnLcNywEo8pev8yQmoU43&quot;</span><span class="p">,</span>
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;business-traveler&quot;</span><span class="p">,</span>
 <a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;active&quot;</span><span class="p">,</span>
@@ -2544,12 +2545,13 @@
 <a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="w">  </span><span class="nt">&quot;autobook_risklevel&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span>
 <a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="p">}</span>
 </code></pre></div>
+<p>Note the <code>persona_id</code> format: <code>{user_sub}_{title}</code>. This composite ID ensures that each user can have only one persona per title.</p>
 <h2 id="service-architecture">Service Architecture</h2>
 <h3 id="persona-api">Persona-API</h3>
 <p>Purpose: Persona lifecycle management (CRUD operations)</p>
 <p>Endpoints:</p>
 <ul>
-<li><code>POST /v1/personas</code> - Create persona</li>
+<li><code>POST /v1/personas</code> - Create persona (idempotent)</li>
 <li><code>GET /v1/personas</code> - List user's personas</li>
 <li><code>GET /v1/personas/{persona_id}</code> - Get specific persona</li>
 <li><code>PUT /v1/personas/{persona_id}</code> - Update persona</li>
@@ -2569,8 +2571,11 @@
 <li><code>scope</code> must be a non-empty array of action strings</li>
 <li><code>valid_from</code> &amp; <code>valid_till</code> must be valid ISO 8601 timestamps</li>
 <li>Custom attributes (e.g., <code>autobook_price</code>, <code>autobook_leadtime</code>, <code>autobook_risklevel</code>) are optional and validated according to the <code>attributes</code> section of the policy manifest</li>
+<li><strong>Uniqueness:</strong> Each user can have only one persona per title (enforced at database level via composite ID)</li>
 </ul>
-<p><strong>Note:</strong> The service fails fast at startup if the policy manifest cannot be loaded, ensuring persona configuration is always consistent with authorization policies.</p>
+<p><strong>Important Notes:</strong>
+- The service fails fast at startup if the policy manifest cannot be loaded, ensuring persona configuration is always consistent with authorization policies
+- <strong>Idempotency:</strong> Creating a persona that already exists (same <code>user_sub</code> + <code>title</code>) returns the existing persona with HTTP 201. This makes provisioning scripts safe to run multiple times.</p>
 <h2 id="authorization-scenarios">Authorization Scenarios</h2>
 <h3 id="scenario-1-owner-with-traveler-persona">Scenario 1: Owner with Traveler Persona</h3>
 <p>Context:</p>
@@ -2679,9 +2684,9 @@
 <a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="err">  &quot;autobook_risklevel&quot;: 3</span>
 <a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="err">}</span>
 </code></pre></div></p>
-<p><strong>Response:</strong>
+<p><strong>Response (HTTP 201):</strong>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p">{</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">&quot;persona_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b9678f30-f4b0-4033-82db-846357311165&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">&quot;persona_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PKbHpCqDnLcNywEo8pev8yQmoU43_traveler&quot;</span><span class="p">,</span>
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="nt">&quot;user_sub&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PKbHpCqDnLcNywEo8pev8yQmoU43&quot;</span><span class="p">,</span>
 <a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;traveler&quot;</span><span class="p">,</span>
 <a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;active&quot;</span><span class="p">,</span>
@@ -2697,6 +2702,7 @@
 <a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="p">}</span>
 </code></pre></div></p>
 <p><strong>Authorization:</strong> The user must be authenticated. The persona is created for the authenticated user (extracted from JWT <code>sub</code> claim).</p>
+<p><strong>Idempotency:</strong> If a persona with the same <code>title</code> already exists for the authenticated user, the API returns the existing persona (HTTP 201). This allows provisioning scripts to be run multiple times safely. The <code>persona_id</code> is deterministic: <code>{user_sub}_{title}</code>.</p>
 <h3 id="fetch">Fetch</h3>
 <p>Fetch a specific persona by ID:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="err">GET /v1/personas/{persona_id}</span>
@@ -2741,8 +2747,9 @@
 <p>Used by Cloud Run deployment with Firebase Authentication:
 - Serverless, scalable NoSQL database
 - Collection: <code>personas</code>
-- Document ID = <code>persona_id</code>
-- Requires composite indexes for efficient queries</p>
+- Document ID = <code>{user_sub}_{title}</code> (composite key for uniqueness)
+- Requires composite indexes for efficient queries
+- <strong>Idempotency:</strong> Creating a persona that already exists returns the existing document</p>
 <p>Required Firestore Indexes:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># Index 1: user_sub + status + created_at (descending)</span>
 <a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>gcloud<span class="w"> </span>firestore<span class="w"> </span>indexes<span class="w"> </span>composite<span class="w"> </span>create<span class="w"> </span><span class="se">\</span>
@@ -2764,7 +2771,9 @@
 - Serverless
 - In-memory or file-based SQLite database
 - Schema defined in <code>personadb_sqlite.py</code>
-- Simple, zero-configuration setup</p>
+- Simple, zero-configuration setup
+- <strong>Uniqueness Constraint:</strong> <code>UNIQUE(user_sub, title)</code> ensures no duplicates
+- <strong>Idempotency:</strong> Creating a persona that already exists returns the existing record</p>
 <h2 id="provisioning-personas">Provisioning Personas</h2>
 <h3 id="gcp-production-firebase">GCP Production (Firebase)</h3>
 <p>Use the <code>seed_firebase_users.py</code> script:</p>
@@ -2773,6 +2782,7 @@
 <a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span>--profile-api-url<span class="o">=</span>https://flowpilot-persona-api-737191827545.us-central1.run.app<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">  </span>--csv<span class="o">=</span>flowpilot-provisioning/users_seed.csv
 </code></pre></div>
+<p><strong>Note:</strong> The seed script is fully idempotent and can be run multiple times safely. It relies on the persona-api's idempotency guarantees rather than implementing its own duplicate checking. This makes the seed script a true regression test that validates API behavior.</p>
 <h3 id="local-development-keycloak">Local Development (Keycloak)</h3>
 <p>Use the <code>seed_keycloak_users.py</code> script:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>python3<span class="w"> </span>flowpilot-provisioning/seed_keycloak_users.py<span class="w"> </span><span class="se">\</span>
@@ -2944,6 +2954,8 @@
 <li><strong>Use active personas for authorization</strong> - Inactive/suspended personas should not be used in authorization</li>
 <li><strong>Provision test data properly</strong> - Use seed scripts to maintain consistency across environments</li>
 <li><strong>Keep manifest in version control</strong> - Track all changes to persona configuration</li>
+<li><strong>Rely on API idempotency</strong> - Don't implement duplicate checking in client code; the API enforces uniqueness at the database level</li>
+<li><strong>Run seed scripts multiple times safely</strong> - Seed scripts are idempotent and serve as regression tests for API behavior</li>
 </ol>
 <h2 id="related-documentation">Related Documentation</h2>
 <ul>
