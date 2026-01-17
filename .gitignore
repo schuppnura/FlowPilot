@@ -179,3 +179,9 @@ infra/opa/policies/*/persona_config.json
 site/
 secrets/
 firebase-admin-key.json
+
+# Exclude directories with sensitive content
+project-plans/
+Flowpilot-project/
+flowpilot-provisioning/
+flowpilot-testing/
