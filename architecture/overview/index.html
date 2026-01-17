@@ -996,10 +996,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-flowpilot-authz-api-port-8002" class="md-nav__link">
+  <a href="#flowpilot-authz-api-port-8002" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. flowpilot-authz-api (Port 8002)
+        flowpilot-authz-api (Port 8002)
       
     </span>
   </a>
@@ -1007,10 +1007,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-flowpilot-delegation-api-port-8005" class="md-nav__link">
+  <a href="#flowpilot-persona-api-port-8006" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. flowpilot-delegation-api (Port 8005)
+        flowpilot-persona-api (Port 8006)
       
     </span>
   </a>
@@ -1018,10 +1018,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3-opa-port-8181" class="md-nav__link">
+  <a href="#flowpilot-delegation-api-port-8005" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. OPA (Port 8181)
+        flowpilot-delegation-api (Port 8005)
       
     </span>
   </a>
@@ -1029,10 +1029,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-firebase-authentication" class="md-nav__link">
+  <a href="#opa-server-port-8181" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Firebase Authentication
+        OPA server (Port 8181)
       
     </span>
   </a>
@@ -1040,10 +1040,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#5-flowpilot-domain-services-api-port-8003" class="md-nav__link">
+  <a href="#firebase-authentication" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. flowpilot-domain-services-api (Port 8003)
+        Firebase Authentication
       
     </span>
   </a>
@@ -1051,10 +1051,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#6-flowpilot-ai-agent-api-port-8004" class="md-nav__link">
+  <a href="#flowpilot-domain-services-api-port-8003" class="md-nav__link">
     <span class="md-ellipsis">
       
-        6. flowpilot-ai-agent-api (Port 8004)
+        flowpilot-domain-services-api (Port 8003)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#flowpilot-ai-agent-api-port-8004" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        flowpilot-ai-agent-api (Port 8004)
       
     </span>
   </a>
@@ -2199,8 +2210,8 @@
 <p>The travel example exists to make the architecture tangible, not to constrain it.</p>
 <h2 id="microservices-architecture">Microservices Architecture</h2>
 <p>FlowPilot consists of multiple microservices, each with a specific responsibility:</p>
-<h3 id="1-flowpilot-authz-api-port-8002">1. flowpilot-authz-api (Port 8002)</h3>
-<p><strong>Authorization façade (PEP ↔ PDP integration)</strong></p>
+<h3 id="flowpilot-authz-api-port-8002">flowpilot-authz-api (Port 8002)</h3>
+<p>Authorization façade (PEP ↔ PDP integration):</p>
 <ul>
 <li>Validates AuthZEN requests</li>
 <li>Validates bearer tokens via JWKS</li>
@@ -2208,8 +2219,17 @@
 <li>Evaluates policies via OPA (ABAC)</li>
 <li>Returns allow/deny with reason codes</li>
 </ul>
-<h3 id="2-flowpilot-delegation-api-port-8005">2. flowpilot-delegation-api (Port 8005)</h3>
-<p><strong>Delegation relationship management</strong></p>
+<h3 id="flowpilot-persona-api-port-8006">flowpilot-persona-api (Port 8006)</h3>
+<p>Persona management:</p>
+<ul>
+<li>Manages persona definitions</li>
+<li>Normlaizes and defaults attributes</li>
+<li>No policy logic</li>
+<li>No PII</li>
+<li>Implements a record per persona referring to the identity using <code>sub</code></li>
+</ul>
+<h3 id="flowpilot-delegation-api-port-8005">flowpilot-delegation-api (Port 8005)</h3>
+<p>Delegation relationship management:</p>
 <ul>
 <li>Manages delegation relationships</li>
 <li>Resolves delegation chains</li>
@@ -2217,38 +2237,38 @@
 <li>No PII</li>
 <li>Implements a directional graph</li>
 </ul>
-<h3 id="3-opa-port-8181">3. OPA (Port 8181)</h3>
-<p><strong>Declarative policy engine</strong></p>
+<h3 id="opa-server-port-8181">OPA server (Port 8181)</h3>
+<p>Declarative policy engine:</p>
 <ul>
 <li>Evaluates Rego policies</li>
 <li>Stateless decision engine</li>
 <li>Policies mounted from filesystem</li>
 </ul>
-<h3 id="4-firebase-authentication">4. Firebase Authentication</h3>
-<p><strong>Identity provider (fully managed)</strong></p>
+<h3 id="firebase-authentication">Firebase Authentication</h3>
+<p>Identity provider (fully managed):</p>
 <ul>
 <li>Issues Firebase ID tokens (JWTs)</li>
 <li>Personas stored in Firestore and custom claims</li>
 <li>Tokens validated locally by services using Firebase Admin SDK</li>
 <li>Automatic key rotation and management</li>
 </ul>
-<h3 id="5-flowpilot-domain-services-api-port-8003">5. flowpilot-domain-services-api (Port 8003)</h3>
-<p><strong>Workflow domain logic (PEP)</strong></p>
+<h3 id="flowpilot-domain-services-api-port-8003">flowpilot-domain-services-api (Port 8003)</h3>
+<p>Workflow domain logic (PEP):</p>
 <ul>
 <li>Creates and manages workflows</li>
 <li>System of record for travel bookings</li>
 <li>Calls authz-api for authorization checks</li>
 <li>Auto-creates delegations</li>
 </ul>
-<h3 id="6-flowpilot-ai-agent-api-port-8004">6. flowpilot-ai-agent-api (Port 8004)</h3>
-<p><strong>AI agent execution (PEP)</strong></p>
+<h3 id="flowpilot-ai-agent-api-port-8004">flowpilot-ai-agent-api (Port 8004)</h3>
+<p>AI agent execution (PEP):</p>
 <ul>
 <li>Executes workflow items on behalf of users</li>
 <li>Demonstrates agentic authorization patterns</li>
 <li>Service-to-service authentication</li>
 </ul>
 <h2 id="privacy-by-design">Privacy by Design</h2>
-<p>Privacy is not an afterthought; it is structural.</p>
+<p>Privacy is not an afterthought; it is structural:</p>
 <ul>
 <li>No PII in tokens - Only pseudonymous identifiers</li>
 <li>No PII passed to AI agents - Only workflow context</li>
