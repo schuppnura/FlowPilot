@@ -20,14 +20,12 @@ from dataclasses import dataclass
 from typing import Any, Dict, List
 
 import requests
-
-import security
 from utils import (
+    build_timeouts,
     build_url,
+    get_http_config,
     http_get_json,
     require_non_empty_string,
-    build_timeouts,
-    get_http_config,
 )
 
 
@@ -35,7 +33,7 @@ from utils import (
 class WorkflowItem:
     workflow_item_id: str
     kind: str
-    raw: Dict[str, Any]
+    raw: dict[str, Any]
 
 
 def normalize_workflow_id(workflow_id: str) -> str:
@@ -47,11 +45,12 @@ def normalize_workflow_id(workflow_id: str) -> str:
 
 
 def list_workflow_items(
-    config: Dict[str, Any],
+    config: dict[str, Any],
     workflow_id: str,
     principal_user_id: str = None,
     principal_persona: str = None,
-) -> List[WorkflowItem]:
+    user_token: str = None,
+) -> list[WorkflowItem]:
     # List workflow items from the workflow service
     # assumption: response contains an 'items' list of dicts.
     # principal_user_id: user's UUID for authorization (passed as query parameter)
@@ -82,9 +81,11 @@ def list_workflow_items(
         url = base_url_with_path
 
     headers = {}
-    token = security.get_service_token()
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
+    # Use user token if provided (agent acts on behalf of user)
+    if user_token:
+        headers["Authorization"] = f"Bearer {user_token}"
+    else:
+        raise ValueError("User token is required for service-to-service calls")
 
     payload = http_get_json(
         url=url, timeout_seconds=timeout_seconds, headers=headers if headers else None
@@ -94,7 +95,7 @@ def list_workflow_items(
     if not isinstance(items_raw, list):
         raise ValueError("Workflow items response malformed: items must be a list")
 
-    items: List[WorkflowItem] = []
+    items: list[WorkflowItem] = []
     for item in items_raw:
         if not isinstance(item, dict):
             continue
@@ -149,11 +150,11 @@ def parse_policy_deny_from_body(response_text: str) -> tuple[list[str], str]:
 
 
 def check_workflow_execution_authorization(
-    config: Dict[str, Any],
+    config: dict[str, Any],
     workflow_id: str,
-    principal_user: Dict[str, Any],
+    principal_user: dict[str, Any],
     agent_sub: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     # AuthZEN: Basic anti-spoofing check - verify principal is valid
     # why: prevent trivial principal spoofing before starting workflow execution
     # note: Full authorization happens at workflow item level via domain-services-api
@@ -184,20 +185,25 @@ def post_execute_workflow_item(
     url: str,
     payload: dict[str, Any],
     timeouts: tuple[float, float],
+    user_token: str = None,
 ) -> tuple[int, dict[str, Any] | None, str]:
     # Call the domain execute endpoint and return status + parsed JSON when possible
     # why: distinguish policy deny (403) from execution errors
     # assumptions: JSON body on success and often on failure
     # side effects: network I/O.
     headers = {}
-    token = security.get_service_token()
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
+    # Use user token if provided (agent acts on behalf of user)
+    if user_token:
+        headers["Authorization"] = f"Bearer {user_token}"
 
-    response = requests.post(
-        url, json=payload, headers=headers if headers else None, **get_http_config()
-    )
-    response_text = response.text or ""
+    try:
+        response = requests.post(
+            url, json=payload, headers=headers if headers else None, **get_http_config()
+        )
+        response_text = response.text or ""
+    except requests.RequestException as exc:
+        # Network request failed - this is an error that should be handled
+        raise RuntimeError(f"Failed to execute workflow item: {exc}") from exc
 
     # Parse JSON response if content-type indicates JSON
     parsed_json: dict[str, Any] | None = None
@@ -210,12 +216,13 @@ def post_execute_workflow_item(
 
 
 def execute_workflow_item(
-    config: Dict[str, Any],
+    config: dict[str, Any],
     workflow_id: str,
     workflow_item_id: str,
-    principal_user: Dict[str, Any],
+    principal_user: dict[str, Any],
     dry_run: bool,
-) -> Dict[str, Any]:
+    user_token: str = None,
+) -> dict[str, Any]:
     # Execute a single workflow item via the domain service and classify policy denies (HTTP 403) as completed results
     # why: denies are valid authorization outcomes and must not be treated as execution failures
     # assumptions: domain service returns 2xx on allow, 403 on deny, and other 4xx/5xx on true failures
@@ -242,13 +249,13 @@ def execute_workflow_item(
         template.format(workflow_id=workflow_id, workflow_item_id=workflow_item_id),
     )
     # AuthZEN: Pass principal-user object instead of just principal_sub
-    payload: Dict[str, Any] = {
+    payload: dict[str, Any] = {
         "principal_user": principal_user,
         "dry_run": bool(dry_run),
     }
 
     status_code, response_json, response_text = post_execute_workflow_item(
-        url=url, payload=payload, timeouts=timeouts
+        url=url, payload=payload, timeouts=timeouts, user_token=user_token
     )
 
     if 200 <= status_code < 300:
@@ -313,11 +320,12 @@ def execute_workflow_item(
 
 
 def execute_workflow_run(
-    config: Dict[str, Any],
+    config: dict[str, Any],
     workflow_id: str,
-    principal_user: Dict[str, Any],
+    principal_user: dict[str, Any],
     dry_run: bool,
-) -> Dict[str, Any]:
+    user_token: str = None,
+) -> dict[str, Any]:
     # Execute a workflow by iterating items and delegating execution to domain endpoints,
     # normalizing each item result into a stable schema
     # why: the UI expects consistent status/decision fields even for denies
@@ -339,9 +347,10 @@ def execute_workflow_run(
         workflow_id=workflow_id,
         principal_user_id=None,
         principal_persona=None,
+        user_token=user_token,
     )
 
-    results: List[Dict[str, Any]] = []
+    results: list[dict[str, Any]] = []
     for item in items:
         try:
             response = execute_workflow_item(
@@ -350,6 +359,7 @@ def execute_workflow_run(
                 workflow_item_id=item.workflow_item_id,
                 principal_user=principal_user,
                 dry_run=dry_run,
+                user_token=user_token,
             )
 
             status = str(response.get("status", "error"))

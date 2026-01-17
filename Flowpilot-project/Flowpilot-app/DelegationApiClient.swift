@@ -5,7 +5,7 @@ final class DelegationApiClient {
     private let urlSession: URLSession
     private let accessTokenProvider: () -> String?
     
-    init(baseUrl: URL = AppConfig.delegationBaseUrl, urlSession: URLSession = .insecure, accessTokenProvider: @escaping () -> String? = { nil }) {
+    init(baseUrl: URL = AppConfig.delegationBaseUrl, urlSession: URLSession = .shared, accessTokenProvider: @escaping () -> String? = { nil }) {
         self.baseUrl = baseUrl
         self.urlSession = urlSession
         self.accessTokenProvider = accessTokenProvider

@@ -23,15 +23,14 @@ import uuid
 from typing import Any, Dict, List, Optional
 
 import requests
-
 import security
 from template_loader import load_workflow_templates_from_directory
 from utils import (
     build_url,
-    require_non_empty_string,
-    read_env_string,
     coerce_timestamp,
     get_http_config,
+    read_env_string,
+    require_non_empty_string,
 )
 
 # AI Agent persona configuration (required environment variable)
@@ -41,7 +40,7 @@ AI_AGENT_PERSONA = read_env_string("AI_AGENT_PERSONA")
 class PolicyDeniedError(PermissionError):
     # Exception raised when authorization policy denies access, carrying reason codes
     def __init__(
-        self, message: str, reason_codes: List[str], advice: List[Dict[str, Any]]
+        self, message: str, reason_codes: list[str], advice: list[dict[str, Any]]
     ):
         super().__init__(message)
         self.reason_codes = reason_codes
@@ -49,13 +48,13 @@ class PolicyDeniedError(PermissionError):
 
 
 class FlowPilotService:
-    def __init__(self, config: Dict[str, Any]) -> None:
+    def __init__(self, config: dict[str, Any]) -> None:
         # Initialize service state
         # why: keep in-memory store and config together
         # side effect: none.
         self._config = dict(config)
-        self._templates: Dict[str, Dict[str, Any]] = {}
-        self._workflows: Dict[str, Dict[str, Any]] = {}
+        self._templates: dict[str, dict[str, Any]] = {}
+        self._workflows: dict[str, dict[str, Any]] = {}
 
     def load_templates(self) -> None:
         # Load templates from directory
@@ -81,11 +80,11 @@ class FlowPilotService:
         # side effect: none.
         return len(self._workflows)
 
-    def list_workflows(self) -> List[Dict[str, Any]]:
+    def list_workflows(self) -> list[dict[str, Any]]:
         # Return minimal workflow metadata for all workflows
         # why: allow clients to select an existing workflow
         # side effect: none.
-        workflows: List[Dict[str, Any]] = []
+        workflows: list[dict[str, Any]] = []
         for workflow_id, workflow in self._workflows.items():
             if not isinstance(workflow, dict):
                 continue
@@ -108,11 +107,11 @@ class FlowPilotService:
         )  # Most recent first
         return workflows
 
-    def list_workflow_templates(self) -> List[Dict[str, Any]]:
+    def list_workflow_templates(self) -> list[dict[str, Any]]:
         # Return minimal template metadata
         # why: client selection without leaking full template details
         # side effect: none.
-        templates: List[Dict[str, Any]] = []
+        templates: list[dict[str, Any]] = []
         for template_id, template in self._templates.items():
             templates.append(
                 {
@@ -136,8 +135,8 @@ class FlowPilotService:
         template_id: str,
         owner_sub: str,
         start_date: str,
-        persona: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        persona: str | None = None,
+    ) -> dict[str, Any]:
         # Create a workflow and itinerary items from a template
         # side effect: stores a new workflow in memory.
         template_id = require_non_empty_string(template_id, "template_id")
@@ -151,7 +150,7 @@ class FlowPilotService:
         workflow_id = "w_" + uuid.uuid4().hex[:8]
         created_at = coerce_timestamp()
 
-        items: List[Dict[str, Any]] = []
+        items: list[dict[str, Any]] = []
         raw_items = template.get("items", [])
         if isinstance(raw_items, list):
             for raw in raw_items:
@@ -165,12 +164,14 @@ class FlowPilotService:
                     "title": str(raw.get("title", kind)),
                     "planned_for": raw.get("planned_for"),
                     "planned_price": raw.get("planned_price"),
-                    "airline_risk_score": raw.get("airline_risk_score"),
                     "status": "planned",
                     "last_decision": None,
                     "last_reason_codes": [],
                     "last_advice": [],
                 }
+                # Only include airline_risk_score if present in template
+                if "airline_risk_score" in raw:
+                    item_dict["airline_risk_score"] = raw["airline_risk_score"]
                 # Copy optional detail fields from template to workflow item
                 for field in [
                     "type",
@@ -185,7 +186,7 @@ class FlowPilotService:
                         item_dict[field] = raw[field]
                 items.append(item_dict)
 
-        workflow: Dict[str, Any] = {
+        workflow: dict[str, Any] = {
             "workflow_id": workflow_id,
             "template_id": template_id,
             "owner_sub": owner_sub,
@@ -208,6 +209,7 @@ class FlowPilotService:
         workflow_id: str,
         owner_sub: str,
         agent_sub: str,
+        user_token: str | None = None,
         expires_in_days: int = 7,
     ) -> None:
         # Create a delegation for the AI agent to access the workflow
@@ -222,21 +224,14 @@ class FlowPilotService:
 
         url = build_url(delegation_api_base_url, "/v1/delegations")
 
-        # Get service token for authentication
-        token = security.get_service_token()
-        if not token:
-            raise RuntimeError(
-                "Service token not available - cannot call delegation-api"
-            )
+        # Use fixed agent identity (simplified for Cloud Run deployment)
+        agent_sub = "agent-runner"
 
-        # Extract actual agent sub from the service token
-        # This must succeed - we cannot proceed without a valid agent identity
-        token_claims = security.verify_token_string(token)
-        agent_sub = token_claims.get("sub")
-        if not agent_sub:
-            raise RuntimeError(
-                "Service token does not contain 'sub' claim - cannot identify agent"
-            )
+        # Use the user's token if provided, otherwise fall back to service token
+        if user_token:
+            token = user_token
+        else:
+            token = security.get_service_token()
 
         body = {
             "principal_id": owner_sub,
@@ -246,8 +241,8 @@ class FlowPilotService:
             "expires_in_days": expires_in_days,
         }
 
-        headers = {"Authorization": f"Bearer {token}"}
-        response = requests.post(url, json=body, headers=headers, **get_http_config())
+        headers = {"Authorization": f"Bearer {token}"} if token else {}
+        response = requests.post(url, json=body, headers=headers if headers else None, **get_http_config())
 
         if response.status_code not in (200, 201):
             raise RuntimeError(
@@ -255,29 +250,20 @@ class FlowPilotService:
             )
 
     def check_read_authorization(
-        self, workflow_id: str, user_sub: str, user_persona: Optional[str] = None
+        self, workflow_id: str, user_sub: str, user_persona: str | None = None
     ) -> None:
         # Check if user is authorized to read the workflow
         # Raises PolicyDeniedError if access is denied
         workflow = self._get_workflow_or_raise(workflow_id)
         owner_sub = str(workflow.get("owner_sub", ""))
 
-        # Debug logging
-        print(
-            f"[check_read_authorization] workflow_id={workflow_id}, user_sub={user_sub}, owner_sub={owner_sub}, user_persona={user_persona}",
-            flush=True,
-        )
-
         # Owner can always read their own workflows
         if user_sub == owner_sub:
-            print(
-                "[check_read_authorization] Owner match - allowing access", flush=True
-            )
             return
 
         # Non-owner must have authorization
         # Build principal_user object (no claims - only id and persona)
-        principal_user: Dict[str, Any] = {
+        principal_user: dict[str, Any] = {
             "type": "user",
             "id": user_sub,
         }
@@ -302,7 +288,7 @@ class FlowPilotService:
                 advice=advice,
             )
 
-    def get_workflow(self, workflow_id: str) -> Dict[str, Any]:
+    def get_workflow(self, workflow_id: str) -> dict[str, Any]:
         # Return a workflow record
         # assumptions: workflow exists
         # side effect: none.
@@ -322,7 +308,7 @@ class FlowPilotService:
             ),
         }
 
-    def get_workflow_items(self, workflow_id: str) -> Dict[str, Any]:
+    def get_workflow_items(self, workflow_id: str) -> dict[str, Any]:
         # Return workflow items for agent-runner
         # assumptions: workflow exists
         # side effect: none.
@@ -331,7 +317,7 @@ class FlowPilotService:
             raise KeyError(f"Workflow not found: {workflow_id}")
 
         workflow = self._workflows[workflow_id]
-        items_out: List[Dict[str, Any]] = []
+        items_out: list[dict[str, Any]] = []
         for item in workflow.get("items", []):
             if not isinstance(item, dict):
                 continue
@@ -361,9 +347,9 @@ class FlowPilotService:
         self,
         workflow_id: str,
         workflow_item_id: str,
-        principal_user: Dict[str, Any],
+        principal_user: dict[str, Any],
         dry_run: bool,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         # Execute a workflow item with AuthZ decision
         # why: PEP responsibility
         # side effects: network I/O + optional state mutation.
@@ -431,7 +417,7 @@ class FlowPilotService:
             "advice": advice,
         }
 
-    def _get_workflow_or_raise(self, workflow_id: str) -> Dict[str, Any]:
+    def _get_workflow_or_raise(self, workflow_id: str) -> dict[str, Any]:
         # Fetch a workflow from memory
         # why: centralize errors
         # side effect: none.
@@ -443,8 +429,8 @@ class FlowPilotService:
         return workflow
 
     def _get_workflow_item_or_raise(
-        self, workflow: Dict[str, Any], item_id: str
-    ) -> Dict[str, Any]:
+        self, workflow: dict[str, Any], item_id: str
+    ) -> dict[str, Any]:
         # Find a workflow item by id
         # why: protect against rogue item ids
         # side effect: none.
@@ -459,7 +445,7 @@ class FlowPilotService:
         raise KeyError(f"Workflow item not found: {item_id}")
 
     def _validate_principal_matches_owner(
-        self, workflow: Dict[str, Any], principal_sub: str
+        self, workflow: dict[str, Any], principal_sub: str
     ) -> None:
         # Prevent trivial principal spoofing in the demo
         # assumption: real systems bind principal_sub to token subject.
@@ -473,12 +459,12 @@ class FlowPilotService:
 
     def _call_authz_for_item(
         self,
-        workflow: Dict[str, Any],
-        item: Dict[str, Any],
-        principal_user: Dict[str, Any],
+        workflow: dict[str, Any],
+        item: dict[str, Any],
+        principal_user: dict[str, Any],
         dry_run: bool,
         action: str = "execute",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         # Call AuthZ /v1/evaluate
         # why: authorization and ***REMOVED*** relationship checks live there
         # side effect: network I/O.
@@ -500,7 +486,7 @@ class FlowPilotService:
             planned_price_eur = float(planned_price.get("amount", 0))
 
         # Build resource properties for OPA policy
-        resource_properties: Dict[str, Any] = {
+        resource_properties: dict[str, Any] = {
             "domain": domain,
             "workflow_id": workflow_id,
             "workflow_item_id": item_id,
@@ -521,28 +507,22 @@ class FlowPilotService:
         url = build_url(authz_base_url, "/v1/evaluate")
 
         # AuthZEN: Build context with principal-user object (not token)
-        context: Dict[str, Any] = {"principal": principal_user}
+        # Add policy_hint for explicit policy selection (travel domain)
+        context: dict[str, Any] = {
+            "principal": principal_user,
+            "policy_hint": "travel",  # Explicit policy selection for travel workflows
+        }
 
+        # Use fixed service identity (simplified for Cloud Run deployment)
+        service_id = "domain-services-api"
         # Get service token for authentication
         token = security.get_service_token()
-        if not token:
-            raise RuntimeError("Service token not available - cannot call authz-api")
-
-        # Extract agent sub from service token
-        # The agent is identified by: sub=<UUID>, type="agent", persona="ai-agent"
-        # This must succeed - we cannot proceed without a valid agent identity
-        token_claims = security.verify_token_string(token)
-        service_id = token_claims.get("sub")
-        if not service_id:
-            raise RuntimeError(
-                "Service token does not contain 'sub' claim - cannot identify agent"
-            )
 
         # Subject is always the agent (service) making the call to authz-api
         # This is a service-to-service call, so subject identifies the calling service (ai-agent-api)
         # The user information (with persona) goes in context.principal
         # Add AI agent persona to subject for authorization checks (configurable via AI_AGENT_PERSONA)
-        subject: Dict[str, Any] = {
+        subject: dict[str, Any] = {
             "type": "agent",
             "id": service_id,
             "persona": AI_AGENT_PERSONA,
@@ -552,12 +532,12 @@ class FlowPilotService:
         owner_sub = str(workflow.get("owner_sub", ""))
         owner_persona = workflow.get("owner_persona")
         if owner_sub:
-            owner_dict: Dict[str, Any] = {"type": "user", "id": owner_sub}
+            owner_dict: dict[str, Any] = {"type": "user", "id": owner_sub}
             if owner_persona:
                 owner_dict["persona"] = str(owner_persona)
             resource_properties["owner"] = owner_dict
 
-        body: Dict[str, Any] = {
+        body: dict[str, Any] = {
             "subject": subject,
             "action": {"name": action},
             "resource": {
@@ -569,8 +549,8 @@ class FlowPilotService:
             "options": {"dry_run": bool(dry_run), "explain": True, "metrics": False},
         }
 
-        headers = {"Authorization": f"Bearer {token}"}
-        response = requests.post(url, json=body, headers=headers, **get_http_config())
+        headers = {"Authorization": f"Bearer {token}"} if token else {}
+        response = requests.post(url, json=body, headers=headers if headers else None, **get_http_config())
         if response.status_code not in (200, 201):
             raise RuntimeError(
                 f"AuthZ evaluate failed: HTTP {response.status_code}: {response.text}"
@@ -579,10 +559,10 @@ class FlowPilotService:
 
     def _call_authz_for_workflow(
         self,
-        workflow: Dict[str, Any],
-        principal_user: Dict[str, Any],
+        workflow: dict[str, Any],
+        principal_user: dict[str, Any],
         action: str = "read",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         # Call AuthZ /v1/evaluate for workflow-level operations (e.g., read)
         # Similar to _call_authz_for_item but for workflow resource type
         authz_base_url = require_non_empty_string(
@@ -594,7 +574,7 @@ class FlowPilotService:
         workflow_id = str(workflow.get("workflow_id", ""))
 
         # Build resource properties
-        resource_properties: Dict[str, Any] = {
+        resource_properties: dict[str, Any] = {
             "domain": domain,
             "workflow_id": workflow_id,
         }
@@ -607,26 +587,20 @@ class FlowPilotService:
         url = build_url(authz_base_url, "/v1/evaluate")
 
         # AuthZEN: Build context with principal-user object
-        context: Dict[str, Any] = {"principal": principal_user}
+        # Add policy_hint for explicit policy selection (travel domain)
+        context: dict[str, Any] = {
+            "principal": principal_user,
+            "policy_hint": "travel",  # Explicit policy selection for travel workflows
+        }
 
+        # Use fixed service identity (simplified for Cloud Run deployment)
+        service_id = "domain-services-api"
         # Get service token for authentication
         token = security.get_service_token()
-        if not token:
-            raise RuntimeError("Service token not available - cannot call authz-api")
-
-        # Extract agent sub from service token
-        # The agent is identified by: sub=<UUID>, type="agent", persona="ai-agent"
-        # This must succeed - we cannot proceed without a valid agent identity
-        token_claims = security.verify_token_string(token)
-        service_id = token_claims.get("sub")
-        if not service_id:
-            raise RuntimeError(
-                "Service token does not contain 'sub' claim - cannot identify agent"
-            )
 
         # Subject is the service making the call
         # Add AI agent persona to subject for authorization checks (configurable via AI_AGENT_PERSONA)
-        subject: Dict[str, Any] = {
+        subject: dict[str, Any] = {
             "type": "agent",
             "id": service_id,
             "persona": AI_AGENT_PERSONA,
@@ -636,12 +610,12 @@ class FlowPilotService:
         owner_sub = str(workflow.get("owner_sub", ""))
         owner_persona = workflow.get("owner_persona")
         if owner_sub:
-            owner_dict: Dict[str, Any] = {"type": "user", "id": owner_sub}
+            owner_dict: dict[str, Any] = {"type": "user", "id": owner_sub}
             if owner_persona:
                 owner_dict["persona"] = str(owner_persona)
             resource_properties["owner"] = owner_dict
 
-        body: Dict[str, Any] = {
+        body: dict[str, Any] = {
             "subject": subject,
             "action": {"name": action},
             "resource": {
@@ -653,8 +627,8 @@ class FlowPilotService:
             "options": {"explain": True, "metrics": False},
         }
 
-        headers = {"Authorization": f"Bearer {token}"}
-        response = requests.post(url, json=body, headers=headers, **get_http_config())
+        headers = {"Authorization": f"Bearer {token}"} if token else {}
+        response = requests.post(url, json=body, headers=headers if headers else None, **get_http_config())
         if response.status_code not in (200, 201):
             raise RuntimeError(
                 f"AuthZ evaluate failed: HTTP {response.status_code}: {response.text}"

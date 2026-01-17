@@ -25,18 +25,18 @@ import argparse
 import os
 from typing import Any, Dict, Optional
 
+import api_logging
+import security
 import uvicorn
+from domain_services_core import FlowPilotService, PolicyDeniedError
 from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, validator
-
-import security
-import api_logging
-from domain_services_core import FlowPilotService, PolicyDeniedError
 from utils import (
+    coerce_positive_int,
     load_json_object,
     merge_config,
-    coerce_positive_int,
     require_non_empty_string,
 )
 
@@ -47,7 +47,7 @@ INCLUDE_ERROR_DETAILS = os.environ.get("INCLUDE_ERROR_DETAILS", "1") == "1"
 AI_AGENT_PERSONA = os.environ.get("AI_AGENT_PERSONA", "ai-agent")
 
 
-DEFAULT_CONFIG: Dict[str, Any] = {
+DEFAULT_CONFIG: dict[str, Any] = {
     "service_name": "flowpilot-api",
     "log_level": "info",
     "domain": "flowpilot",
@@ -71,8 +71,8 @@ class CreateWorkflowRequest(BaseModel):
         ..., min_length=1, max_length=255, description="Principal subject"
     )
     start_date: str = Field(..., description="ISO 8601 date string (YYYY-MM-DD)")
-    persona: Optional[str] = Field(
-        None, max_length=255, description="Selected persona for the user"
+    persona: str = Field(
+        ..., min_length=1, max_length=255, description="Selected persona for the user (required)"
     )
 
     @validator("template_id")
@@ -88,18 +88,16 @@ class CreateWorkflowRequest(BaseModel):
         return security.validate_iso_date(v, "start_date")
 
     @validator("persona")
-    def sanitize_persona(cls, v: Optional[str]) -> Optional[str]:
-        if v is None:
-            return None
+    def sanitize_persona(cls, v: str) -> str:
         return security.sanitize_string(v, 255)
 
 
 class ExecuteWorkflowItemRequest(BaseModel):
     # AuthZEN: Accept principal_user object (preferred) or principal_sub (backward compatibility)
-    principal_user: Optional[Dict[str, Any]] = Field(
+    principal_user: dict[str, Any] | None = Field(
         None, description="Principal-user object (AuthZEN format)"
     )
-    principal_sub: Optional[str] = Field(
+    principal_sub: str | None = Field(
         None,
         min_length=1,
         max_length=255,
@@ -108,12 +106,12 @@ class ExecuteWorkflowItemRequest(BaseModel):
     dry_run: bool = Field(default=True, description="Dry run flag")
 
     @validator("principal_sub")
-    def sanitize_principal_sub(cls, v: Optional[str]) -> Optional[str]:
+    def sanitize_principal_sub(cls, v: str | None) -> str | None:
         if v is None:
             return None
         return security.sanitize_string(v, 255)
 
-    def get_principal_user(self) -> Dict[str, Any]:
+    def get_principal_user(self) -> dict[str, Any]:
         # AuthZEN: Return principal_user if provided, otherwise construct from principal_sub
         if self.principal_user:
             # Return as-is, preserving persona and all other fields
@@ -124,8 +122,8 @@ class ExecuteWorkflowItemRequest(BaseModel):
 
 
 def build_config(
-    config_path: Optional[str], template_directory_override: Optional[str]
-) -> Dict[str, Any]:
+    config_path: str | None, template_directory_override: str | None
+) -> dict[str, Any]:
     # Build runtime config from defaults, optional JSON override, and environment variables
     # side effect: reads env and file.
     config = dict(DEFAULT_CONFIG)
@@ -169,7 +167,7 @@ def build_config(
     return config
 
 
-def handle_get_health(request: Request) -> Dict[str, Any]:
+def handle_get_health(request: Request) -> dict[str, Any]:
     # Return an operational health response
     # why: orchestration/smoke tests
     # side effect: none.
@@ -184,7 +182,7 @@ def handle_get_health(request: Request) -> Dict[str, Any]:
 
 def handle_get_workflow_templates(
     request: Request, token_claims: dict = Depends(security.verify_token)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     # List available workflow templates
     # why: allow the client to pick a workflow
     # side effect: none.
@@ -221,7 +219,7 @@ def handle_get_workflow_templates(
 
 def handle_get_workflows(
     request: Request, token_claims: dict = Depends(security.verify_token)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     # List all workflows
     # why: allow clients to select an existing workflow for delegation
     # side effect: none.
@@ -254,8 +252,8 @@ def handle_get_workflows(
 
 
 def handle_post_workflows(
-    request: Request, body: CreateWorkflowRequest
-) -> Dict[str, Any]:
+    request: Request, body: CreateWorkflowRequest, token_claims: dict = Depends(security.verify_token)
+) -> dict[str, Any]:
     # Create a workflow from a template
     # assumptions: principal_sub is authenticated upstream
     # side effect: stores workflow in memory, creates delegation for AI agent.
@@ -274,22 +272,17 @@ def handle_post_workflows(
         agent_sub = request.app.state.config.get("agent_sub")
 
         if workflow_id and agent_sub:
-            try:
-                service.create_agent_delegation(
-                    workflow_id=workflow_id,
-                    owner_sub=body.principal_sub,
-                    agent_sub=agent_sub,
-                )
-                print(
-                    f"[handle_post_workflows] Auto-created delegation for workflow {workflow_id} to agent {agent_sub}",
-                    flush=True,
-                )
-            except Exception as delegation_error:
-                # Log but don't fail workflow creation if delegation fails
-                print(
-                    f"[handle_post_workflows] WARNING: Failed to create agent delegation: {delegation_error}",
-                    flush=True,
-                )
+            # Auto-create delegation for AI agent - this is critical for agent operation
+            # Extract the user's token from the Authorization header to pass through
+            auth_header = request.headers.get("Authorization", "")
+            user_token = auth_header.replace("Bearer ", "") if auth_header.startswith("Bearer ") else None
+
+            service.create_agent_delegation(
+                workflow_id=workflow_id,
+                owner_sub=body.principal_sub,
+                agent_sub=agent_sub,
+                user_token=user_token,
+            )
 
         return result
     except security.InputValidationError as exception:
@@ -313,7 +306,7 @@ def handle_get_workflow(
     workflow_id: str,
     persona: str = None,
     token_claims: dict = Depends(security.verify_token),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     # Return one workflow record with authorization check
     # why: enforce read access control
     # side effect: none.
@@ -367,7 +360,7 @@ def handle_get_workflow_items(
     persona: str = None,
     user_sub: str = None,
     token_claims: dict = Depends(security.verify_token),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     # Return the items for a workflow with authorization check
     # why: enforce read access control
     # side effect: none.
@@ -384,10 +377,6 @@ def handle_get_workflow_items(
         if user_sub:
             # Service-to-service call: validate the query parameter
             user_sub = security.validate_id(user_sub, "user_sub", max_length=255)
-            print(
-                f"[handle_get_workflow_items] Using user_sub from query param: {user_sub}",
-                flush=True,
-            )
         else:
             # Direct user call: extract from token
             user_sub = token_claims.get("sub")
@@ -395,25 +384,12 @@ def handle_get_workflow_items(
                 raise HTTPException(
                     status_code=401, detail="Invalid token: missing sub claim"
                 )
-            print(
-                f"[handle_get_workflow_items] Using user_sub from token: {user_sub}",
-                flush=True,
-            )
 
         # If no persona provided and this is the agent service account, use configured AI agent persona
         user_persona = persona
         agent_sub = request.app.state.service._config.get("agent_sub")
         if not user_persona and agent_sub and user_sub == agent_sub:
             user_persona = AI_AGENT_PERSONA
-            print(
-                f"[handle_get_workflow_items] Agent detected, using {AI_AGENT_PERSONA} persona",
-                flush=True,
-            )
-
-        print(
-            f"[handle_get_workflow_items] Token sub={token_claims.get('sub')}, user_sub={user_sub}, persona={user_persona}",
-            flush=True,
-        )
 
         service.check_read_authorization(
             workflow_id=workflow_id,
@@ -453,7 +429,7 @@ def handle_post_execute_workflow_item(
     workflow_item_id: str,
     body: ExecuteWorkflowItemRequest,
     token_claims: dict = Depends(security.verify_token),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     # Execute one itinerary item with AuthZ enforcement
     # why: FlowPilot is PEP and delegates decisions to AuthZ/***REMOVED***.
     service: FlowPilotService = request.app.state.service
@@ -549,7 +525,7 @@ def handle_post_execute_workflow_item(
         raise HTTPException(status_code=400, detail=error_detail) from exception
 
 
-def create_app(config: Dict[str, Any]) -> FastAPI:
+def create_app(config: dict[str, Any]) -> FastAPI:
     #
     # Create FastAPI API endpoints and wire routes
     #
@@ -582,6 +558,16 @@ def create_app(config: Dict[str, Any]) -> FastAPI:
             status_code=exc.status_code,
             content={"detail": exc.detail},
         )
+
+    # Add CORS middleware
+    cors_config = security.get_cors_config()
+    api.add_middleware(
+        CORSMiddleware,
+        allow_origins=cors_config["allow_origins"],
+        allow_credentials=cors_config["allow_credentials"],
+        allow_methods=cors_config["allow_methods"],
+        allow_headers=cors_config["allow_headers"],
+    )
 
     # Add security middlewares
     api.add_middleware(security.SecurityHeadersMiddleware)

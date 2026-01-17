@@ -1,8 +1,9 @@
-username;password;email;firstname;lastname;persona;autobook_consent;autobook_price;autobook_leadtime;autobook_risklevel
-carlo;qkr9AXM3wum8fjt*xnc;test1@example.com;Carlo;Schupp;traveler;Yes;10000;7;5
-peter;qkr9AXM3wum8fjt*xnc;test2@example.com;Peter;Surnak;traveler;No;500;2;0
-yannick;qkr9AXM3wum8fjt*xnc;test3@example.com;Yannick;De Backer;travel-agent,business-traveler;Yes;1500;7;2
-isabel;qkr9AXM3wum8fjt*xnc;test4@examplee.com;Isabel;Cools;traveler;Yes;1500;7;2
-kathleen;qkr9AXM3wum8fjt*xnc;test5@example.com;Kathleen;Op De Beeck;traveler,travel-agent;Yes;200;100;0
-martine;qkr9AXM3wum8fjt*xnc;test6@example.com;Martine;Meurrens;traveler,business-traveler;Yes;1500;7;2
-sarah;qkr9AXM3wum8fjt*xnc;test7@example.com;Sarah;Williams;travel-agent;Yes;2000;7;3
+username;password;email;firstname;lastname;persona;consent;autobook_price;autobook_leadtime;autobook_risklevel;persona_status;persona_valid_from;persona_valid_till
+carlo;qkr9AXM3wum8fjt*xnc;carlo@me.com;Carlo;Schupp;traveler;Yes;10000;7;5;active;2024-01-01T00:00:00Z;2026-12-31T23:59:59Z
+peter;qkr9AXM3wum8fjt*xnc;peter@me.com;Peter;Surnak;traveler;No;500;2;0;active;2024-01-01T00:00:00Z;2026-12-31T23:59:59Z
+yannick;qkr9AXM3wum8fjt*xnc;yannick@me.com;Yannick;De Backer;business-traveler,travel-agent,office-manager;Yes;1500;7;2;active;2024-01-01T00:00:00Z;2026-12-31T23:59:59Z
+isabel;qkr9AXM3wum8fjt*xnc;isabel@me.com;Isabel;Cools;traveler;Yes;1500;7;2;active;2024-01-01T00:00:00Z;2026-12-31T23:59:59Z
+kathleen;qkr9AXM3wum8fjt*xnc;kathleen@me.com;Kathleen;Op De Beeck;traveler,travel-agent;Yes;200;100;0;active;2024-01-01T00:00:00Z;2026-12-31T23:59:59Z
+martine;qkr9AXM3wum8fjt*xnc;martine@me.com;Martine;Meurrens;traveler,business-traveler,office-manager;Yes;1500;7;2;active;2024-01-01T00:00:00Z;2026-12-31T23:59:59Z
+sarah;qkr9AXM3wum8fjt*xnc;sarah@me.com;Sarah;Williams;travel-agent;Yes;2000;7;3;active;2024-01-01T00:00:00Z;2026-12-31T23:59:59Z
+alexia;qkr9AXM3wum8fjt*xnc;alexia@me.com;Alexia;Vastenaeckels;traveler,travel-agent;Yes;2000;7;3;suspended;2026-03-01T00:00:00Z;2026-12-31T23:59:59Z

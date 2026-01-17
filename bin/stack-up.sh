@@ -8,6 +8,20 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
+echo ">>> Generating OPA persona_config.json from manifest.yaml..."
+if python3 -c "import yaml" 2>/dev/null; then
+    python3 scripts/generate-opa-persona-config.py travel
+    echo "✓ Generated persona_config.json"
+else
+    echo "⚠ Warning: PyYAML not found. Using existing persona_config.json if available."
+    echo "   Install with: pip3 install pyyaml"
+    if [ ! -f "infra/opa/policies/travel/persona_config.json" ]; then
+        echo "❌ ERROR: persona_config.json not found and cannot generate it."
+        echo "   Please install PyYAML or run: make generate-opa-config"
+        exit 1
+    fi
+fi
+
 echo ">>> Building OCI policy bundle..."
 if command -v policy &> /dev/null; then
     policy build infra/***REMOVED***/cfg/bundle -t localhost/flowpilot-policy:latest

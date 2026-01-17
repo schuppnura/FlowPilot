@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 from graphdb import DelegationGraphDB
-from utils import require_non_empty_string, read_env_string
+from utils import read_env_string, require_non_empty_string
 
 # Delegation allowed actions configuration (required environment variable, comma-separated)
 _DELEGATION_ALLOWED_ACTIONS_STR = read_env_string("DELEGATION_ALLOWED_ACTIONS")
@@ -38,12 +38,10 @@ class DelegationService:
         principal_id: str,
         delegate_id: str,
         expires_in_days: int = 7,
-        workflow_id: Optional[str] = None,
-        scope: Optional[List[str]] = None,
-        delegator_id: Optional[
-            str
-        ] = None,  # ID of the authenticated user creating this delegation
-    ) -> Dict[str, Any]:
+        workflow_id: str | None = None,
+        scope: list[str] | None = None,
+        delegator_id: str | None = None,  # ID of the authenticated user creating this delegation
+    ) -> dict[str, Any]:
         # Create a delegation relationship.
         #
         # Args:
@@ -108,8 +106,8 @@ class DelegationService:
         self,
         principal_id: str,
         delegate_id: str,
-        workflow_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        workflow_id: str | None = None,
+    ) -> dict[str, Any]:
         # Revoke a delegation relationship.
         #
         # Args:
@@ -140,11 +138,11 @@ class DelegationService:
 
     def list_delegations(
         self,
-        principal_id: Optional[str] = None,
-        delegate_id: Optional[str] = None,
-        workflow_id: Optional[str] = None,
+        principal_id: str | None = None,
+        delegate_id: str | None = None,
+        workflow_id: str | None = None,
         include_expired: bool = False,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         # List delegations.
         #
         # Args:
@@ -176,8 +174,8 @@ class DelegationService:
         self,
         principal_id: str,
         delegate_id: str,
-        workflow_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        workflow_id: str | None = None,
+    ) -> dict[str, Any]:
         # Validate that a delegation exists and is active.
         #
         # Args:

@@ -66,29 +66,38 @@ services:
     build:
       context: .
       dockerfile: flowpilot-services/authz-api/Dockerfile
+      args:
+        DEPLOYMENT_ENV: keycloak
     platform: linux/amd64
+    volumes:
+      - ./secrets:/secrets:ro
     environment:
       - OPA_URL=http://opa:8181
-      - OPA_PACKAGE=auto_book
+      # Policy configuration (manifest-based)
+      - POLICY_NAME=travel
+      - POLICY_MANIFEST_DIR=/policies
       # JWT validation using JWKS (no network calls per request)
       - KEYCLOAK_JWKS_URI=https://keycloak:8443/realms/flowpilot/protocol/openid-connect/certs
       - KEYCLOAK_ISSUER=https://localhost:8443/realms/flowpilot
-      - KEYCLOAK_AUDIENCE=flowpilot-desktop
+      # - KEYCLOAK_AUDIENCE=flowpilot  # Disabled for local dev (tokens have 'account' audience)
+      # FlowPilot token signing (for pseudonymous access tokens)
+      - SIGNING_KEY_PATH=/secrets/flowpilot-signing-key.pem
+      - FLOWPILOT_PUBLIC_KEY_PATH=/secrets/flowpilot-signing-key-pub.pem
+      - FLOWPILOT_TOKEN_ISSUER=https://flowpilot-authz-api
+      - FLOWPILOT_TOKEN_AUDIENCE=flowpilot
+      - FLOWPILOT_TOKEN_EXPIRY_SECONDS=900
       # Payload signature scanning
       - ENABLE_PAYLOAD_SIGNATURE_SCAN=0
       # Request limits
       - MAX_REQUEST_SIZE_MB=1
       - MAX_STRING_LENGTH=10000
-      # Default autobook attribute values (used when not present in Keycloak user profile)
-      - DEFAULT_AUTOBOOK_CONSENT=false
-      - DEFAULT_AUTOBOOK_PRICE=0
-      - DEFAULT_AUTOBOOK_LEADTIME=10000
-      - DEFAULT_AUTOBOOK_RISKLEVEL=0
       # Allowed action names (AuthZEN compliant, comma-separated)
       - ALLOWED_ACTIONS=create,read,write,delete,execute
       # Delegation API integration
       - DELEGATION_API_BASE_URL=http://flowpilot-delegation-api:8000
       - DELEGATION_API_TIMEOUT_SECONDS=5.0
+      # Persona API integration (for fetching persona attributes)
+      - PERSONA_API_BASE_URL=http://flowpilot-persona-api:8000
       # Service-to-service authentication for delegation-api and Keycloak calls
       - KEYCLOAK_TOKEN_URL=https://keycloak:8443/realms/flowpilot/protocol/openid-connect/token
       - AGENT_CLIENT_ID=flowpilot-agent
@@ -101,6 +110,11 @@ services:
       - HTTP_DEFAULT_TIMEOUT=10.0
       - HTTP_VERIFY_TLS=false
       - VERIFY_TLS=false
+      # CORS configuration (allow all origins for local development)
+      - CORS_ALLOWED_ORIGINS=*
+      - CORS_ALLOW_CREDENTIALS=true
+      - CORS_ALLOW_METHODS=*
+      - CORS_ALLOW_HEADERS=*
     command: ["python", "authz_main.py", "--host", "0.0.0.0", "--port", "8000"]
     ports:
       - "8002:8000"
@@ -108,11 +122,14 @@ services:
       - opa
       - keycloak
       - flowpilot-delegation-api
+      - flowpilot-persona-api
 
   flowpilot-ai-agent-api:
     build:
       context: .
       dockerfile: flowpilot-services/ai-agent-api/Dockerfile
+      args:
+        DEPLOYMENT_ENV: keycloak
     environment:
       LOG_LEVEL: info
 
@@ -133,7 +150,7 @@ services:
       # JWT validation using JWKS (no network calls per request)
       KEYCLOAK_JWKS_URI: https://keycloak:8443/realms/flowpilot/protocol/openid-connect/certs
       KEYCLOAK_ISSUER: https://localhost:8443/realms/flowpilot
-      KEYCLOAK_AUDIENCE: flowpilot-desktop
+      # KEYCLOAK_AUDIENCE: flowpilot  # Disabled for local dev (tokens have 'account' audience)
       
       # Optional: Enable payload signature scanning
       ENABLE_PAYLOAD_SIGNATURE_SCAN: "0"
@@ -142,6 +159,11 @@ services:
       # HTTP client configuration
       HTTP_DEFAULT_TIMEOUT: "10.0"
       HTTP_VERIFY_TLS: "false"
+      # CORS configuration (allow all origins for local development)
+      CORS_ALLOWED_ORIGINS: "*"
+      CORS_ALLOW_CREDENTIALS: "true"
+      CORS_ALLOW_METHODS: "*"
+      CORS_ALLOW_HEADERS: "*"
     command: ["python", "ai_agent_main.py", "--host", "0.0.0.0", "--port", "8000"]
     ports:
       - "8004:8000"
@@ -153,6 +175,8 @@ services:
     build:
       context: .
       dockerfile: flowpilot-services/domain-services-api/Dockerfile
+      args:
+        DEPLOYMENT_ENV: keycloak
     environment:
       AUTHZ_BASE_URL: "http://flowpilot-authz-api:8000"
       DELEGATION_API_BASE_URL: "http://flowpilot-delegation-api:8000"
@@ -171,7 +195,7 @@ services:
       # JWT validation using JWKS (no network calls per request)
       KEYCLOAK_JWKS_URI: https://keycloak:8443/realms/flowpilot/protocol/openid-connect/certs
       KEYCLOAK_ISSUER: https://localhost:8443/realms/flowpilot
-      KEYCLOAK_AUDIENCE: flowpilot-desktop
+      # KEYCLOAK_AUDIENCE: flowpilot  # Disabled for local dev (tokens have 'account' audience)
       
       # Optional: Enable payload signature scanning
       ENABLE_PAYLOAD_SIGNATURE_SCAN: "0"
@@ -182,6 +206,11 @@ services:
       # HTTP client configuration
       HTTP_DEFAULT_TIMEOUT: "10.0"
       HTTP_VERIFY_TLS: "false"
+      # CORS configuration (allow all origins for local development)
+      CORS_ALLOWED_ORIGINS: "*"
+      CORS_ALLOW_CREDENTIALS: "true"
+      CORS_ALLOW_METHODS: "*"
+      CORS_ALLOW_HEADERS: "*"
     ports:
       - "8003:8000"
     depends_on:
@@ -194,12 +223,14 @@ services:
     build:
       context: .
       dockerfile: flowpilot-services/delegation-api/Dockerfile
+      args:
+        DEPLOYMENT_ENV: keycloak
     platform: linux/amd64
     environment:
       # JWT validation using JWKS
       - KEYCLOAK_JWKS_URI=https://keycloak:8443/realms/flowpilot/protocol/openid-connect/certs
       - KEYCLOAK_ISSUER=https://localhost:8443/realms/flowpilot
-      - KEYCLOAK_AUDIENCE=flowpilot-desktop
+      # - KEYCLOAK_AUDIENCE=flowpilot  # Disabled for local dev (tokens have 'account' audience)
       # Service-to-service authentication
       - KEYCLOAK_TOKEN_URL=https://keycloak:8443/realms/flowpilot/protocol/openid-connect/token
       - AGENT_CLIENT_ID=flowpilot-agent
@@ -217,6 +248,11 @@ services:
       # HTTP client configuration
       - HTTP_DEFAULT_TIMEOUT=10.0
       - HTTP_VERIFY_TLS=false
+      # CORS configuration (allow all origins for local development)
+      - CORS_ALLOWED_ORIGINS=*
+      - CORS_ALLOW_CREDENTIALS=true
+      - CORS_ALLOW_METHODS=*
+      - CORS_ALLOW_HEADERS=*
     command: ["python", "delegation_main.py", "--host", "0.0.0.0", "--port", "8000"]
     ports:
       - "8005:8000"
@@ -225,8 +261,56 @@ services:
     volumes:
       - delegation_db:/app/data
 
+  flowpilot-persona-api:
+    build:
+      context: .
+      dockerfile: flowpilot-services/persona-api/Dockerfile
+      args:
+        DEPLOYMENT_ENV: keycloak
+    platform: linux/amd64
+    environment:
+      # Deployment environment (determines which database to use)
+      - DEPLOYMENT_ENV=keycloak
+      # JWT validation using JWKS
+      - KEYCLOAK_JWKS_URI=https://keycloak:8443/realms/flowpilot/protocol/openid-connect/certs
+      - KEYCLOAK_ISSUER=https://localhost:8443/realms/flowpilot
+      # - KEYCLOAK_AUDIENCE=flowpilot  # Disabled for local dev (tokens have 'account' audience)
+      # Firebase Admin SDK (for local Keycloak, these are not used)
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/firebase-admin-key.json
+      # User profile configuration
+      - MAX_PERSONAS_PER_USER=5
+      # Persona titles are loaded from policy manifest at /policies/travel/manifest.yaml
+      - POLICY_NAME=travel
+      - POLICY_MANIFEST_DIR=/policies
+      # Persona database configuration
+      - PERSONA_DB_PATH=/app/data/personas.db
+      - PERSONA_DEFAULT_EXPIRY_DAYS=365
+      # Payload signature scanning
+      - ENABLE_PAYLOAD_SIGNATURE_SCAN=0
+      # Error message detail (set to 0 in production)
+      - INCLUDE_ERROR_DETAILS=1
+      # API logging
+      - ENABLE_API_LOGGING=1
+      # HTTP client configuration
+      - HTTP_DEFAULT_TIMEOUT=10.0
+      - HTTP_VERIFY_TLS=false
+      # CORS configuration (allow all origins for local development)
+      - CORS_ALLOWED_ORIGINS=*
+      - CORS_ALLOW_CREDENTIALS=true
+      - CORS_ALLOW_METHODS=*
+      - CORS_ALLOW_HEADERS=*
+    command: ["python", "persona_main.py", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8006:8000"
+    depends_on:
+      - keycloak
+    volumes:
+      - persona_db:/app/data
+
 volumes:
   keycloak_data:
     driver: local
   delegation_db:
+    driver: local
+  persona_db:
     driver: local

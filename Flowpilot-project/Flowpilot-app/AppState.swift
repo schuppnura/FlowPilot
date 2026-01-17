@@ -46,12 +46,7 @@ final class AppState: ObservableObject {
     @Published var statusMessage: String = ""
     @Published var errorMessage: String = ""
     
-    let oidcClient = KeycloakOidcClient(
-        issuer: AppConfig.keycloakIssuer,
-        clientId: AppConfig.oidcClientId,
-        redirectUri: AppConfig.oidcRedirectUri,
-        scopes: AppConfig.oidcScopes
-    )
+    let firebaseAuthClient = FirebaseAuthClient()
     
     // Domain-specific client name can remain for now; AppState treats it as a generic workflow backend.
     // Clients are initialized lazily to capture self reference for token provider
@@ -83,13 +78,10 @@ final class AppState: ObservableObject {
     }
     
     func signOut() {
-        // Sign out and clear transient demo state; why: ensure next demo run is clean; side effect: mutates published state.
-        // Also performs Keycloak logout to terminate the SSO session
+        // Sign out and clear transient state; why: ensure next session is clean; side effect: mutates published state.
+        // Firebase email/password auth doesn't require server-side logout
         
-        // Capture idToken before clearing
-        let idTokenToRevoke = idToken
-        
-        // Clear local state immediately
+        // Clear local state
         principalSub = nil
         username = nil
         idToken = nil
@@ -115,90 +107,44 @@ final class AppState: ObservableObject {
         lastAgentRun = nil
         missingProfileFieldsFromAdvice = []
         
-        statusMessage = "Signing out..."
+        statusMessage = "Signed out."
         errorMessage = ""
-        
-        // Perform Keycloak logout asynchronously
-        if let token = idTokenToRevoke {
-            Task {
-                do {
-                    try await oidcClient.signOut(idToken: token)
-                    await MainActor.run {
-                        statusMessage = "Signed out."
-                    }
-                } catch {
-                    // Logout failed, but we've already cleared local state
-                    await MainActor.run {
-                        statusMessage = "Signed out (local only)."
-                    }
-                }
-            }
-        } else {
-            statusMessage = "Signed out."
-        }
     }
     
-    func openKeycloakAccountManagement() {
-        // Open Keycloak account management
-        // The account console will handle authentication automatically
-        // If user is not signed in, it will redirect to login
-        let issuerString = AppConfig.keycloakIssuer.absoluteString
-        let baseUrl = issuerString.components(separatedBy: "/realms/").first ?? issuerString
-        let realm = "flowpilot"
+    func openFirebaseAccountManagement() {
+        // Open Firebase console for account management
+        let consoleUrl = "https://console.firebase.google.com/project/\(AppConfig.firebaseProjectId)/authentication/users"
         
-        // Use account-console client with proper OAuth flow
-        // The account console uses client_id=account-console
-        let accountUrl = "\(baseUrl)/realms/\(realm)/protocol/openid-connect/auth?client_id=account-console&redirect_uri=\(baseUrl.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? baseUrl)/realms/\(realm)/account&response_type=code&scope=openid%20profile&code_challenge_method=S256"
-        
-        guard let url = URL(string: accountUrl) else {
-            // Fallback to direct account console URL
-            let fallbackUrl = "\(baseUrl)/realms/\(realm)/account"
-            if let fallback = URL(string: fallbackUrl) {
-                NSWorkspace.shared.open(fallback)
-                statusMessage = "Opening Keycloak account management. Please sign in if prompted."
-            } else {
-                setError("Unable to open Keycloak account management.")
-            }
+        guard let url = URL(string: consoleUrl) else {
+            setError("Unable to open Firebase console.")
             return
         }
         
         NSWorkspace.shared.open(url)
-        statusMessage = "Opening Keycloak account management..."
+        statusMessage = "Opening Firebase console..."
     }
     
-    func signIn(isRegistrationPreferred: Bool) async {
-        // Perform OIDC sign-in/registration; why: bind workflows to an authenticated principal; side effect: opens browser UI.
+    func signIn(email: String, password: String) async {
+        // Perform Firebase email/password sign-in; why: bind workflows to an authenticated principal.
         clearError()
-        statusMessage = isRegistrationPreferred ? "Opening registration…" : "Opening sign-in…"
+        statusMessage = "Signing in…"
         
         do {
-            let (tokens, sub) = try await oidcClient.signIn(isRegistrationPreferred: isRegistrationPreferred)
-            principalSub = sub
-            idToken = tokens.id_token
-            accessToken = tokens.access_token
-            refreshToken = tokens.refresh_token
+            let (tokens, uid) = try await firebaseAuthClient.signIn(email: email, password: password)
+            principalSub = uid
+            idToken = tokens.idToken
+            accessToken = tokens.idToken  // Firebase uses ID token for authorization
+            refreshToken = tokens.refreshToken
             
-            // Debug: Decode and print access token sub claim
-            if let accessToken = accessToken {
-                do {
-                    let claims = try JwtUtils.decodeClaims(idToken: accessToken)
-                    let tokenSub = claims["sub"] as? String ?? "<no sub>"
-                    print("DEBUG: Access token sub=\(tokenSub), principalSub=\(sub)")
-                    if tokenSub != sub {
-                        print("WARNING: Access token sub (\(tokenSub)) does NOT match principalSub (\(sub))!")
-                    }
-                } catch {
-                    print("DEBUG: Failed to decode access token: \(error)")
-                }
-            }
+            // Extract username from email
+            username = tokens.email ?? email.components(separatedBy: "@").first
             
-            // Extract persona and username from access token
+            // Extract persona from token claims
             extractPersonaFromToken()
-            extractUsernameFromToken()
             
-            statusMessage = "Signed in. sub=\(sub)"
+            statusMessage = "Signed in. uid=\(uid)"
             
-            // Auto-load templates, workflows, and travel agents post sign-in; why: remove manual step and keep UX consistent.
+            // Auto-load templates, workflows, and travel agents post sign-in
             await loadWorkflowTemplates(forceReload: true)
             await loadWorkflows()
             await loadTravelAgents()
@@ -299,7 +245,7 @@ final class AppState: ObservableObject {
             // Debug: print all claim keys to see what's available
             print("DEBUG: Available claims in access token: \(claims.keys.sorted())")
             
-            // Try both "username" and "preferred_username" (Keycloak might use either)
+            // Try both "username" and "preferred_username" (Firebase might use either)
             if let usernameValue = claims["username"] as? String, !usernameValue.isEmpty {
                 username = usernameValue
                 print("DEBUG: Extracted username from 'username' claim: \(username ?? "nil")")
@@ -383,20 +329,19 @@ final class AppState: ObservableObject {
     }
     
     func refreshAccessTokenIfNeeded() async -> Bool {
-        // Refresh access token to get latest autobook attributes; why: ensure token has latest claims before execute; side effect: updates access token.
+        // Refresh access token to get latest claims; why: ensure token has latest claims before execute; side effect: updates access token.
         guard let refreshTokenValue = refreshToken else {
             return false
         }
         
         do {
-            let tokenResponse = try await oidcClient.refreshAccessToken(refreshToken: refreshTokenValue)
-            accessToken = tokenResponse.access_token
-            if let newRefreshToken = tokenResponse.refresh_token {
-                refreshToken = newRefreshToken
-            }
+            let tokenResponse = try await firebaseAuthClient.refreshAccessToken(refreshToken: refreshTokenValue)
+            idToken = tokenResponse.idToken
+            accessToken = tokenResponse.idToken  // Firebase uses ID token for authorization
+            refreshToken = tokenResponse.refreshToken
+            
             // Re-extract persona after refresh
             extractPersonaFromToken()
-            extractUsernameFromToken()
             return true
         } catch {
             setError("Token refresh failed: \(error)")

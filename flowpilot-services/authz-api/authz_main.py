@@ -90,18 +90,19 @@
 
 from __future__ import annotations
 
+import argparse
 import os
+import time
 from typing import Any, Optional
 
-import argparse
-import uvicorn
-
-from fastapi import Body, Depends, FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse
-
-import security
 import api_logging
+import security
+import uvicorn
 from authz_core import evaluate_authorization_request
+from fastapi import Body, Depends, FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from jose import jwt
 
 # ============================================================================
 # Configuration Constants
@@ -110,11 +111,32 @@ from authz_core import evaluate_authorization_request
 # Environment flag for detailed error messages (disable in production)
 INCLUDE_ERROR_DETAILS = os.environ.get("INCLUDE_ERROR_DETAILS", "1") == "1"
 
+# FlowPilot token signing configuration
+SIGNING_KEY_PATH = os.environ.get("SIGNING_KEY_PATH", "/secrets/signing-key")
+FLOWPILOT_PUBLIC_KEY_PATH = os.environ.get("FLOWPILOT_PUBLIC_KEY_PATH", "/secrets/signing-key-pub")
+FLOWPILOT_TOKEN_ISSUER = os.environ.get("FLOWPILOT_TOKEN_ISSUER", "https://flowpilot-authz-api")
+FLOWPILOT_TOKEN_AUDIENCE = os.environ.get("FLOWPILOT_TOKEN_AUDIENCE", "flowpilot")
+FLOWPILOT_TOKEN_EXPIRY_SECONDS = int(os.environ.get("FLOWPILOT_TOKEN_EXPIRY_SECONDS", "900"))  # 15 minutes
+
+# Cached signing key
+_SIGNING_KEY: str | None = None
+_SIGNING_KEY_ID = "flowpilot-v1"
+
 # ============================================================================
 # FastAPI Application
 # ============================================================================
 
 app = FastAPI(title="FlowPilot AuthZ API", version="1.0.0")
+
+# Add CORS middleware
+cors_config = security.get_cors_config()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_config["allow_origins"],
+    allow_credentials=cors_config["allow_credentials"],
+    allow_methods=cors_config["allow_methods"],
+    allow_headers=cors_config["allow_headers"],
+)
 
 # Add security middlewares before defining routes
 app.add_middleware(security.SecurityHeadersMiddleware)
@@ -160,7 +182,7 @@ def build_error_response(
     status_code: int,
     message: str,
     code: str = "ERROR",
-    details: Optional[dict[str, Any]] = None,
+    details: dict[str, Any] | None = None,
 ) -> JSONResponse:
     body: dict[str, Any] = {"message": message, "code": code}
     if details is not None:
@@ -168,9 +190,103 @@ def build_error_response(
     return JSONResponse(status_code=status_code, content=body)
 
 
+def _get_signing_key() -> str:
+    """Load FlowPilot signing key from file system or environment variable (cached)."""
+    global _SIGNING_KEY
+    if _SIGNING_KEY:
+        return _SIGNING_KEY
+
+    # First try environment variable (for Cloud Run secret mounting)
+    env_key = os.environ.get("SIGNING_KEY_CONTENT")
+    if env_key:
+        _SIGNING_KEY = env_key
+        return _SIGNING_KEY
+
+    # Fall back to file system (for local development)
+    try:
+        with open(SIGNING_KEY_PATH) as f:
+            _SIGNING_KEY = f.read()
+        return _SIGNING_KEY
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=500,
+            detail="Token signing key not configured (neither SIGNING_KEY_CONTENT env var nor file at SIGNING_KEY_PATH)"
+        )
+
+
 @app.get("/health")
 def get_health() -> dict[str, Any]:
     return {"status": "ok"}
+
+
+@app.post("/v1/token/exchange")
+def post_token_exchange(
+    request: Request,
+    token_claims: dict[str, Any] = Depends(security.verify_firebase_token),
+) -> dict[str, Any]:
+    """
+    Exchange Firebase ID token for pseudonymous FlowPilot access token.
+    
+    This endpoint accepts a Firebase ID token (which may contain PII like email, name)
+    and returns a minimal access token containing only the user's subject identifier (sub).
+    
+    The returned access token should be used for all backend API calls, enabling
+    privacy-preserving authorization where only the user's UUID is transmitted.
+    
+    Request:
+        Authorization: Bearer <Firebase ID token>
+    
+    Response:
+        {
+            "access_token": "<FlowPilot JWT>",
+            "token_type": "Bearer",
+            "expires_in": 900
+        }
+    
+    The returned access token contains only:
+        - sub: User UUID
+        - iss: FlowPilot issuer URL
+        - aud: FlowPilot audience
+        - exp, iat: Expiry and issued-at timestamps
+    """
+    api_logging.log_api_request(
+        "POST",
+        "/v1/token/exchange",
+        request_body={"exchange": "firebase_id_token -> flowpilot_access_token"},
+        token_claims={"sub": token_claims.get("sub")},  # Only log sub
+        request=request,
+    )
+
+    # Extract user ID from validated Firebase token
+    user_sub = token_claims.get("sub")
+    if not user_sub:
+        raise HTTPException(status_code=400, detail="Missing sub claim in token")
+
+    # Create minimal access token (pseudonymous - sub only)
+    now = int(time.time())
+    access_token_payload = {
+        "sub": user_sub,
+        "iss": FLOWPILOT_TOKEN_ISSUER,
+        "aud": FLOWPILOT_TOKEN_AUDIENCE,
+        "exp": now + FLOWPILOT_TOKEN_EXPIRY_SECONDS,
+        "iat": now,
+        "token_type": "access",
+    }
+
+    # Sign with FlowPilot's private key
+    signing_key = _get_signing_key()
+    access_token = jwt.encode(
+        access_token_payload,
+        signing_key,
+        algorithm="RS256",
+        headers={"kid": _SIGNING_KEY_ID}
+    )
+
+    return {
+        "access_token": access_token,
+        "token_type": "Bearer",
+        "expires_in": FLOWPILOT_TOKEN_EXPIRY_SECONDS,
+    }
 
 
 @app.post("/v1/evaluate")

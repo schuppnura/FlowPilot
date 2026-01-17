@@ -12,79 +12,58 @@
 import Foundation
 
 struct AppConfig {
-    // MARK: - FlowPilot service endpoints
+    // MARK: - FlowPilot service endpoints (Cloud Run)
 
     /// AuthZ API base URL (string form preserved for backward compatibility).
-    /// Default assumption: Docker publishes authz-api on localhost:8002.
+    /// Default: Cloud Run deployment in us-central1.
     static let authzBaseUrl: String = stringValue(
         key: "FLOWPILOT_AUTHZ_BASE_URL",
         infoPlistKey: "FLOWPILOT_AUTHZ_BASE_URL",
-        defaultValue: "http://localhost:8002"
+        defaultValue: "https://flowpilot-authz-api-737191827545.us-central1.run.app"
     )
 
     /// URL form of `authzBaseUrl`.
-    static let authzBaseUrlUrl: URL = URL(string: authzBaseUrl) ?? URL(string: "http://localhost:8002")!
+    static let authzBaseUrlUrl: URL = URL(string: authzBaseUrl) ?? URL(string: "https://flowpilot-authz-api-737191827545.us-central1.run.app")!
 
     /// Domain/services API base URL.
-    /// Default assumption: Docker publishes domain-services-api on localhost:8003.
+    /// Default: Cloud Run deployment in us-central1.
     static let servicesBaseUrl: URL = urlValue(
         key: "FLOWPILOT_SERVICES_BASE_URL",
         infoPlistKey: "FLOWPILOT_SERVICES_BASE_URL",
-        defaultValue: "http://127.0.0.1:8003"
+        defaultValue: "https://flowpilot-domain-services-api-737191827545.us-central1.run.app"
     )
 
     /// Agent-runner API base URL.
-    /// Default assumption: Docker publishes ai-agent-api on localhost:8004.
+    /// Default: Cloud Run deployment in us-central1.
     static let agentRunnerBaseUrl: URL = urlValue(
         key: "FLOWPILOT_AGENT_RUNNER_BASE_URL",
         infoPlistKey: "FLOWPILOT_AGENT_RUNNER_BASE_URL",
-        defaultValue: "http://127.0.0.1:8004"
+        defaultValue: "https://flowpilot-ai-agent-api-737191827545.us-central1.run.app"
     )
     
     /// Delegation API base URL.
-    /// Default assumption: Docker publishes delegation-api on localhost:8005.
+    /// Default: Cloud Run deployment in us-central1.
     static let delegationBaseUrl: URL = urlValue(
         key: "FLOWPILOT_DELEGATION_BASE_URL",
         infoPlistKey: "FLOWPILOT_DELEGATION_BASE_URL",
-        defaultValue: "http://127.0.0.1:8005"
+        defaultValue: "https://flowpilot-delegation-api-737191827545.us-central1.run.app"
     )
 
-    // MARK: - OIDC (Keycloak)
+    // MARK: - Firebase Authentication
 
-    /// Keycloak issuer (realm) URL.
-    /// Default assumption: Docker publishes Keycloak on https://localhost:8443 and imports realm "flowpilot".
-    static let keycloakIssuer: URL = urlValue(
-        key: "FLOWPILOT_KEYCLOAK_ISSUER",
-        infoPlistKey: "FLOWPILOT_KEYCLOAK_ISSUER",
-        defaultValue: "https://localhost:8443/realms/flowpilot"
+    /// Firebase Web API Key for authentication.
+    /// Used for email/password authentication via Firebase REST API.
+    static let firebaseWebApiKey: String = stringValue(
+        key: "FLOWPILOT_FIREBASE_API_KEY",
+        infoPlistKey: "FLOWPILOT_FIREBASE_API_KEY",
+        defaultValue: "REDACTED_API_KEY"
     )
 
-    /// OIDC client id configured in Keycloak.
-    static let oidcClientId: String = stringValue(
-        key: "FLOWPILOT_OIDC_CLIENT_ID",
-        infoPlistKey: "FLOWPILOT_OIDC_CLIENT_ID",
-        defaultValue: "flowpilot-desktop"
-    )
-
-    /// Redirect URI registered in Keycloak for the desktop client.
-    static let oidcRedirectUri: String = stringValue(
-        key: "FLOWPILOT_OIDC_REDIRECT_URI",
-        infoPlistKey: "FLOWPILOT_OIDC_REDIRECT_URI",
-        defaultValue: "flowpilot-demo://oauth/callback"
-    )
-
-    /// Space-separated scopes.
-    static let oidcScopes: String = stringValue(
-        key: "FLOWPILOT_OIDC_SCOPES",
-        infoPlistKey: "FLOWPILOT_OIDC_SCOPES",
-        defaultValue: "openid profile autobook"
-    )
-
-    /// Custom scheme part of `oidcRedirectUri` used by ASWebAuthenticationSession.
-    static let oidcCallbackScheme: String = stringValue(
-        key: "FLOWPILOT_OIDC_CALLBACK_SCHEME",
-        infoPlistKey: "FLOWPILOT_OIDC_CALLBACK_SCHEME",
-        defaultValue: "flowpilot-demo"
+    /// Firebase Project ID.
+    static let firebaseProjectId: String = stringValue(
+        key: "FLOWPILOT_FIREBASE_PROJECT_ID",
+        infoPlistKey: "FLOWPILOT_FIREBASE_PROJECT_ID",
+        defaultValue: "vision-course-476214"
     )
 
     // MARK: - Backward compatible aliases (legacy naming)

@@ -15,25 +15,25 @@ from __future__ import annotations
 
 import argparse
 import os
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
-import uvicorn
-from fastapi import Depends, FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
-from pydantic import BaseModel, Field, validator
-
-import security
 import api_logging
+import security
+import uvicorn
 from ai_agent_core import (
+    check_workflow_execution_authorization,
     execute_workflow_run,
     normalize_workflow_id,
-    check_workflow_execution_authorization,
 )
+from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field, validator
 from utils import (
+    coerce_positive_int,
     load_json_object,
     merge_config,
-    coerce_positive_int,
     require_non_empty_string,
 )
 
@@ -41,7 +41,7 @@ from utils import (
 INCLUDE_ERROR_DETAILS = os.environ.get("INCLUDE_ERROR_DETAILS", "1") == "1"
 
 
-DEFAULT_CONFIG: Dict[str, Any] = {
+DEFAULT_CONFIG: dict[str, Any] = {
     "service_name": "agent-runner-api",
     "log_level": "info",
     # Workflow (domain) API base. In this demo stack it points to the FlowPilot API.
@@ -65,8 +65,8 @@ class WorkflowRunRequest(BaseModel):
         ..., min_length=1, max_length=255, description="Principal subject"
     )
     dry_run: bool = Field(default=True, description="Dry run flag")
-    persona: Optional[str] = Field(
-        None, max_length=255, description="Selected persona for the user"
+    persona: str = Field(
+        ..., min_length=1, max_length=255, description="Selected persona for the user (required)"
     )
 
     @validator("workflow_id")
@@ -78,13 +78,11 @@ class WorkflowRunRequest(BaseModel):
         return security.sanitize_string(v, 255)
 
     @validator("persona")
-    def sanitize_persona(cls, v: Optional[str]) -> Optional[str]:
-        if v is None:
-            return None
+    def sanitize_persona(cls, v: str) -> str:
         return security.sanitize_string(v, 255)
 
 
-def build_config(config_path: Optional[str]) -> Dict[str, Any]:
+def build_config(config_path: str | None) -> dict[str, Any]:
     # Build runtime config from defaults, optional JSON override, and env vars
     # side effect: reads env and file.
     config = dict(DEFAULT_CONFIG)
@@ -133,7 +131,7 @@ def build_config(config_path: Optional[str]) -> Dict[str, Any]:
     return config
 
 
-def handle_get_health(_request: Request) -> Dict[str, str]:
+def handle_get_health(_request: Request) -> dict[str, str]:
     # Provide a simple health response for smoke tests
     # assumption: no downstream checks here by design.
     return {"status": "ok"}
@@ -143,10 +141,10 @@ def handle_post_workflow_runs(
     request: Request,
     body: WorkflowRunRequest,
     token_claims: dict = Depends(security.verify_token),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     # Execute a workflow by iterating items and delegating execution to domain service endpoints (domain is PEP).
     # AuthZEN: Extract user token, decode to get principal info, check authorization before starting.
-    config: Dict[str, Any] = request.app.state.config
+    config: dict[str, Any] = request.app.state.config
 
     # Log request
     request_body = {
@@ -170,7 +168,7 @@ def handle_post_workflow_runs(
             user_token = auth_header[7:]  # Remove "Bearer " prefix
 
         # Decode user token to extract principal information (AuthZEN: disassemble token)
-        principal_user: Optional[Dict[str, Any]] = None
+        principal_user: dict[str, Any] | None = None
         if user_token:
             try:
                 user_claims = security.verify_token_string(user_token)
@@ -188,14 +186,8 @@ def handle_post_workflow_runs(
                     ),  # Use token sub, fallback to body
                 }
 
-                # Add selected persona to principal_user if provided
-                if body.persona:
-                    principal_user["persona"] = body.persona
-                    print(f"DEBUG: Added persona to principal_user: {body.persona}")
-                else:
-                    print(
-                        f"DEBUG: No persona in request body. body.persona = {body.persona}"
-                    )
+                # Add selected persona to principal_user (now required)
+                principal_user["persona"] = body.persona
             except Exception:
                 # If token decode fails, use principal_sub from body (backward compatibility)
                 principal_user = {
@@ -208,21 +200,9 @@ def handle_post_workflow_runs(
 
         workflow_id = normalize_workflow_id(workflow_id=body.workflow_id)
 
-        # Get agent sub from service token
-        # This must succeed - we cannot proceed without a valid agent identity
-        service_token = security.get_service_token()
-        if not service_token:
-            raise HTTPException(
-                status_code=500,
-                detail="Service token not available - cannot identify agent",
-            )
-        service_claims = security.verify_token_string(service_token)
-        agent_sub = service_claims.get("sub")
-        if not agent_sub:
-            raise HTTPException(
-                status_code=500,
-                detail="Service token does not contain 'sub' claim - cannot identify agent",
-            )
+        # Use fixed agent identity (no longer need service token since we pass user token)
+        # The agent acts on behalf of the user with the user's token
+        agent_sub = "agent-runner"
 
         # AuthZEN: Check authorization before starting workflow execution (anti-spoofing)
         authz_result = check_workflow_execution_authorization(
@@ -239,11 +219,13 @@ def handle_post_workflow_runs(
             )
 
         # Execute workflow with principal-user object (AuthZEN: pass principal info, not token)
+        # Pass user token for service-to-service calls (agent acts on behalf of user)
         result = execute_workflow_run(
             config=config,
             workflow_id=workflow_id,
             principal_user=principal_user,
             dry_run=bool(body.dry_run),
+            user_token=user_token,
         )
 
         # Log successful response
@@ -264,11 +246,6 @@ def handle_post_workflow_runs(
             path="/v1/workflow-runs",
             status_code=exc.status_code,
             error=str(exc.detail) if hasattr(exc, "detail") else str(exc),
-        )
-        raise
-    except Exception as exc:
-        api_logging.log_api_response(
-            method="POST", path="/v1/workflow-runs", status_code=500, error=str(exc)
         )
         raise
     except security.InputValidationError as exception:
@@ -299,14 +276,16 @@ def handle_post_workflow_runs(
 
 
 def handle_post_agent_runs(
-    request: Request, body: WorkflowRunRequest
-) -> Dict[str, Any]:
+    request: Request,
+    body: WorkflowRunRequest,
+    token_claims: dict = Depends(security.verify_token),
+) -> dict[str, Any]:
     # Backward-compatible alias for older clients
     # why: preserve existing scripts and desktop app wiring.
-    return handle_post_workflow_runs(request, body)
+    return handle_post_workflow_runs(request, body, token_claims)
 
 
-def create_app(config: Dict[str, Any]) -> FastAPI:
+def create_app(config: dict[str, Any]) -> FastAPI:
     #
     # Create FastAPI API endpoints and wire routes
     #
@@ -320,6 +299,16 @@ def create_app(config: Dict[str, Any]) -> FastAPI:
         swagger_ui_parameters={"defaultModelsExpandDepth": -1},
     )
     api.state.config = config
+
+    # Add CORS middleware
+    cors_config = security.get_cors_config()
+    api.add_middleware(
+        CORSMiddleware,
+        allow_origins=cors_config["allow_origins"],
+        allow_credentials=cors_config["allow_credentials"],
+        allow_methods=cors_config["allow_methods"],
+        allow_headers=cors_config["allow_headers"],
+    )
 
     # Add security middlewares
     api.add_middleware(security.SecurityHeadersMiddleware)

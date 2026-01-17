@@ -171,3 +171,11 @@ data/*
 *.index
 *.npz
 .DS_Store
+
+# Generated OPA config files (auto-generated from manifest.yaml)
+infra/opa/policies/*/persona_config.json
+
+# MkDocs
+site/
+secrets/
+firebase-admin-key.json

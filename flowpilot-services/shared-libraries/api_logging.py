@@ -36,7 +36,6 @@ from typing import Any, Dict, Optional
 
 import security
 
-
 # Configuration
 ENABLE_API_LOGGING = os.environ.get("ENABLE_API_LOGGING", "0") == "1"
 
@@ -65,7 +64,7 @@ def _safe_serialize(obj: Any) -> Any:
     return str(obj)
 
 
-def _sanitize_token_for_logging(token: Optional[str]) -> Optional[Dict[str, Any]]:
+def _sanitize_token_for_logging(token: str | None) -> dict[str, Any] | None:
     # Decode and return token claims for logging, or None if decoding fails
     # This provides the decoded token information without exposing the raw token
     if not token:
@@ -81,7 +80,7 @@ def _sanitize_token_for_logging(token: Optional[str]) -> Optional[Dict[str, Any]
         return {"error": "failed_to_decode", "token_length": len(token) if token else 0}
 
 
-def _extract_raw_token_from_request(request: Any) -> Optional[str]:
+def _extract_raw_token_from_request(request: Any) -> str | None:
     # Extract raw JWT token from FastAPI Request object.
     #
     # Args:
@@ -102,12 +101,12 @@ def _extract_raw_token_from_request(request: Any) -> Optional[str]:
 def log_api_request(
     method: str,
     path: str,
-    request_body: Optional[Dict[str, Any]] = None,
-    token_claims: Optional[Dict[str, Any]] = None,
-    raw_token: Optional[str] = None,
-    request: Optional[Any] = None,  # FastAPI Request object
-    path_params: Optional[Dict[str, Any]] = None,
-    query_params: Optional[Dict[str, Any]] = None,
+    request_body: dict[str, Any] | None = None,
+    token_claims: dict[str, Any] | None = None,
+    raw_token: str | None = None,
+    request: Any | None = None,  # FastAPI Request object
+    path_params: dict[str, Any] | None = None,
+    query_params: dict[str, Any] | None = None,
 ) -> None:
     # Log an API request with full context.
     #
@@ -145,7 +144,7 @@ def log_api_request(
     if raw_token is None and request is not None:
         raw_token = _extract_raw_token_from_request(request)
 
-    log_entry: Dict[str, Any] = {
+    log_entry: dict[str, Any] = {
         "type": "api_request",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "method": method,
@@ -177,8 +176,8 @@ def log_api_response(
     method: str,
     path: str,
     status_code: int,
-    response_body: Optional[Dict[str, Any]] = None,
-    error: Optional[str] = None,
+    response_body: dict[str, Any] | None = None,
+    error: str | None = None,
 ) -> None:
     # Log an API response.
     #
@@ -201,7 +200,7 @@ def log_api_response(
     if not _should_log():
         return
 
-    log_entry: Dict[str, Any] = {
+    log_entry: dict[str, Any] = {
         "type": "api_response",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "method": method,
@@ -222,15 +221,15 @@ def log_api_response(
 def log_api_call(
     method: str,
     path: str,
-    request_body: Optional[Dict[str, Any]] = None,
-    token_claims: Optional[Dict[str, Any]] = None,
-    raw_token: Optional[str] = None,
-    request: Optional[Any] = None,  # FastAPI Request object
-    path_params: Optional[Dict[str, Any]] = None,
-    query_params: Optional[Dict[str, Any]] = None,
-    status_code: Optional[int] = None,
-    response_body: Optional[Dict[str, Any]] = None,
-    error: Optional[str] = None,
+    request_body: dict[str, Any] | None = None,
+    token_claims: dict[str, Any] | None = None,
+    raw_token: str | None = None,
+    request: Any | None = None,  # FastAPI Request object
+    path_params: dict[str, Any] | None = None,
+    query_params: dict[str, Any] | None = None,
+    status_code: int | None = None,
+    response_body: dict[str, Any] | None = None,
+    error: str | None = None,
 ) -> None:
     # Convenience function to log both request and response in one call.
     # Useful when you have all the information at once.

@@ -16,10 +16,11 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urljoin
 
+import api_logging
 import requests
 
 
-def read_env_string(name: str, default_value: Optional[str] = None) -> str:
+def read_env_string(name: str, default_value: str | None = None) -> str:
     # Read required environment variable as string.
     # Args:
     #     name: Environment variable name
@@ -36,7 +37,7 @@ def read_env_string(name: str, default_value: Optional[str] = None) -> str:
     return value.strip()
 
 
-def read_env_int(name: str, default_value: Optional[int] = None) -> int:
+def read_env_int(name: str, default_value: int | None = None) -> int:
     # Read required environment variable as integer.
     # Args:
     #     name: Environment variable name
@@ -56,7 +57,7 @@ def read_env_int(name: str, default_value: Optional[int] = None) -> int:
         raise ValueError(f"Invalid integer value for {name}: {value}") from exc
 
 
-def read_env_float(name: str, default_value: Optional[float] = None) -> float:
+def read_env_float(name: str, default_value: float | None = None) -> float:
     # Read required environment variable as float.
     # Args:
     #     name: Environment variable name
@@ -76,7 +77,7 @@ def read_env_float(name: str, default_value: Optional[float] = None) -> float:
         raise ValueError(f"Invalid float value for {name}: {value}") from exc
 
 
-def read_env_bool(name: str, default_value: Optional[bool] = None) -> bool:
+def read_env_bool(name: str, default_value: bool | None = None) -> bool:
     # Read required environment variable as boolean.
     # Recognizes common boolean representations:
     #   True: "true", "yes", "y", "1", "on" (case-insensitive)
@@ -136,7 +137,7 @@ def coerce_int(value: Any, default: int) -> int:
         return default
 
 
-def coerce_dict(value: Any, field_name: Optional[str] = None) -> dict[str, Any]:
+def coerce_dict(value: Any, field_name: str | None = None) -> dict[str, Any]:
     # Convert a value to a dict, raising error on invalid types.
     # Args:
     #     value: Value to convert (None or dict are acceptable)
@@ -179,7 +180,7 @@ def coerce_bool(value: Any, default: bool) -> bool:
     return bool(value)
 
 
-def coerce_float(value: Any, default: Optional[float] = None) -> Optional[float]:
+def coerce_float(value: Any, default: float | None = None) -> float | None:
     # Convert a value to a float, returning default if conversion fails or value is None.
     if value is None:
         return default
@@ -189,7 +190,7 @@ def coerce_float(value: Any, default: Optional[float] = None) -> Optional[float]
         return default
 
 
-def coerce_str(value: Any, default: Optional[str] = None) -> Optional[str]:
+def coerce_str(value: Any, default: str | None = None) -> str | None:
     # Convert a value to a string, returning default if value is None or empty.
     if value is None:
         return default
@@ -200,7 +201,7 @@ def coerce_str(value: Any, default: Optional[str] = None) -> Optional[str]:
     return str(value)
 
 
-def normalize_departure_date(date_value: Any) -> Optional[str]:
+def normalize_departure_date(date_value: Any) -> str | None:
     # Normalize departure date to RFC3339 format for OPA consumption.
     # Accepts:
     #   - RFC3339 format (e.g., "2025-12-31T00:00:00Z")
@@ -278,7 +279,7 @@ def coerce_timestamp() -> str:
     )
 
 
-def coerce_utc(value: Optional[str]) -> Optional[datetime]:
+def coerce_utc(value: str | None) -> datetime | None:
     # Parse a strict subset of ISO-8601 UTC timestamps used by the service, returning None for missing values.
     if value is None:
         return None
@@ -301,7 +302,7 @@ def coerce_utc(value: Optional[str]) -> Optional[datetime]:
     return parsed.astimezone(timezone.utc)
 
 
-def truncate_text(value: Optional[str], max_length: int) -> str:
+def truncate_text(value: str | None, max_length: int) -> str:
     # Truncate text for error messages to keep logs readable and avoid leaking large upstream payloads.
     if value is None:
         return ""
@@ -311,12 +312,12 @@ def truncate_text(value: Optional[str], max_length: int) -> str:
     return stripped[:max_length] + "…"
 
 
-def require_non_empty_list(value: Any, field_name: str) -> List[str]:
+def require_non_empty_list(value: Any, field_name: str) -> list[str]:
     # Validate scope arrays as non-empty lists of non-empty strings to prevent unsafe or ambiguous permissions.
     if not isinstance(value, list) or not value:
         raise ValueError(f"{field_name} must be a non-empty list of strings")
 
-    normalized: List[str] = []
+    normalized: list[str] = []
     for item in value:
         if not isinstance(item, str) or not item.strip():
             raise ValueError(f"{field_name} items must be non-empty list of strings")
@@ -332,7 +333,7 @@ def require_non_empty_string(value: Any, field_name: str) -> str:
     return value.strip()
 
 
-def require_optional_string(value: Any, field_name: str) -> Optional[str]:
+def require_optional_string(value: Any, field_name: str) -> str | None:
     # Validate optional strings without forcing presence, ensuring consistent normalization to None.
     if value is None:
         return None
@@ -349,7 +350,7 @@ def build_url(base_url: str, path: str) -> str:
     return urljoin(base, relative)
 
 
-def parse_json_object(text: str, context: str) -> Dict[str, Any]:
+def parse_json_object(text: str, context: str) -> dict[str, Any]:
     # Parse JSON response into an object
     # assumption: callers expect an object and want actionable errors.
     if not text or not text.strip():
@@ -366,8 +367,8 @@ def parse_json_object(text: str, context: str) -> Dict[str, Any]:
 
 
 def http_get_text(
-    url: str, timeout_seconds: int, headers: Optional[Dict[str, str]]
-) -> Tuple[int, str]:
+    url: str, timeout_seconds: int, headers: dict[str, str] | None
+) -> tuple[int, str]:
     # Perform HTTP GET and return (status, text)
     # side effect: network I/O and raises on transport errors.
     try:
@@ -380,8 +381,8 @@ def http_get_text(
 
 
 def http_get_json(
-    url: str, timeout_seconds: int, headers: Optional[Dict[str, str]]
-) -> Dict[str, Any]:
+    url: str, timeout_seconds: int, headers: dict[str, str] | None
+) -> dict[str, Any]:
     # Perform HTTP GET expecting JSON object
     # how: call http_get_text then parse
     # side effect: network I/O.
@@ -407,18 +408,50 @@ def http_post_json(url: str, payload: dict, timeouts: tuple[float, float]) -> di
     if len(timeouts) != 2:
         raise ValueError(f"timeouts must be a (connect, read) tuple, got {timeouts}")
 
+    # Log outbound request
+    api_logging.log_api_request(
+        method="POST",
+        path=url,
+        request_body=payload,
+    )
+
     response = requests.post(url, json=payload, timeout=timeouts)
+    
     if response.status_code < 200 or response.status_code >= 300:
+        # Log error response
+        api_logging.log_api_response(
+            method="POST",
+            path=url,
+            status_code=response.status_code,
+            error=f"HTTP POST non-2xx: body={response.text}",
+        )
         raise RuntimeError(
             f"HTTP POST non-2xx: url={url} http={response.status_code} body={response.text}"
         )
 
     try:
-        return response.json()
+        response_body = response.json()
     except ValueError as exc:
+        # Log JSON parsing error
+        api_logging.log_api_response(
+            method="POST",
+            path=url,
+            status_code=response.status_code,
+            error=f"Invalid JSON response: body={response.text}",
+        )
         raise RuntimeError(
             f"HTTP POST invalid JSON response: url={url} http={response.status_code} body={response.text}"
         ) from exc
+    
+    # Log successful response
+    api_logging.log_api_response(
+        method="POST",
+        path=url,
+        status_code=response.status_code,
+        response_body=response_body,
+    )
+    
+    return response_body
 
 
 def build_timeouts(
@@ -441,7 +474,7 @@ def load_json_object(file_path: str) -> dict:
     # why: centralized JSON loading with consistent error handling
     # side effect: filesystem I/O.
     try:
-        with open(file_path, "r", encoding="utf-8") as handle:
+        with open(file_path, encoding="utf-8") as handle:
             data = json.load(handle)
     except FileNotFoundError as exception:
         raise ValueError(f"Config file not found: {file_path}") from exception

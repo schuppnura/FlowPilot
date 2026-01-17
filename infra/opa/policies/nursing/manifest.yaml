@@ -1,0 +1,72 @@
+# Policy Manifest for Nursing Care Use Case
+#
+# This manifest defines the policy configuration for healthcare/nursing domain.
+# It demonstrates how the same authorization framework supports different
+# business use cases with domain-specific attributes.
+
+name: nursing
+package: nursing_care
+
+# Resource types this policy handles (for policy selection routing)
+resource_types:
+  - care_task
+  - patient_assignment
+  - shift
+
+# Persona configuration
+persona_config:
+  # Valid persona status values
+  # Status lifecycle: pending → active → suspended/inactive/expired
+  persona_statuses:
+    - pending      # Persona created but not yet activated
+    - active       # Persona is active and can be used
+    - inactive     # Persona temporarily disabled by user
+    - suspended    # Persona suspended by admin (e.g., compliance issue)
+    - expired      # Persona validity period has ended
+
+# Unified attributes with source, defaults, and validation
+attributes:
+  # Persona attributes (fetched from user's persona)
+  # Note: 'consent' is handled automatically - not policy-specific
+  - name: nursing_max_patient_count
+    type: integer
+    source: persona
+    default: 5
+    required: false
+    description: "Maximum number of patients nurse can handle simultaneously"
+  
+  - name: nursing_shift_hours
+    type: integer
+    source: persona
+    default: 8
+    required: false
+    description: "Maximum shift hours nurse can work"
+  
+  - name: nursing_certification_level
+    type: integer
+    source: persona
+    default: 1
+    required: false
+    description: "Nurse certification level (1=CNA, 2=LPN, 3=RN, 4=Advanced)"
+  
+  # Resource attributes (from care task properties)
+  - name: current_patient_count
+    type: integer
+    source: resource
+    default: 0
+    required: false
+    description: "Current number of assigned patients"
+  
+  - name: current_shift_hours
+    type: integer
+    source: resource
+    default: 0
+    required: false
+    description: "Hours already worked in current shift"
+  
+  - name: required_certification_level
+    type: integer
+    source: resource
+    default: 1
+    required: true
+    description: "Minimum certification level required for task"

@@ -129,20 +129,19 @@ import argparse
 import os
 from typing import Any, Dict, List, Optional
 
-import uvicorn
-from fastapi import Depends, FastAPI, HTTPException, Query, Request
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field, validator
-
-import security
 import api_logging
-import profile
+import security
+import uvicorn
 from delegation_core import DelegationService
+from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from graphdb import DelegationGraphDB
+from pydantic import BaseModel, Field, validator
 from utils import (
+    coerce_positive_int,
     load_json_object,
     merge_config,
-    coerce_positive_int,
     require_non_empty_string,
 )
 
@@ -171,7 +170,7 @@ DELEGATION_ALLOWED_ACTIONS = {
 }
 
 # Default configuration values
-DEFAULT_CONFIG: Dict[str, Any] = {
+DEFAULT_CONFIG: dict[str, Any] = {
     "service_name": "flowpilot-delegation-api",
     "log_level": "info",
     "db_path": "./delegations.db",  # SQLite database file path
@@ -196,10 +195,10 @@ class CreateDelegationRequest(BaseModel):
         max_length=255,
         description="Delegate ID (receiving authority)",
     )
-    workflow_id: Optional[str] = Field(
+    workflow_id: str | None = Field(
         None, max_length=255, description="Optional workflow ID to scope delegation"
     )
-    scope: Optional[List[str]] = Field(
+    scope: list[str] | None = Field(
         None,
         description='List of actions (e.g. ["read"] or ["read", "execute"]). Defaults to ["execute"]',
     )
@@ -219,13 +218,13 @@ class CreateDelegationRequest(BaseModel):
         return security.sanitize_string(v, 255)
 
     @validator("workflow_id")
-    def sanitize_workflow_id(cls, v: Optional[str]) -> Optional[str]:
+    def sanitize_workflow_id(cls, v: str | None) -> str | None:
         if v is None:
             return None
         return security.sanitize_string(v, 255)
 
     @validator("scope")
-    def validate_scope(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+    def validate_scope(cls, v: list[str] | None) -> list[str] | None:
         if v is None:
             return None
         # Validate that scope contains only allowed actions
@@ -244,7 +243,7 @@ class RevokeDelegationRequest(BaseModel):
     delegate_id: str = Field(
         ..., min_length=1, max_length=255, description="Delegate ID"
     )
-    workflow_id: Optional[str] = Field(
+    workflow_id: str | None = Field(
         None, max_length=255, description="Optional workflow ID to scope revocation"
     )
 
@@ -257,13 +256,13 @@ class RevokeDelegationRequest(BaseModel):
         return security.sanitize_string(v, 255)
 
     @validator("workflow_id")
-    def sanitize_workflow_id(cls, v: Optional[str]) -> Optional[str]:
+    def sanitize_workflow_id(cls, v: str | None) -> str | None:
         if v is None:
             return None
         return security.sanitize_string(v, 255)
 
 
-def build_config(config_path: Optional[str]) -> Dict[str, Any]:
+def build_config(config_path: str | None) -> dict[str, Any]:
     # Build runtime config from defaults, optional JSON override, and environment variables.
     config = dict(DEFAULT_CONFIG)
 
@@ -284,7 +283,7 @@ def build_config(config_path: Optional[str]) -> Dict[str, Any]:
     return config
 
 
-def handle_get_health(request: Request) -> Dict[str, Any]:
+def handle_get_health(request: Request) -> dict[str, Any]:
     # Return an operational health response.
     return {
         "status": "ok",
@@ -298,7 +297,7 @@ def handle_post_delegations(
     request: Request,
     body: CreateDelegationRequest,
     token_claims: dict = Depends(security.verify_token),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     # Create a delegation relationship.
     service: DelegationService = request.app.state.service
 
@@ -314,13 +313,13 @@ def handle_post_delegations(
         # Extract delegator_id from JWT to validate they can only delegate what they have
         # Skip validation in these cases:
         #   1. delegator_id matches principal_id (owner creating their own delegation)
-        #   2. Token is from a service account (azp=flowpilot-agent) acting on behalf of owner
+        #   2. Token is from a service account (persona=service) acting on behalf of owner
         #   3. No delegator_id provided
         delegator_id = token_claims.get("sub") if token_claims else None
-        azp = token_claims.get("azp") if token_claims else None
+        persona = token_claims.get("persona") if token_claims else None
 
-        # Check if this is a service account token (client credentials flow)
-        is_service_account = azp == "flowpilot-agent"
+        # Check if this is a service account token (Cloud Run identity token has persona=service)
+        is_service_account = persona == "service"
 
         # Only validate subdelegations (non-service-account, non-owner delegations)
         effective_delegator_id = None
@@ -364,7 +363,7 @@ def handle_delete_delegations(
     request: Request,
     body: RevokeDelegationRequest,
     token_claims: dict = Depends(security.verify_token),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     # Revoke a delegation relationship.
     service: DelegationService = request.app.state.service
 
@@ -410,9 +409,9 @@ def handle_get_delegations_validate(
     request: Request,
     principal_id: str,
     delegate_id: str,
-    workflow_id: Optional[str] = None,
+    workflow_id: str | None = None,
     token_claims: dict = Depends(security.verify_token),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     # Validate a delegation relationship.
     service: DelegationService = request.app.state.service
 
@@ -459,12 +458,12 @@ def handle_get_delegations_validate(
 
 def handle_get_delegations(
     request: Request,
-    principal_id: Optional[str] = None,
-    delegate_id: Optional[str] = None,
-    workflow_id: Optional[str] = None,
+    principal_id: str | None = None,
+    delegate_id: str | None = None,
+    workflow_id: str | None = None,
     include_expired: bool = False,
     token_claims: dict = Depends(security.verify_token),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     # List delegations.
     service: DelegationService = request.app.state.service
 
@@ -499,43 +498,11 @@ def handle_get_delegations(
         raise HTTPException(status_code=500, detail=error_detail) from exception
 
 
-def handle_get_delegation_candidates(
-    request: Request,
-    persona: str = Query(
-        ..., description="Persona to filter users by (e.g., 'travel-agent')"
-    ),
-    token_claims: dict = Depends(security.verify_token),
-) -> Dict[str, Any]:
-    # List users who have a specific persona (delegation candidates).
-    try:
-        api_logging.log_api_request(
-            "GET",
-            "/v1/users",
-            token_claims=token_claims,
-            request=request,
-            path_params={"persona": persona},
-        )
-
-        users = profile.list_users_by_persona(persona)
-        result = {"users": users}
-
-        api_logging.log_api_response("GET", "/v1/users", 200, response_body=result)
-        return result
-    except ValueError as exception:
-        error_detail = security.sanitize_error_message(
-            str(exception), INCLUDE_ERROR_DETAILS
-        )
-        api_logging.log_api_response("GET", "/v1/users", 400, error=error_detail)
-        raise HTTPException(status_code=400, detail=error_detail) from exception
-    except Exception as exception:
-        error_detail = security.sanitize_error_message(
-            str(exception), INCLUDE_ERROR_DETAILS
-        )
-        api_logging.log_api_response("GET", "/v1/users", 500, error=error_detail)
-        raise HTTPException(status_code=500, detail=error_detail) from exception
+# GET /v1/users endpoint has been moved to flowpilot-user-profile-api
+# This service now focuses solely on delegation relationship management
 
 
-def create_app(config: Dict[str, Any]) -> FastAPI:
+def create_app(config: dict[str, Any]) -> FastAPI:
     # Create FastAPI API endpoints and wire routes.
     api = FastAPI(
         title="FlowPilot Delegation API",
@@ -544,9 +511,9 @@ def create_app(config: Dict[str, Any]) -> FastAPI:
     )
     api.state.config = config
 
-    # Initialize graph database
-    db_path = str(config.get("db_path", "./delegations.db"))
-    graphdb = DelegationGraphDB(db_path=db_path)
+    # Initialize PostgreSQL graph database
+    graphdb = DelegationGraphDB()  # Uses env vars for connection
+
     service = DelegationService(graphdb=graphdb)
     api.state.service = service
 
@@ -566,6 +533,16 @@ def create_app(config: Dict[str, Any]) -> FastAPI:
             status_code=exc.status_code,
             content={"detail": exc.detail},
         )
+
+    # Add CORS middleware
+    cors_config = security.get_cors_config()
+    api.add_middleware(
+        CORSMiddleware,
+        allow_origins=cors_config["allow_origins"],
+        allow_credentials=cors_config["allow_credentials"],
+        allow_methods=cors_config["allow_methods"],
+        allow_headers=cors_config["allow_headers"],
+    )
 
     # Add security middlewares
     api.add_middleware(security.SecurityHeadersMiddleware)
@@ -601,12 +578,7 @@ def create_app(config: Dict[str, Any]) -> FastAPI:
         methods=["GET"],
         dependencies=[Depends(security.verify_token)],
     )
-    api.add_api_route(
-        "/v1/users",
-        handle_get_delegation_candidates,
-        methods=["GET"],
-        dependencies=[Depends(security.verify_token)],
-    )
+    # /v1/users endpoint moved to flowpilot-user-profile-api
 
     return api
 

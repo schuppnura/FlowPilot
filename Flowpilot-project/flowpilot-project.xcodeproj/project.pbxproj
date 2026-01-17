@@ -85,7 +85,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 8CC4DE5B2EF05411008D11DE /* Build configuration list for PBXProject "FlowPilot-project" */;
+			buildConfigurationList = 8CC4DE5B2EF05411008D11DE /* Build configuration list for PBXProject "flowpilot-project" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -326,7 +326,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		8CC4DE5B2EF05411008D11DE /* Build configuration list for PBXProject "FlowPilot-project" */ = {
+		8CC4DE5B2EF05411008D11DE /* Build configuration list for PBXProject "flowpilot-project" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				8CC4DE692EF05412008D11DE /* Debug */,

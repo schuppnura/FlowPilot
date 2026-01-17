@@ -139,13 +139,13 @@ def main():
         # Define required mappers
         required_mappers = [
             {
-                "name": "autobook_consent",
+                "name": "consent",
                 "protocol": "openid-connect",
                 "protocolMapper": "oidc-usermodel-attribute-mapper",
                 "consentRequired": False,
                 "config": {
-                    "user.attribute": "autobook_consent",
-                    "claim.name": "autobook_consent",
+                    "user.attribute": "consent",
+                    "claim.name": "consent",
                     "jsonType.label": "String",
                     "id.token.claim": "false",
                     "access.token.claim": "true",

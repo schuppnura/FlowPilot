@@ -5,9 +5,9 @@ final class FlowPilotAIAgentApiClient {
     private let urlSession: URLSession
     private let accessTokenProvider: () -> String?
 
-    init(baseUrl: URL = AppConfig.agentRunnerBaseUrl, urlSession: URLSession = .insecure, accessTokenProvider: @escaping () -> String? = { nil }) {
+    init(baseUrl: URL = AppConfig.agentRunnerBaseUrl, urlSession: URLSession = .shared, accessTokenProvider: @escaping () -> String? = { nil }) {
         // Initialize client with a base URL; why: keep endpoint routing explicit and testable; side effect: none.
-        // Uses .insecure URLSession by default for local development with self-signed certificates.
+        // Uses standard URLSession for Cloud Run services with proper TLS certificates.
         self.baseUrl = baseUrl
         self.urlSession = urlSession
         self.accessTokenProvider = accessTokenProvider

@@ -131,23 +131,20 @@ struct ContentView: View {
             
             Spacer()
             
-            Button(action: {
-                if state.principalSub == nil {
-                    Task { await state.signIn(isRegistrationPreferred: false) }
-                } else {
+            if state.principalSub == nil {
+                // Show sign-in form
+                SignInFormView()
+            } else {
+                Button(action: {
                     state.signOut()
-                }
-            }) {
-                if state.principalSub == nil {
-                    Label("Sign In", systemImage: "person.badge.key.fill")
-                } else {
+                }) {
                     Label("Sign Out", systemImage: "person.crop.circle.badge.xmark")
                 }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .tint(Color(red: 0.95, green: 0.55, blue: 0.25))
+                .frame(width: 140)
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .tint(Color(red: 0.95, green: 0.55, blue: 0.25))
-            .frame(width: 140)
         }
         .padding(16)
         .background(Color.white)

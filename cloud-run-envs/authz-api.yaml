@@ -1,0 +1,28 @@
+OPA_URL: "https://flowpilot-opa-737191827545.us-central1.run.app"
+# Policy configuration (manifest-based)
+POLICY_NAME: "travel"
+POLICY_MANIFEST_DIR: "/policies"
+ALLOWED_ACTIONS: "create,read,write,delete,execute"
+# FlowPilot token signing configuration (keys mounted from Secret Manager)
+SIGNING_KEY_PATH: "/secrets/signing-key"
+FLOWPILOT_PUBLIC_KEY_PATH: "/secrets/signing-key-pub"
+FLOWPILOT_TOKEN_ISSUER: "https://flowpilot-authz-api"
+FLOWPILOT_TOKEN_AUDIENCE: "flowpilot"
+FLOWPILOT_TOKEN_EXPIRY_SECONDS: "900"
+DELEGATION_API_BASE_URL: "https://flowpilot-delegation-api-737191827545.us-central1.run.app"
+DELEGATION_API_TIMEOUT_SECONDS: "5.0"
+PERSONA_API_BASE_URL: "https://flowpilot-user-profile-api-737191827545.us-central1.run.app"
+HTTP_DEFAULT_TIMEOUT: "10.0"
+HTTP_VERIFY_TLS: "true"
+INCLUDE_ERROR_DETAILS: "1"
+ENABLE_API_LOGGING: "1"
+ENABLE_PAYLOAD_SIGNATURE_SCAN: "0"
+MAX_REQUEST_SIZE_MB: "1"
+MAX_STRING_LENGTH: "10000"
+# CORS configuration (specify your web app origins, comma-separated)
+# For development: use "*" to allow all origins
+# For production: specify exact origins like "https://app.example.com,https://admin.example.com"
+CORS_ALLOWED_ORIGINS: "*"
+CORS_ALLOW_CREDENTIALS: "true"
+CORS_ALLOW_METHODS: "*"
+CORS_ALLOW_HEADERS: "*"

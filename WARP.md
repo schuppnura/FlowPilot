@@ -457,16 +457,98 @@ docker compose ps
 docker compose exec flowpilot-authz-api curl http://opa:8181/health
 ```
 
+## GCP Cloud Run Deployment
+
+FlowPilot services are deployed to Google Cloud Platform using Cloud Run. The GCP deployment uses Firebase Authentication instead of Keycloak.
+
+### Deployment Commands
+
+Deploy all services:
+```bash
+./deploy-all-services.sh
+```
+
+This script:
+1. Validates environment configurations
+2. Builds Docker images using Cloud Build
+3. Deploys to Cloud Run with environment configs from `cloud-run-envs/`
+
+Deploy individual service:
+```bash
+# Build
+gcloud builds submit --config=cloudbuild-authz-api.yaml
+
+# Deploy
+gcloud run deploy flowpilot-authz-api \
+  --image=us-central1-docker.pkg.dev/vision-course-476214/flowpilot/flowpilot-authz-api:latest \
+  --region=us-central1 \
+  --platform=managed \
+  --allow-unauthenticated \
+  --ingress=all \
+  --env-vars-file=cloud-run-envs/authz-api.yaml
+```
+
+### Service URLs (GCP)
+- **domain-services-api**: https://flowpilot-domain-services-api-737191827545.us-central1.run.app
+- **authz-api**: https://flowpilot-authz-api-737191827545.us-central1.run.app
+- **delegation-api**: https://flowpilot-delegation-api-737191827545.us-central1.run.app
+- **ai-agent-api**: https://flowpilot-ai-agent-api-737191827545.us-central1.run.app
+- **opa**: https://flowpilot-opa-737191827545.us-central1.run.app
+
+### OPA Policy Updates (GCP)
+
+**Important:** OPA policies are baked into the container image during build. To update policies in GCP:
+
+```bash
+# Rebuild OPA container with updated policies
+docker build -f infra/opa/Dockerfile \
+  -t us-central1-docker.pkg.dev/vision-course-476214/flowpilot/opa:latest \
+  --platform linux/amd64 .
+
+# Push to Artifact Registry
+docker push us-central1-docker.pkg.dev/vision-course-476214/flowpilot/opa:latest
+
+# Deploy updated service
+gcloud run deploy flowpilot-opa \
+  --image us-central1-docker.pkg.dev/vision-course-476214/flowpilot/opa:latest \
+  --region us-central1 \
+  --platform managed
+```
+
+**Recommendation:** For policy development and testing, use the local Docker Compose setup where OPA hot-reloads policies. Only deploy to GCP for production/integration testing.
+
+### GCP Testing
+
+Run Firebase-based regression tests against GCP services:
+```bash
+python3 flowpilot-testing/regression_test_firebase.py
+```
+
+### GCP vs Local Development
+
+**Local (Docker Compose):**
+- Authentication: Keycloak OIDC
+- Policy reload: `docker compose restart opa` (hot reload)
+- Database: SQLite (in-container)
+- Best for: Development, policy iteration, debugging
+
+**GCP (Cloud Run):**
+- Authentication: Firebase Authentication
+- Policy reload: Rebuild and redeploy OPA container
+- Database: Cloud SQL PostgreSQL
+- Best for: Production, integration testing, demos
+
 ## Important Notes
 
 - **Shared Libraries:** Changes to `flowpilot-services/shared-libraries/` require container rebuilds (files are copied at build time)
-- **Policy Hot Reload:** OPA watches `/policies` but container restart is more reliable
+- **Policy Hot Reload (Local):** OPA watches `/policies` but container restart is more reliable
+- **Policy Updates (GCP):** Policies are baked into the OPA image; require rebuild and redeploy
 - **TLS in Dev:** Services use `verify=False` for TLS; never deploy this way
 - **PII Handling:** Only `sub` (UUID) is processed; never log or expose other PII
 - **Error Messages:** Set `INCLUDE_ERROR_DETAILS=0` in production to hide internal details
 - **Client Secret:** Never commit `.env` file; it contains secrets
-- **Port Conflicts:** Ensure ports 8080, 8181, 8443, 8002-8005 are available
-- **macOS App:** Expects services on localhost; update URLs if running remotely
+- **Port Conflicts (Local):** Ensure ports 8080, 8181, 8443, 8002-8005 are available
+- **macOS App:** Update URLs to point to either localhost (local) or Cloud Run URLs (GCP)
 
 ## Additional Resources
 

@@ -2,48 +2,25 @@
 """
 seed_keycloak_users.py
 
-Create/update users in a Keycloak realm from a semicolon-delimited CSV file.
+Create/update users in Keycloak and create personas via persona-api.
+Personas are no longer stored as Keycloak attributes - they are managed via persona-api.
 
-.env support (simple parser, no extra deps):
-- Reads KEYCLOAK_ADMIN and KEYCLOAK_ADMIN_PASSWORD from .env
-
-Precedence:
-- CLI args override .env
-- .env overrides process environment variables
-
-Assumptions / expectations:
-- Keycloak is reachable at config["keycloak"]["base_url"]
-- Admin token is requested from the "master" realm using "admin-cli"
-- CSV columns: username;password;email;firstname;lastname;autobook_consent
-  (autobook_consent is optional, defaults to "Yes" if missing)
-
-Side effects:
-- Creates users in the configured target realm.
-- Resets passwords for the listed users.
+CSV columns: username;password;email;firstname;lastname;persona;consent;autobook_price;autobook_leadtime;autobook_risklevel
 """
 
 from __future__ import annotations
 
 import argparse
 import csv
-import json
 import os
-import re
+import sys
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
-
+from typing import List, Optional
 import requests
 import urllib3
 
-# Disable SSL warnings when verify_tls is False
+# Disable SSL warnings for local development
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-
-@dataclass(frozen=True)
-class KeycloakConfig:
-    base_url: str
-    target_realm: str
-    verify_tls: bool
 
 
 @dataclass(frozen=True)
@@ -53,147 +30,60 @@ class SeedUser:
     email: str
     first_name: str
     last_name: str
-    persona: List[str]  # List of persona strings (e.g., ["traveler", "travel-agent"])
-    autobook_consent: str  # "Yes" or "No"
-    autobook_price: str  # Max price in EUR (e.g., "5000")
-    autobook_leadtime: str  # Minimum lead time in days (e.g., "1")
-    autobook_risklevel: str  # Max risk level (e.g., "10")
+    persona_titles: List[str]  # List of persona titles (e.g., ["traveler", "travel-agent"])
+    consent: bool  # True or False
+    autobook_price: int  # Max price in EUR (e.g., 5000)
+    autobook_leadtime: int  # Minimum lead time in days (e.g., 1)
+    autobook_risklevel: int  # Max risk level 0-100 (e.g., 10)
+    persona_status: str  # Persona status ("active", "inactive", etc.)
+    persona_valid_from: str  # ISO 8601 timestamp
+    persona_valid_till: str  # ISO 8601 timestamp
 
 
 def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Seed Keycloak users into the configured realm (FlowPilot)."
-    )
-    parser.add_argument(
-        "--config",
-        default="/mnt/data/provision_config.json",
-        help="Path to provision_config.json (default: /mnt/data/provision_config.json)",
+        description="Seed Keycloak users and create personas via persona-api."
     )
     parser.add_argument(
         "--csv",
-        default="/mnt/data/users_seed.csv",
-        help="Path to users CSV (default: /mnt/data/users_seed.csv)",
+        default="flowpilot-provisioning/users_seed.csv",
+        help="Path to users CSV (default: flowpilot-provisioning/users_seed.csv)",
     )
     parser.add_argument(
-        "--env-file",
-        default=".env",
-        help='Path to .env file (default: ".env")',
+        "--keycloak-url",
+        default="https://localhost:8443",
+        help="Keycloak base URL (default: https://localhost:8443)",
     )
     parser.add_argument(
-        "--admin-username",
-        default="",
-        help="Keycloak admin username (overrides .env / environment if set)",
+        "--realm",
+        default="flowpilot",
+        help="Keycloak realm (default: flowpilot)",
+    )
+    parser.add_argument(
+        "--admin-user",
+        default="admin",
+        help="Keycloak admin username (default: admin)",
     )
     parser.add_argument(
         "--admin-password",
-        default="",
-        help="Keycloak admin password (overrides .env / environment if set)",
+        help="Keycloak admin password (from KEYCLOAK_ADMIN_PASSWORD env var if not provided)",
     )
     parser.add_argument(
-        "--admin-realm",
-        default="master",
-        help='Realm to authenticate against for admin token (default: "master")',
+        "--profile-api-url",
+        default="http://localhost:8006",
+        help="User Profile API URL (default: http://localhost:8006)",
+    )
+    parser.add_argument(
+        "--client-id",
+        default="flowpilot-desktop",
+        help="Client ID for user authentication (default: flowpilot-desktop)",
     )
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="If set, do not call Keycloak; only print intended actions.",
+        help="If set, do not call Keycloak or persona-api; only print intended actions.",
     )
     return parser.parse_args()
-
-
-def load_dotenv_file(path: str) -> Dict[str, str]:
-    """
-    Minimal .env parser:
-    - Supports lines: KEY=VALUE
-    - Ignores empty lines and comments starting with '#'
-    - Strips optional surrounding single/double quotes from VALUE
-    - Does not expand variables
-    """
-    values: Dict[str, str] = {}
-    if not path or not os.path.exists(path):
-        return values
-
-    with open(path, "r", encoding="utf-8") as file_handle:
-        for raw_line in file_handle:
-            line = raw_line.strip()
-            if not line or line.startswith("#"):
-                continue
-            if "=" not in line:
-                continue
-
-            key, value = line.split("=", 1)
-            key = key.strip()
-            value = value.strip()
-
-            if (value.startswith('"') and value.endswith('"')) or (
-                value.startswith("'") and value.endswith("'")
-            ):
-                value = value[1:-1]
-
-            if key:
-                values[key] = value
-
-    return values
-
-
-def resolve_admin_credentials(
-    args: argparse.Namespace, dotenv_values: Dict[str, str]
-) -> tuple[str, str]:
-    admin_username = (args.admin_username or "").strip()
-    admin_password = (args.admin_password or "").strip()
-
-    if not admin_username:
-        admin_username = (dotenv_values.get("KEYCLOAK_ADMIN") or "").strip()
-    if not admin_username:
-        admin_username = (dotenv_values.get("KEYCLOAK_ADMIN_USERNAME") or "").strip()
-    if not admin_username:
-        admin_username = (os.environ.get("KEYCLOAK_ADMIN") or "").strip()
-    if not admin_username:
-        admin_username = (os.environ.get("KEYCLOAK_ADMIN_USERNAME") or "").strip()
-
-    if not admin_password:
-        admin_password = (dotenv_values.get("KEYCLOAK_ADMIN_PASSWORD") or "").strip()
-    if not admin_password:
-        admin_password = (os.environ.get("KEYCLOAK_ADMIN_PASSWORD") or "").strip()
-
-    return admin_username, admin_password
-
-
-def load_json_with_trailing_commas(path: str) -> Dict[str, Any]:
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"Config file not found: {path}")
-
-    with open(path, "r", encoding="utf-8") as file_handle:
-        raw_text = file_handle.read()
-
-    sanitized_text = re.sub(r",\s*([}\]])", r"\1", raw_text)
-
-    try:
-        parsed = json.loads(sanitized_text)
-    except json.JSONDecodeError as error:
-        raise ValueError(f"Invalid JSON in config (even after sanitizing): {error}") from error
-
-    if not isinstance(parsed, dict):
-        raise ValueError("Config JSON root must be an object.")
-    return parsed
-
-
-def parse_keycloak_config(config_data: Dict[str, Any]) -> KeycloakConfig:
-    keycloak_section = config_data.get("keycloak")
-    if not isinstance(keycloak_section, dict):
-        raise ValueError('Config must contain object: "keycloak".')
-
-    base_url = str(keycloak_section.get("base_url", "")).strip().rstrip("/")
-    target_realm = str(keycloak_section.get("target_realm", "")).strip()
-    verify_tls = bool(keycloak_section.get("verify_tls", True))
-
-    if not base_url:
-        raise ValueError("Missing config: keycloak.base_url")
-    if not target_realm:
-        raise ValueError("Missing config: keycloak.target_realm")
-
-    return KeycloakConfig(base_url=base_url, target_realm=target_realm, verify_tls=verify_tls)
 
 
 def load_users_from_csv(path: str) -> List[SeedUser]:
@@ -203,492 +93,316 @@ def load_users_from_csv(path: str) -> List[SeedUser]:
     users: List[SeedUser] = []
     with open(path, "r", encoding="utf-8") as file_handle:
         reader = csv.DictReader(file_handle, delimiter=";")
-        expected_fields = ["username", "password", "email", "firstname", "lastname"]
-        optional_fields = ["persona", "autobook_consent", "autobook_price", "autobook_leadtime", "autobook_risklevel"]
+        
         if reader.fieldnames is None:
             raise ValueError("CSV has no header row.")
         
-        # Normalize field names (strip whitespace, handle variations)
-        normalized_fieldnames = {field.strip(): field for field in reader.fieldnames}
-        
-        # Check for required fields (case-insensitive, whitespace-tolerant)
-        missing_fields = []
-        for expected in expected_fields:
-            found = False
-            for actual in normalized_fieldnames.keys():
-                if actual.lower().strip() == expected.lower():
-                    found = True
-                    break
-            if not found:
-                missing_fields.append(expected)
-        
-        if missing_fields:
-            raise ValueError(f"CSV is missing required columns: {missing_fields}. Found columns: {list(reader.fieldnames)}")
-
         for row_index, row in enumerate(reader, start=2):
-            # Get values with case-insensitive, whitespace-tolerant lookup
-            username = _get_field_value(row, "username", normalized_fieldnames)
-            password = _get_field_value(row, "password", normalized_fieldnames)
-            email = _get_field_value(row, "email", normalized_fieldnames)
-            first_name = _get_field_value(row, "firstname", normalized_fieldnames)
-            last_name = _get_field_value(row, "lastname", normalized_fieldnames)
+            username = (row.get("username") or "").strip()
+            password = (row.get("password") or "").strip()
+            email = (row.get("email") or "").strip()
+            first_name = (row.get("firstname") or "").strip()
+            last_name = (row.get("lastname") or "").strip()
             
-            # Parse persona - comma-separated values, strip whitespace, filter empty
-            persona_raw = _get_field_value(row, "persona", normalized_fieldnames, default="")
-            persona_list = [p.strip() for p in persona_raw.split(",") if p.strip()] if persona_raw else []
+            # Parse persona titles (comma-separated list)
+            persona_raw = (row.get("persona") or "").strip()
+            persona_titles = [p.strip() for p in persona_raw.split(",") if p.strip()] if persona_raw else ["traveler"]
             
-            autobook_consent = _get_field_value(row, "autobook_consent", normalized_fieldnames, default="Yes")
-            autobook_price = _get_field_value(row, "autobook_price", normalized_fieldnames, default="1500")
-            autobook_leadtime = _get_field_value(row, "autobook_leadtime", normalized_fieldnames, default="7")
-            autobook_risklevel = _get_field_value(row, "autobook_risklevel", normalized_fieldnames, default="2")
+            consent_raw = (row.get("consent") or "Yes").strip()
+            autobook_price_raw = (row.get("autobook_price") or "1500").strip()
+            autobook_leadtime_raw = (row.get("autobook_leadtime") or "7").strip()
+            autobook_risklevel_raw = (row.get("autobook_risklevel") or "2").strip()
+            
+            # Parse persona metadata
+            persona_status = (row.get("persona_status") or "active").strip()
+            persona_valid_from = (row.get("persona_valid_from") or "").strip()
+            persona_valid_till = (row.get("persona_valid_till") or "").strip()
+            
+            # If temporal fields not provided, default to empty (will be set by API)
+            if not persona_valid_from:
+                from datetime import datetime, timezone
+                persona_valid_from = datetime.now(timezone.utc).isoformat()
+            if not persona_valid_till:
+                from datetime import datetime, timezone, timedelta
+                persona_valid_till = (datetime.now(timezone.utc) + timedelta(days=365)).isoformat()
 
             if not username:
-                raise ValueError(f"Row {row_index}: username is empty.")
+                continue  # Skip empty rows
             if not password:
                 raise ValueError(f"Row {row_index}: password is empty.")
-            # Email, first_name, last_name are now optional
-            # if not email:
-            #     raise ValueError(f"Row {row_index}: email is empty.")
+            if not email:
+                raise ValueError(f"Row {row_index}: email is empty.")
             
-            # Normalize consent value
-            consent_normalized = autobook_consent.strip()
-            if consent_normalized.lower() not in ("yes", "no", "true", "false", "1", "0"):
-                print(f"Warning: Row {row_index}: autobook_consent='{consent_normalized}' is not Yes/No, defaulting to 'Yes'")
-                consent_normalized = "Yes"
-            else:
-                # Map to Yes/No
-                if consent_normalized.lower() in ("yes", "true", "1"):
-                    consent_normalized = "Yes"
-                else:
-                    consent_normalized = "No"
+            # Parse consent as boolean
+            consent_bool = consent_raw.lower() in ("yes", "true", "1")
+            
+            # Parse numeric values
+            try:
+                price_int = int(autobook_price_raw)
+                leadtime_int = int(autobook_leadtime_raw)
+                risklevel_int = int(autobook_risklevel_raw)
+            except ValueError as e:
+                raise ValueError(f"Row {row_index}: Invalid numeric value - {e}")
 
             users.append(
                 SeedUser(
                     username=username,
                     password=password,
-                    email=email or "",
+                    email=email,
                     first_name=first_name or "",
                     last_name=last_name or "",
-                    persona=persona_list,
-                    autobook_consent=consent_normalized,
-                    autobook_price=autobook_price.strip(),
-                    autobook_leadtime=autobook_leadtime.strip(),
-                    autobook_risklevel=autobook_risklevel.strip(),
+                    persona_titles=persona_titles,
+                    consent=consent_bool,
+                    autobook_price=price_int,
+                    autobook_leadtime=leadtime_int,
+                    autobook_risklevel=risklevel_int,
+                    persona_status=persona_status,
+                    persona_valid_from=persona_valid_from,
+                    persona_valid_till=persona_valid_till,
                 )
             )
 
     return users
 
 
-def _get_field_value(
-    row: Dict[str, str], 
-    field_name: str, 
-    normalized_fieldnames: Dict[str, str],
-    default: str = ""
-) -> str:
-    """Get field value from CSV row with case-insensitive, whitespace-tolerant lookup."""
-    # Try exact match first
-    if field_name in row:
-        return (row[field_name] or "").strip() or default
-    
-    # Try normalized lookup (case-insensitive, whitespace-tolerant)
-    for normalized, original in normalized_fieldnames.items():
-        if normalized.lower().strip() == field_name.lower():
-            return (row.get(original) or "").strip() or default
-    
-    return default
-
-
-def request_admin_token(
-    base_url: str,
-    admin_realm: str,
-    admin_username: str,
-    admin_password: str,
-    verify_tls: bool,
-) -> str:
-    if not admin_username or not admin_password:
-        raise ValueError(
-            "Admin credentials missing. Provide --admin-username/--admin-password, "
-            "or set KEYCLOAK_ADMIN and KEYCLOAK_ADMIN_PASSWORD in .env / environment."
-        )
-
-    token_url = f"{base_url}/realms/{admin_realm}/protocol/openid-connect/token"
-    form_data = {
+def get_admin_token(base_url: str, admin_user: str, admin_password: str) -> str:
+    """Get admin access token from Keycloak."""
+    url = f"{base_url}/realms/master/protocol/openid-connect/token"
+    data = {
+        "username": admin_user,
+        "password": admin_password,
         "grant_type": "password",
         "client_id": "admin-cli",
-        "username": admin_username,
-        "password": admin_password,
     }
-
-    # Suppress SSL warnings if not verifying TLS
-    if not verify_tls:
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     
-    response = requests.post(token_url, data=form_data, timeout=30, verify=verify_tls)
-    if response.status_code != 200:
-        raise RuntimeError(
-            f"Failed to obtain admin token ({response.status_code}). Response: {response.text}"
-        )
-
-    token_data = response.json()
-    access_token = token_data.get("access_token")
-    if not access_token:
-        raise RuntimeError("Token response did not contain access_token.")
-    return str(access_token)
+    response = requests.post(url, data=data, verify=False)
+    response.raise_for_status()
+    return response.json()["access_token"]
 
 
-def find_user_id(
-    session: requests.Session,
-    base_url: str,
-    realm: str,
-    username: str,
-    verify_tls: bool,
-) -> Optional[str]:
-    search_url = f"{base_url}/admin/realms/{realm}/users?username={requests.utils.quote(username)}"
-    response = session.get(search_url, timeout=30, verify=verify_tls)
-    if response.status_code != 200:
-        raise RuntimeError(
-            f"Failed to search user '{username}' ({response.status_code}): {response.text}"
-        )
-
-    items = response.json()
-    if not isinstance(items, list):
-        raise RuntimeError(f"Unexpected search response for '{username}': {response.text}")
-
-    for item in items:
-        if isinstance(item, dict) and item.get("username") == username and item.get("id"):
-            return str(item["id"])
-
-    return None
+def get_user_by_username(base_url: str, realm: str, token: str, username: str) -> Optional[dict]:
+    """Get existing user by username."""
+    url = f"{base_url}/admin/realms/{realm}/users"
+    params = {"username": username, "exact": "true"}
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    response = requests.get(url, params=params, headers=headers, verify=False)
+    response.raise_for_status()
+    
+    users = response.json()
+    return users[0] if users else None
 
 
-def create_user(
-    session: requests.Session,
-    base_url: str,
-    realm: str,
-    user: SeedUser,
-    verify_tls: bool,
-) -> str:
-    create_url = f"{base_url}/admin/realms/{realm}/users"
+def create_keycloak_user(base_url: str, realm: str, token: str, user: SeedUser) -> str:
+    """Create a new user in Keycloak (authentication only, no persona attributes)."""
+    url = f"{base_url}/admin/realms/{realm}/users"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
+    
+    # No attributes stored in Keycloak - personas managed via persona-api
     payload = {
         "username": user.username,
+        "email": user.email,
+        "firstName": user.first_name,
+        "lastName": user.last_name,
         "enabled": True,
+        "emailVerified": True,
+        "credentials": [{
+            "type": "password",
+            "value": user.password,
+            "temporary": False,
+        }],
     }
-    # Email, firstName, lastName are optional
-    if user.email:
-        payload["email"] = user.email
-        payload["emailVerified"] = True
-    if user.first_name:
-        payload["firstName"] = user.first_name
-    if user.last_name:
-        payload["lastName"] = user.last_name
-
-    response = session.post(create_url, json=payload, timeout=30, verify=verify_tls)
-
-    if response.status_code == 201:
-        location = response.headers.get("Location", "")
-        user_id = location.rstrip("/").split("/")[-1].strip()
-        if user_id:
-            return user_id
-        found_id = find_user_id(session, base_url, realm, user.username, verify_tls)
-        if found_id:
-            return found_id
-        raise RuntimeError(f"User created but could not determine id for '{user.username}'.")
-
-    if response.status_code == 409:
-        found_id = find_user_id(session, base_url, realm, user.username, verify_tls)
-        if found_id:
-            return found_id
-        raise RuntimeError(f"User '{user.username}' already exists but id lookup failed.")
-
-    raise RuntimeError(
-        f"Failed to create user '{user.username}' ({response.status_code}): {response.text}"
-    )
-
-
-def update_user_profile(
-    session: requests.Session,
-    base_url: str,
-    realm: str,
-    user_id: str,
-    user: SeedUser,
-    verify_tls: bool,
-) -> None:
-    update_url = f"{base_url}/admin/realms/{realm}/users/{user_id}"
-    # Fetch current user data to preserve existing attributes
-    response = session.get(update_url, timeout=30, verify=verify_tls)
-    if response.status_code != 200:
-        raise RuntimeError(
-            f"Failed to get user data for '{user.username}' ({response.status_code}): {response.text}"
-        )
     
-    user_data = response.json()
-    # Update only the fields we want to change, preserving attributes
-    user_data["username"] = user.username
-    user_data["enabled"] = True
-    # Email, firstName, lastName are optional
-    if user.email:
-        user_data["email"] = user.email
-        user_data["emailVerified"] = True
-    elif "email" in user_data:
-        # Keep existing email if not provided
-        pass
-    if user.first_name:
-        user_data["firstName"] = user.first_name
-    elif "firstName" in user_data:
-        # Keep existing firstName if not provided
-        pass
-    if user.last_name:
-        user_data["lastName"] = user.last_name
-    elif "lastName" in user_data:
-        # Keep existing lastName if not provided
-        pass
+    response = requests.post(url, json=payload, headers=headers, verify=False)
+    response.raise_for_status()
     
-    response = session.put(update_url, json=user_data, timeout=30, verify=verify_tls)
-    if response.status_code != 204:
-        raise RuntimeError(
-            f"Failed to update profile for '{user.username}' ({response.status_code}): {response.text}"
-        )
+    # Get user ID from Location header
+    location = response.headers.get("Location", "")
+    user_id = location.split("/")[-1] if location else None
+    
+    if not user_id:
+        # Fallback: query for the user
+        created_user = get_user_by_username(base_url, realm, token, user.username)
+        user_id = created_user["id"] if created_user else None
+    
+    return user_id
 
 
-def reset_user_password(
-    session: requests.Session,
-    base_url: str,
-    realm: str,
-    user_id: str,
-    password: str,
-    verify_tls: bool,
-) -> None:
+def update_keycloak_user(base_url: str, realm: str, token: str, user_id: str, user: SeedUser) -> None:
+    """Update existing user in Keycloak (authentication only, no persona attributes)."""
+    url = f"{base_url}/admin/realms/{realm}/users/{user_id}"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
+    
+    # No attributes stored in Keycloak - personas managed via persona-api
+    payload = {
+        "email": user.email,
+        "firstName": user.first_name,
+        "lastName": user.last_name,
+        "enabled": True,
+        "emailVerified": True,
+    }
+    
+    response = requests.put(url, json=payload, headers=headers, verify=False)
+    response.raise_for_status()
+    
+    # Update password separately
     reset_url = f"{base_url}/admin/realms/{realm}/users/{user_id}/reset-password"
-    payload = {"type": "password", "value": password, "temporary": False}
-    response = session.put(reset_url, json=payload, timeout=30, verify=verify_tls)
-    if response.status_code != 204:
-        raise RuntimeError(
-            f"Failed to reset password for user_id={user_id} ({response.status_code}): {response.text}"
-        )
+    password_payload = {
+        "type": "password",
+        "value": user.password,
+        "temporary": False,
+    }
+    response = requests.put(reset_url, json=password_payload, headers=headers, verify=False)
+    response.raise_for_status()
 
 
-def set_user_autobook_attributes(
-    session: requests.Session,
-    base_url: str,
-    realm: str,
-    user_id: str,
-    user: SeedUser,
-    verify_tls: bool,
-) -> None:
-    """Set all autobook-related attributes for a user."""
-    update_url = f"{base_url}/admin/realms/{realm}/users/{user_id}"
-    # Fetch current user data first
-    response = session.get(update_url, timeout=30, verify=verify_tls)
-    if response.status_code != 200:
-        raise RuntimeError(
-            f"Failed to get user data for user_id={user_id} ({response.status_code}): {response.text}"
-        )
+def get_service_token(keycloak_url: str, realm: str, client_id: str, client_secret: str) -> str:
+    """Get service account token for calling persona-api."""
+    url = f"{keycloak_url}/realms/{realm}/protocol/openid-connect/token"
+    data = {
+        "grant_type": "client_credentials",
+        "client_id": client_id,
+        "client_secret": client_secret,
+    }
     
-    user_data = response.json()
-    # Initialize attributes if not present
-    if "attributes" not in user_data or user_data["attributes"] is None:
-        user_data["attributes"] = {}
-    
-    # Set the attributes
-    user_data["attributes"]["autobook_consent"] = [user.autobook_consent]
-    user_data["attributes"]["autobook_price"] = [user.autobook_price]
-    user_data["attributes"]["autobook_leadtime"] = [user.autobook_leadtime]
-    user_data["attributes"]["autobook_risklevel"] = [user.autobook_risklevel]
-    
-    # Remove read-only fields that Keycloak doesn't accept in PUT
-    for field in ["access", "createdTimestamp", "totp", "disableableCredentialTypes", "requiredActions", "notBefore"]:
-        user_data.pop(field, None)
-    
-    # Update user with new attributes
-    response = session.put(update_url, json=user_data, timeout=30, verify=verify_tls)
-    if response.status_code != 204:
-        raise RuntimeError(
-            f"Failed to set autobook attributes for user_id={user_id} ({response.status_code}): {response.text}"
-        )
-    
-    # Verify the attributes were set
-    verify_response = session.get(update_url, timeout=30, verify=verify_tls)
-    if verify_response.status_code == 200:
-        verified_user = verify_response.json()
-        verified_attrs = verified_user.get("attributes") or {}
-        if not verified_attrs.get("autobook_consent"):
-            # Attributes didn't persist - this might be a Keycloak configuration issue
-            print(f"Warning: Attributes for {user.username} may not have persisted. Keycloak may require 'Unmanaged Attributes' to be enabled.")
+    response = requests.post(url, data=data, verify=False)
+    response.raise_for_status()
+    return response.json()["access_token"]
 
 
-def set_user_persona_attribute(
-    session: requests.Session,
-    base_url: str,
-    realm: str,
-    user_id: str,
-    user: SeedUser,
-    verify_tls: bool,
-) -> None:
-    """Set the persona attribute for a user (multivalued)."""
-    update_url = f"{base_url}/admin/realms/{realm}/users/{user_id}"
-    # Fetch current user data first
-    response = session.get(update_url, timeout=30, verify=verify_tls)
-    if response.status_code != 200:
-        raise RuntimeError(
-            f"Failed to get user data for user_id={user_id} ({response.status_code}): {response.text}"
-        )
+def create_persona_via_api(persona_title: str, user: SeedUser, profile_api_url: str, token: str) -> None:
+    """Create a single persona for user via persona-api."""
+    url = f"{profile_api_url.rstrip('/')}/v1/personas"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
     
-    user_data = response.json()
-    # Initialize attributes if not present
-    if "attributes" not in user_data or user_data["attributes"] is None:
-        user_data["attributes"] = {}
+    payload = {
+        "title": persona_title,
+        "consent": user.consent,
+        "autobook_price": user.autobook_price,
+        "autobook_leadtime": user.autobook_leadtime,
+        "autobook_risklevel": user.autobook_risklevel,
+        "valid_from": user.persona_valid_from,
+        "valid_till": user.persona_valid_till,
+    }
     
-    # Set the persona attribute as a list (multivalued)
-    # If persona list is empty, set to empty list (required attribute must be present)
-    user_data["attributes"]["persona"] = user.persona if user.persona else []
+    # Note: status is set to 'active' by default in persona_core.py
+    # The CSV persona_status field is for future use if we want to create inactive personas
     
-    # Remove read-only fields that Keycloak doesn't accept in PUT
-    for field in ["access", "createdTimestamp", "totp", "disableableCredentialTypes", "requiredActions", "notBefore", "federatedIdentities", "self"]:
-        user_data.pop(field, None)
-    
-    # Update user with new attributes
-    response = session.put(update_url, json=user_data, timeout=30, verify=verify_tls)
-    if response.status_code != 204:
-        raise RuntimeError(
-            f"Failed to set persona attribute for user_id={user_id} ({response.status_code}): {response.text}"
-        )
-    
-    # Verify the attribute was set
-    verify_response = session.get(update_url, timeout=30, verify=verify_tls)
-    if verify_response.status_code == 200:
-        verified_user = verify_response.json()
-        verified_attrs = verified_user.get("attributes") or {}
-        if "persona" not in verified_attrs:
-            print(f"Warning: Persona attribute for {user.username} may not have persisted. Keycloak may require 'Unmanaged Attributes' to be enabled.")
+    response = requests.post(url, json=payload, headers=headers)
+    response.raise_for_status()
 
 
-def seed_users(
-    keycloak_config: KeycloakConfig,
-    admin_realm: str,
-    admin_username: str,
-    admin_password: str,
+def get_user_token(base_url: str, realm: str, username: str, password: str, client_id: str) -> str:
+    """Get access token for a user."""
+    url = f"{base_url}/realms/{realm}/protocol/openid-connect/token"
+    data = {
+        "username": username,
+        "password": password,
+        "grant_type": "password",
+        "client_id": client_id,
+    }
+    
+    response = requests.post(url, data=data, verify=False)
+    response.raise_for_status()
+    return response.json()["access_token"]
+
+
+def seed_users_keycloak(
     users: List[SeedUser],
-    is_dry_run: bool,
+    base_url: str,
+    realm: str,
+    admin_user: str,
+    admin_password: str,
+    profile_api_url: str,
+    client_id: str,
+    is_dry_run: bool
 ) -> None:
     if is_dry_run:
-        print("DRY RUN: No calls will be made to Keycloak.")
-        print(f"Target: {keycloak_config.base_url} realm={keycloak_config.target_realm}")
+        print("DRY RUN: No calls will be made to Keycloak or persona-api.")
         for user in users:
-            persona_str = ", ".join(user.persona) if user.persona else "(none)"
-            print(f"- Would create/update user '{user.username}' with persona=[{persona_str}] and set password.")
+            personas_str = ", ".join(user.persona_titles)
+            print(f"- Would create/update user '{user.email}' (username: {user.username})")
+            print(f"  Personas: [{personas_str}]")
+            print(f"  Status: {user.persona_status}, Valid: {user.persona_valid_from} to {user.persona_valid_till}")
         return
 
-    access_token = request_admin_token(
-        base_url=keycloak_config.base_url,
-        admin_realm=admin_realm,
-        admin_username=admin_username,
-        admin_password=admin_password,
-        verify_tls=keycloak_config.verify_tls,
-    )
-
-    session = requests.Session()
-    session.headers.update(
-        {"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"}
-    )
-
+    # Get admin token
+    try:
+        token = get_admin_token(base_url, admin_user, admin_password)
+    except Exception as e:
+        print(f"ERROR: Failed to authenticate as admin: {e}")
+        sys.exit(1)
+    
     created_count = 0
     updated_count = 0
+    persona_count = 0
 
     for user in users:
-        existing_id = find_user_id(
-            session=session,
-            base_url=keycloak_config.base_url,
-            realm=keycloak_config.target_realm,
-            username=user.username,
-            verify_tls=keycloak_config.verify_tls,
-        )
-
-        if existing_id:
-            user_id = existing_id
-            update_user_profile(
-                session=session,
-                base_url=keycloak_config.base_url,
-                realm=keycloak_config.target_realm,
-                user_id=user_id,
-                user=user,
-                verify_tls=keycloak_config.verify_tls,
-            )
-            updated_count += 1
-        else:
-            user_id = create_user(
-                session=session,
-                base_url=keycloak_config.base_url,
-                realm=keycloak_config.target_realm,
-                user=user,
-                verify_tls=keycloak_config.verify_tls,
-            )
-            created_count += 1
-
-        reset_user_password(
-            session=session,
-            base_url=keycloak_config.base_url,
-            realm=keycloak_config.target_realm,
-            user_id=user_id,
-            password=user.password,
-            verify_tls=keycloak_config.verify_tls,
-        )
-
-        # Set all autobook-related attributes from CSV
         try:
-            set_user_autobook_attributes(
-                session=session,
-                base_url=keycloak_config.base_url,
-                realm=keycloak_config.target_realm,
-                user_id=user_id,
-                user=user,
-                verify_tls=keycloak_config.verify_tls,
-            )
+            # Step 1: Create/update user in Keycloak
+            existing_user = get_user_by_username(base_url, realm, token, user.username)
+            
+            if existing_user:
+                user_id = existing_user["id"]
+                update_keycloak_user(base_url, realm, token, user_id, user)
+                print(f"OK (Keycloak): {user.email} (updated, id={user_id})")
+                updated_count += 1
+            else:
+                user_id = create_keycloak_user(base_url, realm, token, user)
+                print(f"OK (Keycloak): {user.email} (created, id={user_id})")
+                created_count += 1
+            
+            # Step 2: Get user token
+            user_token = get_user_token(base_url, realm, user.username, user.password, client_id)
+            
+            # Step 3: Create all personas for this user via persona-api
+            for persona_title in user.persona_titles:
+                create_persona_via_api(persona_title, user, profile_api_url, user_token)
+                print(f"OK (Persona):  {user.email} -> '{persona_title}'")
+                persona_count += 1
+            
         except Exception as exc:
-            print(f"Warning: Failed to set autobook attributes for {user.username}: {exc}")
-            # Continue anyway
-
-        # Set persona attribute from CSV
-        try:
-            set_user_persona_attribute(
-                session=session,
-                base_url=keycloak_config.base_url,
-                realm=keycloak_config.target_realm,
-                user_id=user_id,
-                user=user,
-                verify_tls=keycloak_config.verify_tls,
-            )
-        except Exception as exc:
-            print(f"Warning: Failed to set persona attribute for {user.username}: {exc}")
-            # Continue anyway
-
-        print(f"OK: {user.username} (id={user_id})")
+            print(f"ERROR: Failed to process {user.email}: {exc}")
+            continue
 
     print("")
     print("Summary")
-    print(f"Created: {created_count}")
-    print(f"Updated: {updated_count}")
-    print(f"Total:   {len(users)}")
+    print(f"Users created: {created_count}")
+    print(f"Users updated: {updated_count}")
+    print(f"Personas created: {persona_count}")
+    print(f"Total users: {len(users)}")
 
 
 def main() -> int:
     args = parse_arguments()
-
-    dotenv_values = load_dotenv_file(args.env_file)
-    admin_username, admin_password = resolve_admin_credentials(args, dotenv_values)
-
-    config_data = load_json_with_trailing_commas(args.config)
-    keycloak_config = parse_keycloak_config(config_data)
+    
+    # Get admin password from args or environment
+    admin_password = args.admin_password or os.environ.get("KEYCLOAK_ADMIN_PASSWORD")
+    if not admin_password:
+        print("ERROR: Admin password required. Provide via --admin-password or KEYCLOAK_ADMIN_PASSWORD env var.")
+        return 1
+    
     users = load_users_from_csv(args.csv)
-
-    seed_users(
-        keycloak_config=keycloak_config,
-        admin_realm=args.admin_realm,
-        admin_username=admin_username,
+    seed_users_keycloak(
+        users,
+        base_url=args.keycloak_url,
+        realm=args.realm,
+        admin_user=args.admin_user,
         admin_password=admin_password,
-        users=users,
+        profile_api_url=args.profile_api_url,
+        client_id=args.client_id,
         is_dry_run=bool(args.dry_run),
     )
+    
     return 0
 
 
