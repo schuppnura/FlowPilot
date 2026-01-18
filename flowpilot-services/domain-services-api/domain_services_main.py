@@ -50,7 +50,7 @@ AI_AGENT_PERSONA = os.environ.get("AI_AGENT_PERSONA", "ai-agent")
 DEFAULT_CONFIG: dict[str, Any] = {
     "service_name": "flowpilot-api",
     "log_level": "info",
-    "domain": "flowpilot",
+    "domain": "travel",
     # Templates
     "template_directory": "../data/trip_templates",
     # AuthZ integration
@@ -74,6 +74,9 @@ class CreateWorkflowRequest(BaseModel):
     persona: str = Field(
         ..., min_length=1, max_length=255, description="Selected persona for the user (required)"
     )
+    domain: str | None = Field(
+        None, min_length=1, max_length=255, description="Domain hint for policy selection (e.g., 'travel', 'nursing')"
+    )
 
     @validator("template_id")
     def validate_template_id(cls, v: str) -> str:
@@ -89,6 +92,12 @@ class CreateWorkflowRequest(BaseModel):
 
     @validator("persona")
     def sanitize_persona(cls, v: str) -> str:
+        return security.sanitize_string(v, 255)
+
+    @validator("domain")
+    def sanitize_domain(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
         return security.sanitize_string(v, 255)
 
 
@@ -186,35 +195,9 @@ def handle_get_workflow_templates(
     # List available workflow templates
     # why: allow the client to pick a workflow
     # side effect: none.
-    try:
-        api_logging.log_api_request(
-            method="GET",
-            path="/v1/workflow-templates",
-            token_claims=token_claims,
-            request=request,
-        )
-        service: FlowPilotService = request.app.state.service
-        result = {"templates": service.list_workflow_templates()}
-        api_logging.log_api_response(
-            method="GET",
-            path="/v1/workflow-templates",
-            status_code=200,
-            response_body=result,
-        )
-        return result
-    except HTTPException as e:
-        api_logging.log_api_response(
-            method="GET",
-            path="/v1/workflow-templates",
-            status_code=e.status_code,
-            error=str(e.detail) if hasattr(e, "detail") else str(e),
-        )
-        raise
-    except Exception as e:
-        api_logging.log_api_response(
-            method="GET", path="/v1/workflow-templates", status_code=500, error=str(e)
-        )
-        raise
+    service: FlowPilotService = request.app.state.service
+    result = {"templates": service.list_workflow_templates()}
+    return result
 
 
 def handle_get_workflows(
@@ -223,32 +206,9 @@ def handle_get_workflows(
     # List all workflows
     # why: allow clients to select an existing workflow for delegation
     # side effect: none.
-    try:
-        api_logging.log_api_request(
-            method="GET",
-            path="/v1/workflows",
-            token_claims=token_claims,
-            request=request,
-        )
-        service: FlowPilotService = request.app.state.service
-        result = {"workflows": service.list_workflows()}
-        api_logging.log_api_response(
-            method="GET", path="/v1/workflows", status_code=200, response_body=result
-        )
-        return result
-    except HTTPException as e:
-        api_logging.log_api_response(
-            method="GET",
-            path="/v1/workflows",
-            status_code=e.status_code,
-            error=str(e.detail) if hasattr(e, "detail") else str(e),
-        )
-        raise
-    except Exception as e:
-        api_logging.log_api_response(
-            method="GET", path="/v1/workflows", status_code=500, error=str(e)
-        )
-        raise
+    service: FlowPilotService = request.app.state.service
+    result = {"workflows": service.list_workflows()}
+    return result
 
 
 def handle_post_workflows(
@@ -265,6 +225,7 @@ def handle_post_workflows(
             owner_sub=body.principal_sub,
             start_date=body.start_date,
             persona=body.persona,
+            domain=body.domain,
         )
 
         # Auto-create delegation for AI agent to access the workflow
@@ -322,10 +283,15 @@ def handle_get_workflow(
                 status_code=401, detail="Invalid token: missing sub claim"
             )
 
+        # Extract raw token from request header for service-to-service calls
+        auth_header = request.headers.get("authorization", "")
+        user_token = auth_header[7:] if auth_header.lower().startswith("bearer ") else None
+
         service.check_read_authorization(
             workflow_id=workflow_id,
             user_sub=user_sub,
             user_persona=persona,
+            user_token=user_token,
         )
 
         return service.get_workflow(workflow_id=workflow_id)
@@ -387,14 +353,19 @@ def handle_get_workflow_items(
 
         # If no persona provided and this is the agent service account, use configured AI agent persona
         user_persona = persona
-        agent_sub = request.app.state.service._config.get("agent_sub")
+        agent_sub = request.app.state.config.get("agent_sub")
         if not user_persona and agent_sub and user_sub == agent_sub:
             user_persona = AI_AGENT_PERSONA
+
+        # Extract raw token from request header for service-to-service calls
+        auth_header = request.headers.get("authorization", "")
+        user_token = auth_header[7:] if auth_header.lower().startswith("bearer ") else None
 
         service.check_read_authorization(
             workflow_id=workflow_id,
             user_sub=user_sub,
             user_persona=user_persona,
+            user_token=user_token,
         )
 
         return service.get_workflow_items(workflow_id=workflow_id)
@@ -431,18 +402,8 @@ def handle_post_execute_workflow_item(
     token_claims: dict = Depends(security.verify_token),
 ) -> dict[str, Any]:
     # Execute one itinerary item with AuthZ enforcement
-    # why: FlowPilot is PEP and delegates decisions to AuthZ/***REMOVED***.
+    # why: FlowPilot is PEP and delegates decisions to AuthZ/OPA.
     service: FlowPilotService = request.app.state.service
-
-    # Log request
-    api_logging.log_api_request(
-        method="POST",
-        path=f"/v1/workflows/{workflow_id}/items/{workflow_item_id}/execute",
-        request_body=body.dict() if hasattr(body, "dict") else body,
-        token_claims=token_claims,
-        request=request,
-        path_params={"workflow_id": workflow_id, "workflow_item_id": workflow_item_id},
-    )
 
     try:
         # Validate path parameters
@@ -461,24 +422,10 @@ def handle_post_execute_workflow_item(
             dry_run=bool(body.dry_run),
         )
 
-        # Log response
-        api_logging.log_api_response(
-            method="POST",
-            path=f"/v1/workflows/{workflow_id}/items/{workflow_item_id}/execute",
-            status_code=200,
-            response_body=result,
-        )
-
         return result
     except security.InputValidationError as exception:
         error_detail = security.sanitize_error_message(
             str(exception), INCLUDE_ERROR_DETAILS
-        )
-        api_logging.log_api_response(
-            method="POST",
-            path=f"/v1/workflows/{workflow_id}/items/{workflow_item_id}/execute",
-            status_code=400,
-            error=error_detail,
         )
         raise HTTPException(status_code=400, detail=error_detail) from exception
     except PolicyDeniedError as exception:
@@ -488,39 +435,15 @@ def handle_post_execute_workflow_item(
             "reason_codes": exception.reason_codes,
             "advice": exception.advice,
         }
-        api_logging.log_api_response(
-            method="POST",
-            path=f"/v1/workflows/{workflow_id}/items/{workflow_item_id}/execute",
-            status_code=403,
-            error=str(error_detail),
-        )
         raise HTTPException(status_code=403, detail=error_detail) from exception
     except PermissionError as exception:
         # Fallback for other PermissionError cases
-        api_logging.log_api_response(
-            method="POST",
-            path=f"/v1/workflows/{workflow_id}/items/{workflow_item_id}/execute",
-            status_code=403,
-            error="Permission denied",
-        )
         raise HTTPException(status_code=403, detail="Permission denied") from exception
     except KeyError as exception:
-        api_logging.log_api_response(
-            method="POST",
-            path=f"/v1/workflows/{workflow_id}/items/{workflow_item_id}/execute",
-            status_code=404,
-            error="Resource not found",
-        )
         raise HTTPException(status_code=404, detail="Resource not found") from exception
     except ValueError as exception:
         error_detail = security.sanitize_error_message(
             str(exception), INCLUDE_ERROR_DETAILS
-        )
-        api_logging.log_api_response(
-            method="POST",
-            path=f"/v1/workflows/{workflow_id}/items/{workflow_item_id}/execute",
-            status_code=400,
-            error=error_detail,
         )
         raise HTTPException(status_code=400, detail=error_detail) from exception
 

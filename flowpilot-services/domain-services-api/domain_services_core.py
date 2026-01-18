@@ -19,6 +19,7 @@
 
 from __future__ import annotations
 
+import json
 import uuid
 from typing import Any, Dict, List, Optional
 
@@ -29,6 +30,7 @@ from utils import (
     build_url,
     coerce_timestamp,
     get_http_config,
+    http_post_json,
     read_env_string,
     require_non_empty_string,
 )
@@ -118,7 +120,7 @@ class FlowPilotService:
                     "template_id": template_id,
                     "name": str(template.get("name", template_id)),
                     "domain": str(
-                        template.get("domain", self._config.get("domain", "flowpilot"))
+                        template.get("domain", self._config.get("domain", "travel"))
                     ),
                     "item_count": (
                         len(template.get("items", []))
@@ -136,6 +138,7 @@ class FlowPilotService:
         owner_sub: str,
         start_date: str,
         persona: str | None = None,
+        domain: str | None = None,
     ) -> dict[str, Any]:
         # Create a workflow and itinerary items from a template
         # side effect: stores a new workflow in memory.
@@ -186,11 +189,15 @@ class FlowPilotService:
                         item_dict[field] = raw[field]
                 items.append(item_dict)
 
+        # Use provided domain or fall back to config default
+        workflow_domain = domain if domain else self._config.get("domain", "travel")
+        
         workflow: dict[str, Any] = {
             "workflow_id": workflow_id,
             "template_id": template_id,
             "owner_sub": owner_sub,
             "owner_persona": persona,  # Store the persona used when creating the workflow
+            "domain": workflow_domain,  # Store domain for policy_hint routing
             "created_at": created_at,
             "departure_date": start_date,  # Use the start_date parameter provided by the user
             "items": items,
@@ -242,15 +249,15 @@ class FlowPilotService:
         }
 
         headers = {"Authorization": f"Bearer {token}"} if token else {}
-        response = requests.post(url, json=body, headers=headers if headers else None, **get_http_config())
-
-        if response.status_code not in (200, 201):
-            raise RuntimeError(
-                f"Delegation creation failed: HTTP {response.status_code}: {response.text}"
-            )
+        # Use centralized http_post_json for logging and error handling
+        http_post_json(
+            url=url,
+            payload=body,
+            headers=headers if headers else None,
+        )
 
     def check_read_authorization(
-        self, workflow_id: str, user_sub: str, user_persona: str | None = None
+        self, workflow_id: str, user_sub: str, user_persona: str | None = None, user_token: str | None = None
     ) -> None:
         # Check if user is authorized to read the workflow
         # Raises PolicyDeniedError if access is denied
@@ -275,6 +282,7 @@ class FlowPilotService:
             workflow=workflow,
             principal_user=principal_user,
             action="read",
+            user_token=user_token,
         )
 
         decision = str(decision_payload.get("decision", "deny"))
@@ -507,10 +515,11 @@ class FlowPilotService:
         url = build_url(authz_base_url, "/v1/evaluate")
 
         # AuthZEN: Build context with principal-user object (not token)
-        # Add policy_hint for explicit policy selection (travel domain)
+        # Add policy_hint for explicit policy selection from workflow domain
+        workflow_domain = workflow.get("domain") or self._config.get("domain", "travel")
         context: dict[str, Any] = {
             "principal": principal_user,
-            "policy_hint": "travel",  # Explicit policy selection for travel workflows
+            "policy_hint": workflow_domain,  # Dynamic policy selection based on workflow domain
         }
 
         # Use fixed service identity (simplified for Cloud Run deployment)
@@ -550,18 +559,19 @@ class FlowPilotService:
         }
 
         headers = {"Authorization": f"Bearer {token}"} if token else {}
-        response = requests.post(url, json=body, headers=headers if headers else None, **get_http_config())
-        if response.status_code not in (200, 201):
-            raise RuntimeError(
-                f"AuthZ evaluate failed: HTTP {response.status_code}: {response.text}"
-            )
-        return response.json()
+        # Use centralized http_post_json for logging and error handling
+        return http_post_json(
+            url=url,
+            payload=body,
+            headers=headers if headers else None,
+        )
 
     def _call_authz_for_workflow(
         self,
         workflow: dict[str, Any],
         principal_user: dict[str, Any],
         action: str = "read",
+        user_token: str | None = None,
     ) -> dict[str, Any]:
         # Call AuthZ /v1/evaluate for workflow-level operations (e.g., read)
         # Similar to _call_authz_for_item but for workflow resource type
@@ -587,16 +597,17 @@ class FlowPilotService:
         url = build_url(authz_base_url, "/v1/evaluate")
 
         # AuthZEN: Build context with principal-user object
-        # Add policy_hint for explicit policy selection (travel domain)
+        # Add policy_hint for explicit policy selection from workflow domain
+        workflow_domain = workflow.get("domain") or self._config.get("domain", "travel")
         context: dict[str, Any] = {
             "principal": principal_user,
-            "policy_hint": "travel",  # Explicit policy selection for travel workflows
+            "policy_hint": workflow_domain,  # Dynamic policy selection based on workflow domain
         }
 
         # Use fixed service identity (simplified for Cloud Run deployment)
         service_id = "domain-services-api"
-        # Get service token for authentication
-        token = security.get_service_token()
+        # Use user token if provided (GCP/Firebase), otherwise fall back to service token (Keycloak)
+        token = user_token if user_token else security.get_service_token()
 
         # Subject is the service making the call
         # Add AI agent persona to subject for authorization checks (configurable via AI_AGENT_PERSONA)
@@ -628,9 +639,14 @@ class FlowPilotService:
         }
 
         headers = {"Authorization": f"Bearer {token}"} if token else {}
-        response = requests.post(url, json=body, headers=headers if headers else None, **get_http_config())
-        if response.status_code not in (200, 201):
-            raise RuntimeError(
-                f"AuthZ evaluate failed: HTTP {response.status_code}: {response.text}"
-            )
-        return response.json()
+        
+        # Log warning if no service token is available
+        if not token:
+            print(f"WARNING: No service token available for authz API call. This may cause authorization failures.", flush=True)
+        
+        # Use centralized http_post_json for logging and error handling
+        return http_post_json(
+            url=url,
+            payload=body,
+            headers=headers if headers else None,
+        )
