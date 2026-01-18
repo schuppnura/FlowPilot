@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useAppState } from '../../state/AppStateContext';
 import { StatusBadge } from '../common/StatusBadge';
+import { terminology, capitalize } from '../../config';
 
 export function BookPanel() {
   const {
@@ -50,7 +51,7 @@ export function BookPanel() {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-medium text-nura-dark flex items-center gap-3">
           <span className="text-2xl">📊</span>
-          Book my trip
+          Book my {terminology.workflow}
         </h2>
 
         <div className="flex gap-3">
@@ -68,7 +69,7 @@ export function BookPanel() {
             className="px-6 py-2 bg-red-700 text-white font-medium rounded-lg hover:bg-red-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             <span>📅</span>
-            Book Trip
+            Book {capitalize(terminology.workflow)}
           </button>
         </div>
       </div>
@@ -90,11 +91,11 @@ export function BookPanel() {
       {/* Trip Selection */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Select trip
+          Select {terminology.workflow}
         </label>
         {workflows.length === 0 ? (
           <p className="text-sm text-gray-500 py-2">
-            No trips available. Create a trip in the "My trip" tab first.
+            No {terminology.workflows} available. Create a {terminology.workflow} in the "{terminology.Workflows}" tab first.
           </p>
         ) : (
           <select
@@ -103,10 +104,10 @@ export function BookPanel() {
             disabled={personaRequired || loading}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-nura-orange focus:border-transparent disabled:opacity-50"
           >
-            <option value="">Select a trip...</option>
+            <option value="">Select a {terminology.workflow}...</option>
             {workflows.map((workflow) => (
               <option key={workflow.workflow_id} value={workflow.workflow_id}>
-                {workflow.workflow_id} - {workflow.departure_date || 'no date'} ({workflow.item_count} items)
+                {workflow.workflow_id} - {workflow.departure_date || 'no date'} ({workflow.item_count} {terminology.workflowItems})
               </option>
             ))}
           </select>
@@ -161,7 +162,7 @@ export function BookPanel() {
 
       {!lastAgentRun && canRun && (
         <p className="text-sm text-gray-500 text-center py-8">
-          Click "Dry Run" or "Book Trip" to see authorization results
+          Click "Dry Run" or "Book {capitalize(terminology.workflow)}" to see authorization results
         </p>
       )}
     </div>

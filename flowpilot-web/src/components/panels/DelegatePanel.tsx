@@ -1,7 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { useAppState } from '../../state/AppStateContext';
+import { useAuth } from '../../state/AuthContext';
+import { PanelHeader } from '../common/PanelHeader';
+import { terminology } from '../../config';
 
 export function DelegatePanel() {
+  const { openSignInModal } = useAuth();
   const {
     workflows,
     travelAgents,
@@ -33,35 +37,41 @@ export function DelegatePanel() {
     }
   }, []);
 
-  // Load travel agents ONCE on mount
-  // IMPORTANT: Don't reload if we have a status message (to preserve success message)
+  // Load travel agents when personas are available
+  // Use refs to prevent infinite loops
   useEffect(() => {
-    // If we have a status message, NEVER reload travel agents
-    if (statusMessage && statusMessage.trim().length > 0) {
-      console.log('DelegatePanel: Skipping loadTravelAgents to preserve statusMessage:', statusMessage);
+    // Wait for personas to be loaded
+    if (personas.length === 0) {
+      console.log('DelegatePanel: No personas available yet');
       return;
     }
     
-    // If we've already loaded, don't reload
-    if (hasLoadedTravelAgentsRef.current) {
-      console.log('DelegatePanel: Already loaded travel agents');
+    // If we've already loaded travel agents, we're done
+    if (hasLoadedTravelAgentsRef.current && travelAgents.length > 0) {
+      // We have travel agents - only skip reload if we have a relevant status message
+      if (statusMessage && statusMessage.trim().length > 0 && statusMessage.includes('delegated')) {
+        console.log('DelegatePanel: Already loaded travel agents, skipping reload to preserve delegation statusMessage:', statusMessage);
+        return;
+      }
+      console.log('DelegatePanel: Already loaded travel agents, count:', travelAgents.length);
       return;
     }
     
-    // If already loading, don't trigger another load
-    if (loading) {
-      console.log('DelegatePanel: Already loading, skipping');
+    // If we have travel agents and a status message from delegation, preserve it
+    if (travelAgents.length > 0 && statusMessage && statusMessage.trim().length > 0 && statusMessage.includes('delegated')) {
+      console.log('DelegatePanel: Have travel agents and delegation statusMessage, skipping reload to preserve message:', statusMessage);
       return;
     }
     
-    console.log('DelegatePanel: Loading travel agents...');
+    // Load travel agents (searches for all delegation personas: travel-agent, office-manager, booking-assistant)
+    console.log('DelegatePanel: Loading travel agents (currently have', travelAgents.length, 'travel agents, loading:', loading, ')');
     hasLoadedTravelAgentsRef.current = true;
     loadTravelAgents().catch((err) => {
       console.error('DelegatePanel: Failed to load travel agents:', err);
       hasLoadedTravelAgentsRef.current = false; // Reset on error so we can retry
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run once on mount - intentionally omit deps to prevent infinite loop
+  }, [personas.length]); // Depend on personas.length to detect when personas are loaded
 
   // Debug: Log statusMessage changes
   useEffect(() => {
@@ -121,7 +131,11 @@ export function DelegatePanel() {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6">
+    <div className="space-y-6">
+      {/* Panel Header */}
+      <PanelHeader onSignInClick={openSignInModal} />
+      
+      <div className="bg-white rounded-lg shadow-sm p-6">
       <h2 className="text-2xl font-medium text-nura-dark mb-6 flex items-center gap-3">
         <span className="text-2xl">👥</span>
         Delegate
@@ -150,11 +164,11 @@ export function DelegatePanel() {
       {/* Trip Selection */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Select trip
+          Select {terminology.workflow}
         </label>
         {workflows.length === 0 ? (
           <p className="text-sm text-gray-500 py-2">
-            No trips available. Create a trip in the "My trip" tab first.
+            No {terminology.workflows} available. Create a {terminology.workflow} in the "{terminology.Workflows}" tab first.
           </p>
         ) : (
           <select
@@ -163,10 +177,10 @@ export function DelegatePanel() {
             disabled={personaRequired || loading}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-nura-orange focus:border-transparent disabled:opacity-50"
           >
-            <option value="">Select a trip...</option>
+            <option value="">Select a {terminology.workflow}...</option>
             {workflows.map((workflow) => (
               <option key={workflow.workflow_id} value={workflow.workflow_id}>
-                {workflow.workflow_id} - {workflow.departure_date || 'no date'} ({workflow.item_count} items)
+                {workflow.workflow_id} - {workflow.departure_date || 'no date'} ({workflow.item_count} {terminology.workflowItems})
               </option>
             ))}
           </select>
@@ -191,10 +205,12 @@ export function DelegatePanel() {
               </option>
             ))}
           </select>
-          {travelAgents.length === 0 && (
-            <p className="text-xs text-gray-500 mt-1">
-              No travel agents available
-            </p>
+          {!loading && travelAgents.length === 0 && (
+            <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-700">
+                No travel agents available. Users must have one of these personas: <strong>travel-agent</strong>, <strong>office-manager</strong>, or <strong>booking-assistant</strong>.
+              </p>
+            </div>
           )}
         </div>
 
@@ -232,6 +248,7 @@ export function DelegatePanel() {
         </button>
 
       </div>
+    </div>
     </div>
   );
 }

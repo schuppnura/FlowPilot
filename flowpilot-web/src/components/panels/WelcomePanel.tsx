@@ -1,33 +1,39 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../state/AuthContext';
+import { PanelHeader } from '../common/PanelHeader';
+import { config } from '../../config';
 
 export function WelcomePanel() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, openSignInModal } = useAuth();
 
   const handleCreateTrip = () => {
     if (!user) {
-      navigate('/account');
+      openSignInModal();
     } else {
-      navigate('/trips');
+      navigate('/my-trips');
     }
   };
 
   const handleManageTrip = () => {
     if (!user) {
-      navigate('/account');
+      openSignInModal();
     } else {
-      navigate('/trips');
+      navigate('/my-trips');
     }
   };
 
   return (
-    <div className="relative min-h-[600px] rounded-lg overflow-hidden shadow-lg">
+    <div className="space-y-6">
+      {/* Panel Header */}
+      <PanelHeader onSignInClick={openSignInModal} />
+      
+      <div className="relative min-h-[600px] rounded-lg overflow-hidden shadow-lg">
       {/* Background Image */}
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{
-          backgroundImage: 'url(/images/nura-home.jpg)',
+          backgroundImage: `url(${config.backgroundImage})`,
         }}
       >
         {/* Overlay */}
@@ -39,7 +45,7 @@ export function WelcomePanel() {
         <div className="text-center mb-12">
           <h1 className="text-5xl font-light text-white mb-4">FlowPilot</h1>
           <p className="text-xl text-white text-opacity-90">
-            Policy-driven authorization & delegation for AI-powered workflows
+            {config.tagline}
           </p>
         </div>
 
@@ -48,16 +54,17 @@ export function WelcomePanel() {
             onClick={handleCreateTrip}
             className="px-8 py-4 bg-nura-orange text-white font-medium rounded-lg shadow-md hover:bg-opacity-90 transition-all transform hover:scale-105"
           >
-            Create New Trip
+            {config.terminology.createAction}
           </button>
           <button
             onClick={handleManageTrip}
             className="px-8 py-4 bg-white bg-opacity-20 backdrop-blur-sm text-white font-medium rounded-lg border-2 border-white hover:bg-opacity-30 transition-all transform hover:scale-105"
           >
-            Manage My Trip
+            {config.terminology.manageAction}
           </button>
         </div>
       </div>
+    </div>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { config } from '../../config';
 
 interface Tab {
   path: string;
@@ -8,9 +9,8 @@ interface Tab {
 
 const tabs: Tab[] = [
   { path: '/', label: 'Welcome' },
-  { path: '/account', label: 'My account' },
-  { path: '/trips', label: 'My trip' },
-  { path: '/book', label: 'Book' },
+  { path: '/account', label: 'My Personas' },
+  { path: '/my-trips', label: config.terminology.myWorkflows },
   { path: '/invite', label: 'Invite' },
   { path: '/delegate', label: 'Delegate' },
 ];

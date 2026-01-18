@@ -1,7 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { useAppState } from '../../state/AppStateContext';
+import { useAuth } from '../../state/AuthContext';
+import { PanelHeader } from '../common/PanelHeader';
+import { terminology } from '../../config';
 
 export function InvitePanel() {
+  const { openSignInModal } = useAuth();
   const {
     workflows,
     invitees,
@@ -145,7 +149,11 @@ export function InvitePanel() {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6">
+    <div className="space-y-6">
+      {/* Panel Header */}
+      <PanelHeader onSignInClick={openSignInModal} />
+      
+      <div className="bg-white rounded-lg shadow-sm p-6">
       <h2 className="text-2xl font-medium text-nura-dark mb-6 flex items-center gap-3">
         <span className="text-2xl">✉️</span>
         Invite
@@ -174,11 +182,11 @@ export function InvitePanel() {
       {/* Trip Selection */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Select trip
+          Select {terminology.workflow}
         </label>
         {workflows.length === 0 ? (
           <p className="text-sm text-gray-500 py-2">
-            No trips available. Create a trip in the "My trip" tab first.
+            No {terminology.workflows} available. Create a {terminology.workflow} in the "{terminology.Workflows}" tab first.
           </p>
         ) : (
           <select
@@ -187,10 +195,10 @@ export function InvitePanel() {
             disabled={personaRequired || loading}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-nura-orange focus:border-transparent disabled:opacity-50"
           >
-            <option value="">Select a trip...</option>
+            <option value="">Select a {terminology.workflow}...</option>
             {workflows.map((workflow) => (
               <option key={workflow.workflow_id} value={workflow.workflow_id}>
-                {workflow.workflow_id} - {workflow.departure_date || 'no date'} ({workflow.item_count} items)
+                {workflow.workflow_id} - {workflow.departure_date || 'no date'} ({workflow.item_count} {terminology.workflowItems})
               </option>
             ))}
           </select>
@@ -267,6 +275,7 @@ export function InvitePanel() {
         </button>
 
       </div>
+    </div>
     </div>
   );
 }
