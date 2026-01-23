@@ -1,0 +1,362 @@
+openapi: 3.0.3
+info:
+  title: FlowPilot Domain Services API
+  version: "0.9.0"
+  description: >
+    FlowPilot domain services API (workflow system-of-record).
+    
+    **Security**: All endpoints (except /health) require bearer token authentication.
+    
+    **TLS**: Services use HTTP within the Docker network. For production, deploy behind
+    a TLS-terminating reverse proxy (nginx, Traefik, etc.).
+servers:
+  - url: http://127.0.0.1:8003
+    description: Local development access
+  - url: http://flowpilot-domain-services-api:8000
+    description: Docker network (internal)
+security:
+  - BearerAuth: []
+paths:
+  /health:
+    get:
+      summary: Health check
+      security: []  # No authentication required for health check
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              examples:
+                ok:
+                  value:
+                    status: ok
+
+  /v1/workflow-templates:
+    get:
+      summary: List workflow templates
+      responses:
+        "200":
+          description: List of templates
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowTemplatesResponse"
+              examples:
+                sample:
+                  value:
+                    templates:
+                      - template_id: template_all_ok
+                        title: Basic City Trip (all OK)
+                        description: A basic template with 3 planned items.
+                        item_count: 3
+                      - template_id: template_basic
+                        title: Basic City Trip (mix allow/deny)
+                        description: A template designed to demonstrate mixed outcomes.
+                        item_count: 3
+
+  /v1/workflows:
+    post:
+      summary: Create workflow (trip) from a template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWorkflowRequest"
+            examples:
+              create:
+                value:
+                  template_id: template_all_ok
+                  principal_sub: 1460e175-74f9-43af-aac3-7b4fc0547f05
+      responses:
+        "200":
+          description: Created workflow
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Trip"
+              examples:
+                created:
+                  value:
+                    workflow_id: t_85244fb6
+                    template_id: template_all_ok
+                    owner_sub: 1460e175-74f9-43af-aac3-7b4fc0547f05
+                    created_at: "2025-12-16T15:24:09.068379+00:00"
+                    item_count: 3
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/workflows/{workflow_id}:
+    get:
+      summary: Get workflow (trip) by id
+      parameters:
+        - name: workflow_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: t_85244fb6
+      responses:
+        "200":
+          description: Workflow details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Trip"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                notFound:
+                  value:
+                    detail: "Trip not found: t_..."
+
+  /v1/workflows/{workflow_id}/items:
+    get:
+      summary: List workflow items
+      parameters:
+        - name: workflow_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: t_85244fb6
+      responses:
+        "200":
+          description: Item list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowItemsResponse"
+              examples:
+                sample:
+                  value:
+                    workflow_id: t_85244fb6
+                    items:
+                      - workflow_workflow_item_id: i_8484ac8f
+                        kind: unknown
+                        title: unknown
+                        status: planned
+                      - workflow_workflow_item_id: i_6aac5389
+                        kind: unknown
+                        title: unknown
+                        status: planned
+                      - workflow_workflow_item_id: i_0c758592
+                        kind: unknown
+                        title: unknown
+                        status: planned
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/workflows/{workflow_id}/items-items/{workflow_workflow_item_id}/execute:
+    post:
+      summary: Execute a single workflow item (PEP)
+      parameters:
+        - name: workflow_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: t_85244fb6
+        - name: workflow_workflow_item_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: i_8484ac8f
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExecuteWorkflowItemRequest"
+            examples:
+              dryRun:
+                value:
+                  principal_sub: 1460e175-74f9-43af-aac3-7b4fc0547f05
+                  dry_run: true
+      responses:
+        "200":
+          description: Executed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExecuteItemResponse"
+              examples:
+                ok:
+                  value:
+                    workflow_id: t_85244fb6
+                    workflow_workflow_item_id: i_8484ac8f
+                    dry_run: true
+                    result: executed
+                    status: completed
+        "403":
+          description: Denied by policy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                denied:
+                  value:
+                    detail: "Access denied by policy decision: decision=deny reason_codes=['***REMOVED***.deny']"
+        "400":
+          description: Bad request / downstream failure
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        service:
+          type: string
+        templates_loaded:
+          type: integer
+        workflows_in_memory:
+          type: integer
+      required: [status, service, templates_loaded, workflows_in_memory]
+
+    ErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+      required: [detail]
+
+    WorkflowTemplate:
+      type: object
+      properties:
+        template_id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        item_count:
+          type: integer
+          minimum: 0
+      required: [template_id, title, description, item_count]
+
+    WorkflowTemplatesResponse:
+      type: object
+      properties:
+        templates:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkflowTemplate"
+      required: [templates]
+
+    CreateWorkflowRequest:
+      type: object
+      properties:
+        template_id:
+          type: string
+        principal_sub:
+          type: string
+      required: [template_id, principal_sub]
+
+    Trip:
+      type: object
+      properties:
+        workflow_id:
+          type: string
+        template_id:
+          type: string
+        owner_sub:
+          type: string
+        created_at:
+          type: string
+        item_count:
+          type: integer
+          minimum: 0
+      required: [workflow_id, template_id, owner_sub, created_at, item_count]
+
+    WorkflowItem:
+      type: object
+      properties:
+        workflow_workflow_item_id:
+          type: string
+        kind:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+      required: [workflow_workflow_item_id, kind, title, status]
+
+    WorkflowItemsResponse:
+      type: object
+      properties:
+        workflow_id:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkflowItem"
+      required: [workflow_id, items]
+
+    ExecuteWorkflowItemRequest:
+      type: object
+      properties:
+        principal_sub:
+          type: string
+        dry_run:
+          type: boolean
+      required: [principal_sub, dry_run]
+
+    ExecuteItemResponse:
+      type: object
+      properties:
+        workflow_id:
+          type: string
+        workflow_workflow_item_id:
+          type: string
+        dry_run:
+          type: boolean
+        result:
+          type: string
+        status:
+          type: string
+      required: [workflow_id, workflow_workflow_item_id, dry_run, result, status]
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        JWT bearer token for authentication.
+        
+        **Local Development (Docker Compose):**
+        - JWT from Keycloak OIDC provider
+        - Service-to-service calls use client credentials grant
+        
+        **GCP Cloud Run:**
+        - User tokens: Firebase ID tokens (RS256)
+        - Service tokens: HS256 JWTs with shared secret
+        
+        Example: `Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...`

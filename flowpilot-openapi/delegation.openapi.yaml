@@ -1,0 +1,456 @@
+openapi: 3.0.3
+info:
+  title: FlowPilot Delegation API
+  version: "1.0.0"
+  description: >
+    Delegation service for managing delegation relationships in a graph database.
+    
+    **Responsibilities**:
+    - Create and manage delegation relationships (principal -> delegate)
+    - Validate delegation chains for authorization checks
+    - Maintain delegation metadata (workflow scoping, expiration)
+    
+    **Security**: All endpoints (except /health) require bearer token authentication.
+    
+    **TLS**: Services use HTTP within the Docker network. For production, deploy behind
+    a TLS-terminating reverse proxy (nginx, Traefik, etc.).
+servers:
+  - url: http://127.0.0.1:8005
+    description: Local development access
+  - url: http://flowpilot-delegation-api:8000
+    description: Docker network (internal)
+security:
+  - BearerAuth: []
+paths:
+  /health:
+    get:
+      summary: Health check
+      security: []  # No authentication required for health check
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              examples:
+                ok:
+                  value:
+                    status: ok
+                    service: flowpilot-delegation-api
+
+  /v1/delegations:
+    post:
+      summary: Create a delegation relationship
+      description: >
+        Creates a delegation relationship where a principal delegates authority to a delegate.
+        Delegations can be scoped to a specific workflow or be general (workflow_id = null).
+        Delegations have an expiration time (default 7 days, configurable).
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDelegationRequest"
+            examples:
+              delegateWorkflowToTravelAgent:
+                value:
+                  principal_id: df3438a6-7523-4a59-8339-41e073be3148
+                  delegate_id: bcadc299-f463-4f7d-bab5-2221761387f4
+                  workflow_id: w_8ffcc2cd
+                  expires_in_days: 7
+              delegateGeneralToTravelAgent:
+                value:
+                  principal_id: df3438a6-7523-4a59-8339-41e073be3148
+                  delegate_id: bcadc299-f463-4f7d-bab5-2221761387f4
+                  expires_in_days: 14
+      responses:
+        "200":
+          description: Delegation created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DelegationResponse"
+              examples:
+                created:
+                  value:
+                    principal_id: df3438a6-7523-4a59-8339-41e073be3148
+                    delegate_id: bcadc299-f463-4f7d-bab5-2221761387f4
+                    workflow_id: w_8ffcc2cd
+                    expires_at: "2025-12-31T12:00:00Z"
+                    created_at: "2025-12-24T12:00:00Z"
+                    revoked_at: null
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      summary: Revoke a delegation relationship
+      description: >
+        Revokes an active delegation relationship. Once revoked, the delegation
+        is no longer considered valid for authorization checks.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevokeDelegationRequest"
+            examples:
+              revokeWorkflowDelegation:
+                value:
+                  principal_id: df3438a6-7523-4a59-8339-41e073be3148
+                  delegate_id: bcadc299-f463-4f7d-bab5-2221761387f4
+                  workflow_id: w_8ffcc2cd
+              revokeGeneralDelegation:
+                value:
+                  principal_id: df3438a6-7523-4a59-8339-41e073be3148
+                  delegate_id: bcadc299-f463-4f7d-bab5-2221761387f4
+      responses:
+        "200":
+          description: Delegation revoked successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevokeDelegationResponse"
+              examples:
+                revoked:
+                  value:
+                    principal_id: df3438a6-7523-4a59-8339-41e073be3148
+                    delegate_id: bcadc299-f463-4f7d-bab5-2221761387f4
+                    workflow_id: w_8ffcc2cd
+                    revoked: true
+        "400":
+          description: Bad request (delegation not found or already revoked)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    get:
+      summary: List delegations
+      description: >
+        List delegations filtered by principal_id (outgoing) or delegate_id (incoming).
+        Can optionally filter by workflow_id and include expired delegations.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: principal_id
+          in: query
+          required: false
+          description: Filter by principal ID (outgoing delegations)
+          schema:
+            type: string
+        - name: delegate_id
+          in: query
+          required: false
+          description: Filter by delegate ID (incoming delegations)
+          schema:
+            type: string
+        - name: workflow_id
+          in: query
+          required: false
+          description: Filter by workflow ID
+          schema:
+            type: string
+        - name: include_expired
+          in: query
+          required: false
+          description: Include expired delegations
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: List of delegations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListDelegationsResponse"
+              examples:
+                outgoing:
+                  value:
+                    delegations:
+                      - principal_id: df3438a6-7523-4a59-8339-41e073be3148
+                        delegate_id: bcadc299-f463-4f7d-bab5-2221761387f4
+                        workflow_id: w_8ffcc2cd
+                        expires_at: "2025-12-31T12:00:00Z"
+                        created_at: "2025-12-24T12:00:00Z"
+                        revoked_at: null
+                incoming:
+                  value:
+                    delegations:
+                      - principal_id: df3438a6-7523-4a59-8339-41e073be3148
+                        delegate_id: bcadc299-f463-4f7d-bab5-2221761387f4
+                        workflow_id: w_8ffcc2cd
+                        expires_at: "2025-12-31T12:00:00Z"
+                        created_at: "2025-12-24T12:00:00Z"
+                        revoked_at: null
+        "400":
+          description: Bad request (missing principal_id or delegate_id)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/delegations/validate:
+    get:
+      summary: Validate a delegation relationship
+      description: >
+        Validates whether a delegation exists and is active (not expired, not revoked).
+        Returns the delegation chain if valid, empty chain if not valid.
+        This endpoint is used by authz-api to check delegation before policy evaluation.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: principal_id
+          in: query
+          required: true
+          description: Principal ID (resource owner)
+          schema:
+            type: string
+        - name: delegate_id
+          in: query
+          required: true
+          description: Delegate ID (user/agent attempting to act)
+          schema:
+            type: string
+        - name: workflow_id
+          in: query
+          required: false
+          description: Optional workflow ID to scope the validation
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidateDelegationResponse"
+              examples:
+                validDirect:
+                  value:
+                    valid: true
+                    delegation_chain:
+                      - df3438a6-7523-4a59-8339-41e073be3148
+                validDelegated:
+                  value:
+                    valid: true
+                    delegation_chain:
+                      - df3438a6-7523-4a59-8339-41e073be3148
+                      - bcadc299-f463-4f7d-bab5-2221761387f4
+                invalid:
+                  value:
+                    valid: false
+                    delegation_chain: []
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+        service:
+          type: string
+          example: flowpilot-delegation-api
+      required:
+        - status
+        - service
+
+    CreateDelegationRequest:
+      type: object
+      properties:
+        principal_id:
+          type: string
+          description: Principal ID (delegating authority)
+          example: df3438a6-7523-4a59-8339-41e073be3148
+        delegate_id:
+          type: string
+          description: Delegate ID (receiving authority)
+          example: bcadc299-f463-4f7d-bab5-2221761387f4
+        workflow_id:
+          type: string
+          nullable: true
+          description: Optional workflow ID to scope delegation
+          example: w_8ffcc2cd
+        expires_in_days:
+          type: integer
+          description: "Days until expiration (default: 7)"
+          minimum: 1
+          maximum: 365
+          default: 7
+          example: 7
+      required:
+        - principal_id
+        - delegate_id
+
+    RevokeDelegationRequest:
+      type: object
+      properties:
+        principal_id:
+          type: string
+          description: Principal ID
+          example: df3438a6-7523-4a59-8339-41e073be3148
+        delegate_id:
+          type: string
+          description: Delegate ID
+          example: bcadc299-f463-4f7d-bab5-2221761387f4
+        workflow_id:
+          type: string
+          nullable: true
+          description: Optional workflow ID to scope revocation
+          example: w_8ffcc2cd
+      required:
+        - principal_id
+        - delegate_id
+
+    DelegationResponse:
+      type: object
+      properties:
+        principal_id:
+          type: string
+          example: df3438a6-7523-4a59-8339-41e073be3148
+        delegate_id:
+          type: string
+          example: bcadc299-f463-4f7d-bab5-2221761387f4
+        workflow_id:
+          type: string
+          nullable: true
+          example: w_8ffcc2cd
+        expires_at:
+          type: string
+          format: date-time
+          example: "2025-12-31T12:00:00Z"
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-12-24T12:00:00Z"
+        revoked_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+      required:
+        - principal_id
+        - delegate_id
+        - expires_at
+        - created_at
+        - revoked_at
+
+    RevokeDelegationResponse:
+      type: object
+      properties:
+        principal_id:
+          type: string
+          example: df3438a6-7523-4a59-8339-41e073be3148
+        delegate_id:
+          type: string
+          example: bcadc299-f463-4f7d-bab5-2221761387f4
+        workflow_id:
+          type: string
+          nullable: true
+          example: w_8ffcc2cd
+        revoked:
+          type: boolean
+          example: true
+      required:
+        - principal_id
+        - delegate_id
+        - revoked
+
+    ListDelegationsResponse:
+      type: object
+      properties:
+        delegations:
+          type: array
+          items:
+            $ref: "#/components/schemas/DelegationResponse"
+      required:
+        - delegations
+
+    ValidateDelegationResponse:
+      type: object
+      properties:
+        valid:
+          type: boolean
+          description: Whether the delegation is valid
+          example: true
+        delegation_chain:
+          type: array
+          items:
+            type: string
+          description: List of IDs representing the delegation chain from principal to delegate
+          example:
+            - df3438a6-7523-4a59-8339-41e073be3148
+            - bcadc299-f463-4f7d-bab5-2221761387f4
+      required:
+        - valid
+        - delegation_chain
+
+    ErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+          description: Error message
+          example: "Delegation not found or already revoked"
+      required:
+        - detail
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        JWT bearer token for authentication.
+        
+        **Local Development (Docker Compose):**
+        - JWT from Keycloak OIDC provider
+        - Service-to-service calls use client credentials grant
+        
+        **GCP Cloud Run:**
+        - User tokens: Firebase ID tokens (RS256)
+        - Service tokens: HS256 JWTs with shared secret
+        
+        Example: `Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...`
+
