@@ -1,0 +1,159 @@
+# Policy Manifest for Travel Booking Use Case
+#
+# This manifest defines the policy configuration for the travel booking domain.
+# It specifies which OPA package to evaluate and which persona attributes are
+# required for policy evaluation.
+#
+# Manifest Schema:
+#   name: Policy identifier (used in POLICY_NAME environment variable)
+#   package: OPA Rego package name
+#   attributes: List of persona attribute names needed by this policy
+#     - General attributes (e.g., consent) apply across use cases
+#     - Use case-specific attributes are prefixed (e.g., autobook_*)
+
+name: travel
+package: auto_book
+
+# Resource types this policy handles (for policy selection routing)
+resource_types:
+  - workflow
+  - workflow_item
+  - trip
+
+# Persona configuration
+persona_config:
+  # Valid persona status values
+  # Status lifecycle: pending → active → suspended/inactive/expired
+  persona_statuses:
+    - pending      # Persona created but not yet activated
+    - active       # Persona is active and can be used
+    - inactive     # Persona temporarily disabled by user
+    - suspended    # Persona suspended by admin (e.g., compliance issue)
+    - expired      # Persona validity period has ended
+  
+  # Persona titles with rich metadata
+  persona_titles:
+    - title: visitor
+      description: "End user who may be interested in travel options or the itinerary"
+      can-be-invited: true
+      can-be-delegated-to: false
+      allowed-actions: [read]
+
+    - title: traveler
+      description: "End users who book travel for themselves and for whom autobook preferences apply to their itineraries"
+      can-be-invited: true
+      can-be-delegated-to: false
+      allowed-actions: [read, create, update, execute, delete]
+    
+    - title: business-traveler
+      description: "End users who book travel for business purposes with specific autobook preferences"
+      can-be-invited: true
+      can-be-delegated-to: false
+      allowed-actions: [read, create, update, execute, delete]
+    
+    - title: travel-agent
+      description: "Travel agent who can execute workflows on behalf of travelers, if explicitly delegated"
+      can-be-invited: false
+      can-be-delegated-to: true
+      allowed-actions: [read, create, update, execute, delete]
+    
+    - title: office-manager
+      description: "Office manager who can consult and update someone's booking, but cannot execute it"
+      can-be-invited: false
+      can-be-delegated-to: true
+      allowed-actions: [read, create, update]
+    
+    - title: booking-assistant
+      description: "Booking assistant who can manage and execute bookings on behalf of travelers"
+      can-be-invited: false
+      can-be-delegated-to: true
+      allowed-actions: [read, create, update, execute]
+    
+    - title: user-admin
+      description: "Supra-level administrator with full permissions to update personas of other users"
+      can-be-invited: false
+      can-be-delegated-to: true
+      allowed-actions: [read, create, update, execute, delete]
+
+# Unified attributes with source, defaults, and validation
+#
+# IMPORTANT: Validation Responsibility
+# - persona-api: Validates that required attributes are PRESENT (not None)
+#                     Does NOT validate ranges or policy-specific constraints
+# - authz-api: Passes attributes to OPA without validation or defaulting
+# - OPA policy: Performs ALL policy-specific validation (e.g., range checks)
+#
+# This separation ensures the system is extensible to other policies without
+# hardcoding policy logic in the API layer.
+attributes:
+  # Persona custom attributes
+  - name: consent
+    type: boolean
+    source: persona
+    default: false
+    required: false
+    description: "Whether the user has consented to autonomous booking"
+  
+  - name: autobook_price
+    type: integer
+    source: persona
+    default: 500
+    required: false
+    description: "Maximum trip cost for autonomous booking (USD)"
+  
+  - name: autobook_leadtime
+    type: integer
+    source: persona
+    default: 7
+    required: false
+    description: "Minimum days before departure for autonomous booking"
+  
+  - name: autobook_risklevel
+    type: integer
+    source: persona
+    default: 3
+    required: false
+    description: "Maximum airline risk score for autonomous booking (1-5 scale)"
+  
+  - name: approval_date
+    type: date
+    source: persona
+    default: null
+    required: false
+    description: "Date when autonomous booking was approved (ISO 8601 format)"
+  
+  - name: approved_by
+    type: email
+    source: persona
+    default: null
+    required: false
+    description: "Email address of the person who approved autonomous booking"
+  
+  - name: business_email
+    type: email
+    source: persona
+    default: null
+    required: false
+    description: "Business email address for the persona"
+  
+  # Resource attributes (from workflow/item properties)
+  - name: planned_price
+    type: float
+    source: resource
+    default: 0.0
+    required: false
+    description: "Planned cost of the trip"
+  
+  - name: departure_date
+    type: date
+    source: resource
+    default: null
+    required: false
+    description: "Trip departure date (ISO 8601 format)"
+  
+  - name: airline_risk_score
+    type: float
+    source: resource
+    default: null
+    required: false
+    description: "Airline risk score (1.0=lowest risk, 5.0=highest risk). Only present for flight items."

@@ -1,0 +1,18 @@
+{
+  "projects": {
+    "default": "vision-course-476214"
+  },
+  "targets": {
+    "vision-course-476214": {
+      "hosting": {
+        "travel": [
+          "flowpilot-travel"
+        ],
+        "nursing": [
+          "flowpilot-nursing"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

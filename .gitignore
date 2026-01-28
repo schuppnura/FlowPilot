@@ -1,0 +1,198 @@
+# Note: All code is tracked in this private repo.
+# For public publication, use scripts/sync-to-public.sh to sync only client-facing code.
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# poetry
+poetry.lock
+
+# pdm
+.pdm.toml
+
+# PEP 582
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.env.*
+.env.local
+.env.*.local
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Secrets and credentials
+*.secret
+*.key
+*.pem
+infra/keycloak/certs/key.pem
+infra/certs/mkcert-rootCA.pem
+secrets/
+.secrets/
+infra/keycloak/realm-flowpilot.json
+
+# Firebase and GCP credentials
+**/firebase-admin-key.json
+bin/firebase-admin-key.json
+*.credentials.json
+service-account*.json
+
+# HTTPS Bundle Server
+/tmp/https-bundle-server.log
+/tmp/https-bundle-server.pid
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# Internal documentation and logs (not for public release)
+flowpilot-docs/
+project-docs/
+mylog.txt
+debug_test.py
+logs/
+
+# Internal scripts (provisioning, secrets management, etc.)
+scripts/
+bin/
+
+# GCP Cloud Run deployment configurations (contain production URLs and internal IPs)
+cloud-run-envs/
+
+# Internal testing data and tooling (contains test users, passwords, internal tools)
+flowpilot-testing/
+odrl_compiler/
+test_delegation_api.py
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# UV
+uv.lock
+
+# IDE and Xcode
+*.xcworkspace/
+DerivedData/
+*.xcuserstate
+*.xcuserdatad/
+.vscode/
+.idea/
+
+# Project specific
+*.faiss
+*.index
+*.npz
+.DS_Store

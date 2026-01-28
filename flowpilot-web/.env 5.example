@@ -1,0 +1,11 @@
+# Firebase Configuration
+# Get these from your Firebase project settings: https://console.firebase.google.com/
+VITE_FIREBASE_API_KEY=your-api-key-here
+VITE_FIREBASE_AUTH_DOMAIN=your-project-id.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-project-id
+
+# API URLs (optional - defaults to GCP Cloud Run endpoints)
+# Uncomment and modify if you want to use local development URLs
+# VITE_DOMAIN_SERVICES_API_URL=http://localhost:8003
+# VITE_DELEGATION_API_URL=http://localhost:8005
+# VITE_AI_AGENT_API_URL=http://localhost:8004

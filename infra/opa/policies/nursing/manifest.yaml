@@ -1,0 +1,110 @@
+# Policy Manifest for Nursing Workflow Demo
+#
+# This manifest mirrors the travel policy structure but targets nursing workflows.
+# It defines the policy package and the persona/resource attributes required for
+# policy evaluation, including family caregiver support.
+
+name: nursing
+package: nursing_workflow
+
+resource_types:
+  - workflow
+  - workflow_item
+
+persona_config:
+  persona_statuses:
+    - pending
+    - active
+    - inactive
+    - suspended
+    - expired
+
+  persona_titles:
+    - title: patient
+      description: "Patient (or resident) who owns the care workflow and can delegate tasks."
+      can-be-invited: true
+      can-be-delegated-to: false
+      allowed-actions: [read, update]
+
+    - title: caregiver
+      description: "Family member who can coordinate administrative steps for a patient when delegated."
+      can-be-invited: false
+      can-be-delegated-to: true
+      allowed-actions: [read, update, execute]
+
+    - title: nurse
+      description: "Nurse who can execute workflow items on behalf of a patient, if explicitly delegated."
+      can-be-invited: false
+      can-be-delegated-to: true
+      allowed-actions: [read, update, execute]
+
+    - title: doctor
+      description: "Doctor with a caring relationship, if explicitly delegated."
+      can-be-invited: false
+      can-be-delegated-to: true
+      allowed-actions: [read, update, execute]
+
+    - title: care-coordinator
+      description: "Care coordinator who can manage discharge/admin tasks when delegated."
+      can-be-invited: false
+      can-be-delegated-to: true
+      allowed-actions: [read, update, execute]
+
+    - title: user-admin
+      description: "Supra-level administrator with full permissions to update personas of other users."
+      can-be-invited: false
+      can-be-delegated-to: true
+      allowed-actions: [read, update, execute, delete]
+
+# Attributes required by the nursing policy
+attributes:
+  # Owner (patient) persona attributes
+  - name: consent
+    type: boolean
+    source: persona
+    default: false
+    required: false
+    description: "General consent flag for autonomous operations (policy-gated)."
+
+  - name: auto_execute_effort
+    type: integer
+    source: persona
+    default: 30
+    required: false
+    description: "Maximum allowed planned effort (minutes) for autonomous execution."
+
+  - name: auto_execute_leadtime_hours
+    type: integer
+    source: persona
+    default: 1
+    required: false
+    description: "Minimum hours before due time for autonomous execution."
+
+  - name: auto_execute_risklevel
+    type: integer
+    source: persona
+    default: 3
+    required: false
+    description: "Maximum allowed care risk score for autonomous execution."
+
+  # Resource attributes (workflow item properties)
+  - name: planned_effort_minutes
+    type: float
+    source: resource
+    default: 0.0
+    required: false
+    description: "Estimated effort for the workflow item."
+
+  - name: due_datetime
+    type: date
+    source: resource
+    default: null
+    required: true
+    description: "Due time for the workflow item (RFC3339)."
+
+  - name: care_risk_score
+    type: float
+    source: resource
+    default: null
+    required: false
+    description: "Risk score (1=low, 5=high) representing escalation sensitivity."

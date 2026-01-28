@@ -1,0 +1,331 @@
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.4.7
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_HOSTNAME: https://localhost:8443
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HTTPS_CERTIFICATE_FILE: /opt/keycloak/certs/cert.pem
+      KC_HTTPS_CERTIFICATE_KEY_FILE: /opt/keycloak/certs/key.pem
+      KC_HTTPS_PORT: 8443
+    ports:
+      - "8080:8080"
+      - "8443:8443"
+    volumes:
+      - ./infra/keycloak:/opt/keycloak/data/import:ro
+      - ./infra/keycloak/certs:/opt/keycloak/certs:ro
+      - keycloak_data:/opt/keycloak/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -k -f https://localhost:8443/realms/master || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+  keycloak-setup:
+    image: python:3.11-slim
+    depends_on:
+      keycloak:
+        condition: service_started
+    volumes:
+      - .:/workspace:ro
+    working_dir: /workspace
+    environment:
+      - KEYCLOAK_ADMIN_USERNAME=${KEYCLOAK_ADMIN_USERNAME}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
+      - KEYCLOAK_HOST=keycloak
+      - KEYCLOAK_PORT=8443
+    command:
+      - /bin/bash
+      - -c
+      - |
+        echo "=========================================="
+        echo "Keycloak Setup - Running automatically"
+        echo "=========================================="
+        apt-get update -qq > /dev/null 2>&1 && apt-get install -y -qq curl > /dev/null 2>&1
+        pip install -q requests urllib3 > /dev/null 2>&1
+        chmod +x scripts/setup_keycloak.sh
+        bash scripts/setup_keycloak.sh
+        echo ""
+        echo "✓ Keycloak setup complete!"
+    restart: "no"
+
+  opa:
+    image: openpolicyagent/opa:latest
+    command: ["run", "--server", "--addr", "0.0.0.0:8181", "--watch", "/policies"]
+    volumes:
+      - ./infra/opa/policies:/policies:ro
+    ports:
+      - "8181:8181"
+    restart: unless-stopped
+
+  flowpilot-authz-api:
+    build:
+      context: .
+      dockerfile: flowpilot-services/authz-api/Dockerfile
+      args:
+        DEPLOYMENT_ENV: keycloak
+    platform: linux/amd64
+    volumes:
+      - ./secrets:/secrets:ro
+    environment:
+      - SERVICE_ID=authz-api
+      - OPA_URL=http://opa:8181
+      # Policy configuration (manifest-based)
+      - POLICY_NAME=travel
+      - POLICY_MANIFEST_DIR=/policies
+      # JWT validation using JWKS (no network calls per request)
+      - KEYCLOAK_JWKS_URI=https://keycloak:8443/realms/flowpilot/protocol/openid-connect/certs
+      - KEYCLOAK_ISSUER=https://localhost:8443/realms/flowpilot
+      # - KEYCLOAK_AUDIENCE=flowpilot  # Disabled for local dev (tokens have 'account' audience)
+      # FlowPilot token signing (for pseudonymous access tokens)
+      - SIGNING_KEY_PATH=/secrets/flowpilot-signing-key.pem
+      - FLOWPILOT_PUBLIC_KEY_PATH=/secrets/flowpilot-signing-key-pub.pem
+      - FLOWPILOT_TOKEN_ISSUER=https://flowpilot-authz-api
+      - FLOWPILOT_TOKEN_AUDIENCE=flowpilot
+      - FLOWPILOT_TOKEN_EXPIRY_SECONDS=900
+      # Payload signature scanning
+      - ENABLE_PAYLOAD_SIGNATURE_SCAN=0
+      # Request limits
+      - MAX_REQUEST_SIZE_MB=1
+      - MAX_STRING_LENGTH=10000
+      # Allowed action names (AuthZEN compliant, comma-separated)
+      - ALLOWED_ACTIONS=create,read,write,delete,execute
+      # Delegation API integration
+      - DELEGATION_API_BASE_URL=http://flowpilot-delegation-api:8000
+      - DELEGATION_API_TIMEOUT_SECONDS=5.0
+      # Persona API integration (for fetching persona attributes)
+      - PERSONA_API_BASE_URL=http://flowpilot-persona-api:8000
+      # Service-to-service authentication for delegation-api and Keycloak calls
+      - KEYCLOAK_TOKEN_URL=https://keycloak:8443/realms/flowpilot/protocol/openid-connect/token
+      - AGENT_CLIENT_ID=flowpilot-agent
+      - AGENT_CLIENT_SECRET=${AGENT_CLIENT_SECRET}
+      # Error message detail (set to 0 in production)
+      - INCLUDE_ERROR_DETAILS=1
+      # API logging (set to 1 to enable JSON logging to stdout)
+      - ENABLE_API_LOGGING=1
+      # HTTP client configuration
+      - HTTP_DEFAULT_TIMEOUT=10.0
+      - HTTP_VERIFY_TLS=false
+      - VERIFY_TLS=false
+      # CORS configuration (allow all origins for local development)
+      - CORS_ALLOWED_ORIGINS=*
+      - CORS_ALLOW_CREDENTIALS=true
+      - CORS_ALLOW_METHODS=*
+      - CORS_ALLOW_HEADERS=*
+      # Service token requirement (disabled for local dev - no GCP metadata server)
+      - REQUIRE_SERVICE_TOKEN=0
+    command: ["python", "authz_main.py", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8002:8000"
+    depends_on:
+      - opa
+      - keycloak
+      - flowpilot-delegation-api
+      - flowpilot-persona-api
+
+  flowpilot-ai-agent-api:
+    build:
+      context: .
+      dockerfile: flowpilot-services/ai-agent-api/Dockerfile
+      args:
+        DEPLOYMENT_ENV: keycloak
+    environment:
+      LOG_LEVEL: info
+      SERVICE_ID: ai-agent-api
+      SERVICE_PERSONA: ai-agent  # Service persona for authorization checks
+
+      # Domain/workflow API base URL.
+      WORKFLOW_BASE_URL: http://flowpilot-domain-services-api:8000
+
+      # AuthZ API base URL for authorization checks
+      AUTHZ_BASE_URL: http://flowpilot-authz-api:8000
+      AGENT_SUB: agent-runner  # Stable identifier for AI agent service
+
+      # Client credentials for service-to-service calls
+      KEYCLOAK_TOKEN_URL: https://keycloak:8443/realms/flowpilot/protocol/openid-connect/token
+      AGENT_CLIENT_ID: flowpilot-agent
+      AGENT_CLIENT_SECRET: ${AGENT_CLIENT_SECRET}
+
+      VERIFY_TRAVELER_TOKEN: "false"
+
+      # JWT validation using JWKS (no network calls per request)
+      KEYCLOAK_JWKS_URI: https://keycloak:8443/realms/flowpilot/protocol/openid-connect/certs
+      KEYCLOAK_ISSUER: https://localhost:8443/realms/flowpilot
+      # KEYCLOAK_AUDIENCE: flowpilot  # Disabled for local dev (tokens have 'account' audience)
+      
+      # Optional: Enable payload signature scanning
+      ENABLE_PAYLOAD_SIGNATURE_SCAN: "0"
+      # Error message detail (set to 0 in production)
+      INCLUDE_ERROR_DETAILS: "1"
+      # HTTP client configuration
+      HTTP_DEFAULT_TIMEOUT: "10.0"
+      HTTP_VERIFY_TLS: "false"
+      CORS_ALLOWED_ORIGINS: "*"
+      CORS_ALLOW_CREDENTIALS: "true"
+      CORS_ALLOW_METHODS: "*"
+      CORS_ALLOW_HEADERS: "*"
+      # Service token requirement (disabled for local dev - no GCP metadata server)
+      REQUIRE_SERVICE_TOKEN: "0"
+    command: ["python", "ai_agent_main.py", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8004:8000"
+    depends_on:
+      - keycloak
+      - flowpilot-domain-services-api
+
+  flowpilot-domain-services-api:
+    build:
+      context: .
+      dockerfile: flowpilot-services/domain-services-api/Dockerfile
+      args:
+        DEPLOYMENT_ENV: keycloak
+    environment:
+      AUTHZ_BASE_URL: "http://flowpilot-authz-api:8000"
+      DELEGATION_API_BASE_URL: "http://flowpilot-delegation-api:8000"
+      AGENT_SUB: "agent-runner"  # Stable identifier for AI agent service
+      SERVICE_ID: "domain-services-api"  # Service identity for authz calls
+      SERVICE_PERSONA: "domain-services"  # Service persona for authorization checks
+      DOMAIN: "flowpilot"
+
+      # Templates are mounted at /data inside the container.
+      TEMPLATE_DIRECTORY: "/data/trip_templates"
+
+      # Client credentials for service-to-service calls
+      KEYCLOAK_TOKEN_URL: https://keycloak:8443/realms/flowpilot/protocol/openid-connect/token
+      AGENT_CLIENT_ID: flowpilot-agent
+      AGENT_CLIENT_SECRET: ${AGENT_CLIENT_SECRET}
+
+      # JWT validation using JWKS (no network calls per request)
+      KEYCLOAK_JWKS_URI: https://keycloak:8443/realms/flowpilot/protocol/openid-connect/certs
+      KEYCLOAK_ISSUER: https://localhost:8443/realms/flowpilot
+      # KEYCLOAK_AUDIENCE: flowpilot  # Disabled for local dev (tokens have 'account' audience)
+      
+      # Optional: Enable payload signature scanning
+      ENABLE_PAYLOAD_SIGNATURE_SCAN: "0"
+      # Error message detail (set to 0 in production)
+      INCLUDE_ERROR_DETAILS: "1"
+      # API logging (set to 1 to enable JSON logging to stdout)
+      ENABLE_API_LOGGING: "1"
+      # HTTP client configuration
+      HTTP_DEFAULT_TIMEOUT: "10.0"
+      HTTP_VERIFY_TLS: "false"
+      # CORS configuration (allow all origins for local development)
+      CORS_ALLOWED_ORIGINS: "*"
+      CORS_ALLOW_CREDENTIALS: "true"
+      CORS_ALLOW_METHODS: "*"
+      CORS_ALLOW_HEADERS: "*"
+      # Service token requirement (disabled for local dev - no GCP metadata server)
+      REQUIRE_SERVICE_TOKEN: "0"
+    ports:
+      - "8003:8000"
+    depends_on:
+      - flowpilot-authz-api
+      - flowpilot-delegation-api
+    volumes:
+      - ./data:/data:ro
+
+  flowpilot-delegation-api:
+    build:
+      context: .
+      dockerfile: flowpilot-services/delegation-api/Dockerfile
+      args:
+        DEPLOYMENT_ENV: keycloak
+    platform: linux/amd64
+    environment:
+      - SERVICE_ID=delegation-api
+      # JWT validation using JWKS
+      - KEYCLOAK_JWKS_URI=https://keycloak:8443/realms/flowpilot/protocol/openid-connect/certs
+      - KEYCLOAK_ISSUER=https://localhost:8443/realms/flowpilot
+      # - KEYCLOAK_AUDIENCE=flowpilot  # Disabled for local dev (tokens have 'account' audience)
+      # Service-to-service authentication
+      - KEYCLOAK_TOKEN_URL=https://keycloak:8443/realms/flowpilot/protocol/openid-connect/token
+      - AGENT_CLIENT_ID=flowpilot-agent
+      - AGENT_CLIENT_SECRET=${AGENT_CLIENT_SECRET}
+      # Delegation configuration
+      - DELEGATION_ALLOWED_ACTIONS=read,update,execute,delete
+      # Database
+      - DB_PATH=/app/data/delegations.db
+      # Payload signature scanning
+      - ENABLE_PAYLOAD_SIGNATURE_SCAN=0
+      # Error message detail (set to 0 in production)
+      - INCLUDE_ERROR_DETAILS=1
+      # API logging (set to 1 to enable JSON logging to stdout)
+      - ENABLE_API_LOGGING=1
+      # HTTP client configuration
+      - HTTP_DEFAULT_TIMEOUT=10.0
+      - HTTP_VERIFY_TLS=false
+      # CORS configuration (allow all origins for local development)
+      - CORS_ALLOWED_ORIGINS=*
+      - CORS_ALLOW_CREDENTIALS=true
+      - CORS_ALLOW_METHODS=*
+      - CORS_ALLOW_HEADERS=*
+      # Service token requirement (disabled for local dev - no GCP metadata server)
+      - REQUIRE_SERVICE_TOKEN=0
+    command: ["python", "delegation_main.py", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8005:8000"
+    depends_on:
+      - keycloak
+    volumes:
+      - delegation_db:/app/data
+
+  flowpilot-persona-api:
+    build:
+      context: .
+      dockerfile: flowpilot-services/persona-api/Dockerfile
+      args:
+        DEPLOYMENT_ENV: keycloak
+    platform: linux/amd64
+    environment:
+      - SERVICE_ID=persona-api
+      # Deployment environment (determines which database to use)
+      - DEPLOYMENT_ENV=keycloak
+      # JWT validation using JWKS
+      - KEYCLOAK_JWKS_URI=https://keycloak:8443/realms/flowpilot/protocol/openid-connect/certs
+      - KEYCLOAK_ISSUER=https://localhost:8443/realms/flowpilot
+      # - KEYCLOAK_AUDIENCE=flowpilot  # Disabled for local dev (tokens have 'account' audience)
+      # Firebase Admin SDK (for local Keycloak, these are not used)
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/firebase-admin-key.json
+      # User profile configuration
+      - MAX_PERSONAS_PER_USER=5
+      # Persona titles are loaded from policy manifest at /policies/travel/manifest.yaml
+      - POLICY_NAME=travel
+      - POLICY_MANIFEST_DIR=/policies
+      # Persona database configuration
+      - PERSONA_DB_PATH=/app/data/personas.db
+      - PERSONA_DEFAULT_EXPIRY_DAYS=365
+      # Payload signature scanning
+      - ENABLE_PAYLOAD_SIGNATURE_SCAN=0
+      # Error message detail (set to 0 in production)
+      - INCLUDE_ERROR_DETAILS=1
+      # API logging
+      - ENABLE_API_LOGGING=1
+      # HTTP client configuration
+      - HTTP_DEFAULT_TIMEOUT=10.0
+      - HTTP_VERIFY_TLS=false
+      # CORS configuration (allow all origins for local development)
+      - CORS_ALLOWED_ORIGINS=*
+      - CORS_ALLOW_CREDENTIALS=true
+      - CORS_ALLOW_METHODS=*
+      - CORS_ALLOW_HEADERS=*
+      # Service token requirement (disabled for local dev - no GCP metadata server)
+      - REQUIRE_SERVICE_TOKEN=0
+    command: ["python", "persona_main.py", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8006:8000"
+    depends_on:
+      - keycloak
+    volumes:
+      - persona_db:/app/data
+
+volumes:
+  keycloak_data:
+    driver: local
+  delegation_db:
+    driver: local
+  persona_db:
+    driver: local

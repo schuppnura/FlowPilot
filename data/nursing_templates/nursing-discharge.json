@@ -1,0 +1,40 @@
+{
+  "domain": "nursing",
+  "workflow_id": "w_discharge_001",
+  "workflow_kind": "nursing",
+  "workflow_title": "Discharge Workflow (Demo)",
+  "owner": {
+    "type": "user",
+    "id": "PATIENT_SUB_UUID",
+    "persona": "patient"
+  },
+  "items": [
+    {
+      "workflow_item_id": "i_discharge_summary",
+      "workflow_item_kind": "discharge",
+      "title": "Prepare discharge summary packet",
+      "planned_effort_minutes": 20,
+      "due_datetime": "2026-01-17T14:00:00Z",
+      "care_risk_score": 3,
+      "notes": "Compile instructions and check completeness; no clinical decisions."
+    },
+    {
+      "workflow_item_id": "i_followup_appointments",
+      "workflow_item_kind": "discharge",
+      "title": "Schedule follow-up appointments",
+      "planned_effort_minutes": 15,
+      "due_datetime": "2026-01-17T15:00:00Z",
+      "care_risk_score": 2,
+      "notes": "Coordinate logistics; confirm dates; share with patient/family caregiver."
+    },
+    {
+      "workflow_item_id": "i_homecare_setup",
+      "workflow_item_kind": "discharge",
+      "title": "Arrange home-care logistics",
+      "planned_effort_minutes": 25,
+      "due_datetime": "2026-01-17T16:00:00Z",
+      "care_risk_score": 2,
+      "notes": "Order equipment and transport; administrative coordination only."
+    }
+  ]
+}

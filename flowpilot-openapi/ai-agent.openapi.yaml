@@ -1,0 +1,263 @@
+openapi: 3.0.3
+info:
+  title: Agent Runner API
+  version: "0.1.0"
+  description: >
+    Agent runner for workflow execution with per-item authorization.
+    
+    **Security**: All endpoints (except /health) require bearer token authentication.
+    
+    **TLS**: Services use HTTP within the Docker network. For production, deploy behind
+    a TLS-terminating reverse proxy (nginx, Traefik, etc.).
+servers:
+  - url: http://127.0.0.1:8004
+    description: Local development access
+security:
+  - BearerAuth: []
+paths:
+  /health:
+    get:
+      summary: Health check
+      security: []  # No authentication required for health check
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              examples:
+                ok:
+                  value:
+                    status: ok
+
+  /v1/workflow-runs:
+    post:
+      summary: Execute a workflow run (iterate items)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkflowRunRequest"
+            examples:
+              run:
+                value:
+                  workflow_id: t_4a6455a3
+                  principal_sub: 1460e175-74f9-43af-aac3-7b4fc0547f05
+                  dry_run: true
+      responses:
+        "200":
+          description: Run results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentRunResponse"
+              examples:
+                denyAll:
+                  value:
+                    run_id: wr_db0748d8aa
+                    workflow_id: t_4a6455a3
+                    principal_sub: 1460e175-74f9-43af-aac3-7b4fc0547f05
+                    dry_run: true
+                    results:
+                      - workflow_workflow_workflow_item_id: i_f032d0a2
+                        kind: unknown
+                        status: completed
+                        decision: deny
+                        reason_codes: [***REMOVED***.deny]
+                        advice:
+                          - type: deny
+                            message: "Access denied by policy decision: decision=deny reason_codes=['***REMOVED***.deny']"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/agent-runs:
+    post:
+      summary: Execute a workflow run (backward-compatible alias)
+      description: Alias for /v1/workflow-runs maintained for backward compatibility
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkflowRunRequest"
+            examples:
+              run:
+                value:
+                  workflow_id: t_4a6455a3
+                  principal_sub: 1460e175-74f9-43af-aac3-7b4fc0547f05
+                  dry_run: true
+      responses:
+        "200":
+          description: Run results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentRunResponse"
+              examples:
+                denyAll:
+                  value:
+                    run_id: wr_db0748d8aa
+                    workflow_id: t_4a6455a3
+                    principal_sub: 1460e175-74f9-43af-aac3-7b4fc0547f05
+                    dry_run: true
+                    results:
+                      - workflow_workflow_workflow_item_id: i_f032d0a2
+                        kind: unknown
+                        status: completed
+                        decision: deny
+                        reason_codes: [***REMOVED***.deny]
+                        advice:
+                          - type: deny
+                            message: "Access denied by policy decision: decision=deny reason_codes=['***REMOVED***.deny']"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+      required: [status]
+
+    ErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+      required: [detail]
+
+    WorkflowRunRequest:
+      type: object
+      properties:
+        workflow_id:
+          type: string
+          description: Workflow identifier
+        workflow_id:
+          type: string
+          description: Legacy alias for workflow_id (backward compatibility)
+        principal_sub:
+          type: string
+          description: End-user subject UUID
+        dry_run:
+          type: boolean
+          description: If true, simulate execution without side effects
+          default: true
+      required: [principal_sub, dry_run]
+
+    AgentRunRequest:
+      type: object
+      description: Alias for WorkflowRunRequest (backward compatibility)
+      properties:
+        workflow_id:
+          type: string
+        workflow_id:
+          type: string
+        principal_sub:
+          type: string
+        dry_run:
+          type: boolean
+          default: true
+      required: [principal_sub, dry_run]
+
+    AgentAdvice:
+      type: object
+      properties:
+        type:
+          type: string
+          description: advice category (deny, error, info)
+        message:
+          type: string
+      required: [type, message]
+
+    AgentRunItemResult:
+      type: object
+      properties:
+        workflow_workflow_workflow_item_id:
+          type: string
+        kind:
+          type: string
+        status:
+          type: string
+          description: completed or error
+        decision:
+          type: string
+          description: allow or deny
+        reason_codes:
+          type: array
+          items:
+            type: string
+        advice:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentAdvice"
+      required: [workflow_workflow_workflow_item_id, kind, status, decision, reason_codes, advice]
+
+    AgentRunResponse:
+      type: object
+      properties:
+        run_id:
+          type: string
+        workflow_id:
+          type: string
+        principal_sub:
+          type: string
+        dry_run:
+          type: boolean
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentRunItemResult"
+      required: [run_id, workflow_id, principal_sub, dry_run, results]
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        JWT bearer token for authentication.
+        
+        **Local Development (Docker Compose):**
+        - JWT from Keycloak OIDC provider
+        - Service-to-service calls use client credentials grant
+        
+        **GCP Cloud Run:**
+        - User tokens: Firebase ID tokens (RS256)
+        - Service tokens: HS256 JWTs with shared secret
+        
+        Example: `Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...`

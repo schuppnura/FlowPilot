@@ -1,0 +1,18 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--build-arg'
+      - 'DEPLOYMENT_ENV=firebase'
+      - '-t'
+      - 'europe-west1-docker.pkg.dev/vision-course-476214/flowpilot/flowpilot-persona-api'
+      - '-f'
+      - 'flowpilot-services/persona-api/Dockerfile'
+      - '.'
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'europe-west1-docker.pkg.dev/vision-course-476214/flowpilot/flowpilot-persona-api'
+images:
+  - 'europe-west1-docker.pkg.dev/vision-course-476214/flowpilot/flowpilot-persona-api'
+timeout: '600s'

@@ -1,0 +1,25 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'europe-west1-docker.pkg.dev/vision-course-476214/flowpilot/opa:latest'
+      - '-t'
+      - 'europe-west1-docker.pkg.dev/vision-course-476214/flowpilot/opa:${_VERSION_TAG}'
+      - '-f'
+      - 'infra/opa/Dockerfile'
+      - '.'
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'europe-west1-docker.pkg.dev/vision-course-476214/flowpilot/opa:latest'
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'europe-west1-docker.pkg.dev/vision-course-476214/flowpilot/opa:${_VERSION_TAG}'
+images:
+  - 'europe-west1-docker.pkg.dev/vision-course-476214/flowpilot/opa:latest'
+  - 'europe-west1-docker.pkg.dev/vision-course-476214/flowpilot/opa:${_VERSION_TAG}'
+substitutions:
+  _VERSION_TAG: 'manual'
+timeout: '600s'

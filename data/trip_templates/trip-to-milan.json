@@ -1,0 +1,34 @@
+{
+  "template_id": "trip-to-milan",
+  "domain": "travel",
+  "name": "Trip to Milan",
+  "departure_date": "2025-12-31",
+  "items": [
+    { 
+      "kind": "lodging",
+      "type": "Hotel",
+      "title": "Hotel Calimala Milano",
+      "city": "Milan",
+      "neighborhood": "Centre",
+      "star_rating": 3,
+      "planned_price": { "currency": "EUR", "amount": 4200 }
+    },
+    { 
+      "kind": "catering",
+      "type": "restaurant",
+      "title": "Ristorante Galleria",
+      "star_rating": 4,
+      "cuisine": "Milanese",
+      "planned_price": { "currency": "EUR", "amount": 120 }
+    },
+    { 
+      "kind": "transport",
+      "type": "flight",
+      "title": "Flight to Milan Linate",
+      "departure_airport": "BRU",
+      "arrival_airport": "LIN",
+      "planned_price": { "currency": "EUR", "amount": 4000 },
+      "airline_risk_score": 2
+    }
+  ]
+}

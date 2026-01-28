@@ -1,0 +1,129 @@
+{
+  "persona_titles": [
+    {
+      "title": "visitor",
+      "description": "End user who may be interested in travel options or the itinerary",
+      "can-be-invited": true,
+      "can-be-delegated-to": false,
+      "allowed-actions": [
+        "read"
+      ]
+    },
+    {
+      "title": "traveler",
+      "description": "End users who book travel for themselves and for whom autobook preferences apply to their itineraries",
+      "can-be-invited": true,
+      "can-be-delegated-to": false,
+      "allowed-actions": [
+        "read",
+        "create",
+        "update",
+        "execute",
+        "delete"
+      ]
+    },
+    {
+      "title": "business-traveler",
+      "description": "End users who book travel for business purposes with specific autobook preferences",
+      "can-be-invited": true,
+      "can-be-delegated-to": false,
+      "allowed-actions": [
+        "read",
+        "create",
+        "update",
+        "execute",
+        "delete"
+      ]
+    },
+    {
+      "title": "travel-agent",
+      "description": "Travel agent who can execute workflows on behalf of travelers, if explicitly delegated",
+      "can-be-invited": false,
+      "can-be-delegated-to": true,
+      "allowed-actions": [
+        "read",
+        "create",
+        "update",
+        "execute",
+        "delete"
+      ]
+    },
+    {
+      "title": "office-manager",
+      "description": "Office manager with delegation and workflow execution capabilities",
+      "can-be-invited": false,
+      "can-be-delegated-to": true,
+      "allowed-actions": [
+        "read",
+        "create",
+        "update"
+      ]
+    },
+    {
+      "title": "booking-assistant",
+      "description": "Booking assistant who can execute bookings on behalf of travelers",
+      "can-be-invited": false,
+      "can-be-delegated-to": true,
+      "allowed-actions": [
+        "read",
+        "create",
+        "update",
+        "execute"
+      ]
+    },
+    {
+      "title": "user-admin",
+      "description": "Supra-level administrator with full permissions to update personas of other users",
+      "can-be-invited": false,
+      "can-be-delegated-to": true,
+      "allowed-actions": [
+        "read",
+        "create",
+        "update",
+        "execute",
+        "delete"
+      ]
+    }
+  ],
+  "persona_statuses": [
+    "pending",
+    "active",
+    "inactive",
+    "suspended",
+    "expired"
+  ],
+  "delegation_personas": {
+    "read": [
+      "travel-agent",
+      "office-manager",
+      "booking-assistant",
+      "user-admin"
+    ],
+    "update": [
+      "travel-agent",
+      "office-manager",
+      "booking-assistant",
+      "user-admin"
+    ],
+    "execute": [
+      "travel-agent",
+      "booking-assistant",
+      "user-admin"
+    ],
+    "delete": [
+      "travel-agent",
+      "user-admin"
+    ]
+  },
+  "invitation_personas": {
+    "read": [
+      "visitor",
+      "traveler",
+      "business-traveler"
+    ],
+    "update": [
+      "traveler",
+      "business-traveler"
+    ]
+  }
+}

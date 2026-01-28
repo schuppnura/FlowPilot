@@ -1,0 +1,111 @@
+{
+  "persona_titles": [
+    {
+      "title": "patient",
+      "description": "Patient (or resident) who owns the care workflow and can delegate tasks.",
+      "can-be-invited": true,
+      "can-be-delegated-to": false,
+      "allowed-actions": [
+        "read",
+        "update"
+      ]
+    },
+    {
+      "title": "caregiver",
+      "description": "Family member who can coordinate administrative steps for a patient when delegated.",
+      "can-be-invited": false,
+      "can-be-delegated-to": true,
+      "allowed-actions": [
+        "read",
+        "update",
+        "execute"
+      ]
+    },
+    {
+      "title": "nurse",
+      "description": "Nurse who can execute workflow items on behalf of a patient, if explicitly delegated.",
+      "can-be-invited": false,
+      "can-be-delegated-to": true,
+      "allowed-actions": [
+        "read",
+        "update",
+        "execute"
+      ]
+    },
+    {
+      "title": "doctor",
+      "description": "Doctor with a caring relationship, if explicitly delegated.",
+      "can-be-invited": false,
+      "can-be-delegated-to": true,
+      "allowed-actions": [
+        "read",
+        "update",
+        "execute"
+      ]
+    },
+    {
+      "title": "care-coordinator",
+      "description": "Care coordinator who can manage discharge/admin tasks when delegated.",
+      "can-be-invited": false,
+      "can-be-delegated-to": true,
+      "allowed-actions": [
+        "read",
+        "update",
+        "execute"
+      ]
+    },
+    {
+      "title": "user-admin",
+      "description": "Supra-level administrator with full permissions to update personas of other users.",
+      "can-be-invited": false,
+      "can-be-delegated-to": true,
+      "allowed-actions": [
+        "read",
+        "update",
+        "execute",
+        "delete"
+      ]
+    }
+  ],
+  "persona_statuses": [
+    "pending",
+    "active",
+    "inactive",
+    "suspended",
+    "expired"
+  ],
+  "delegation_personas": {
+    "read": [
+      "caregiver",
+      "nurse",
+      "doctor",
+      "care-coordinator",
+      "user-admin"
+    ],
+    "update": [
+      "caregiver",
+      "nurse",
+      "doctor",
+      "care-coordinator",
+      "user-admin"
+    ],
+    "execute": [
+      "caregiver",
+      "nurse",
+      "doctor",
+      "care-coordinator",
+      "user-admin"
+    ],
+    "delete": [
+      "user-admin"
+    ]
+  },
+  "invitation_personas": {
+    "read": [
+      "patient"
+    ],
+    "update": [
+      "patient"
+    ]
+  }
+}

@@ -1,0 +1,548 @@
+openapi: 3.0.3
+info:
+  title: FlowPilot User Profile API
+  version: "1.0.0"
+  description: >
+    User profile management service providing abstraction over Firebase/Firestore.
+    
+    **Responsibilities:**
+    - Get user profile (authenticated user's own profile)
+    - Update user profile (personas and autobook preferences)
+    - List users by persona (for delegation candidate discovery)
+    
+    **Security:** All endpoints (except /health) require bearer token authentication.
+servers:
+  - url: http://127.0.0.1:8006
+    description: Local development access
+  - url: http://flowpilot-user-profile-api:8000
+    description: Docker network (internal)
+  - url: https://flowpilot-user-profile-api-737191827545.us-central1.run.app
+    description: GCP Cloud Run (production)
+security:
+  - BearerAuth: []
+paths:
+  /health:
+    get:
+      summary: Health check
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /v1/users/by-persona:
+    get:
+      summary: List users by persona title (compatibility endpoint)
+      description: >
+        Returns a list of users who have an active persona with the specified title.
+        This endpoint queries the new persona database and provides a simplified response.
+        Recommended for applications migrating from the legacy /v1/users endpoint.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: title
+          in: query
+          required: true
+          description: "Persona title to filter by (e.g., 'travel-agent', 'traveler')"
+          schema:
+            type: string
+            example: travel-agent
+      responses:
+        "200":
+          description: List of users with the specified persona
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListUsersResponse"
+              examples:
+                travelAgents:
+                  value:
+                    users:
+                      - sub: bcadc299-f463-4f7d-bab5-2221761387f4
+                        email: null
+                        persona: travel-agent
+                      - sub: ef456789-abcd-1234-5678-9abcdef01234
+                        email: null
+                        persona: travel-agent
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/personas:
+    post:
+      summary: Create a new persona
+      description: >
+        Create a new persona for the authenticated user.
+        **Note:** Each user can only have one persona per title. Attempting to create
+        a duplicate persona title will return a 400 error.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePersonaRequest"
+            examples:
+              traveler:
+                value:
+                  title: traveler
+                  scope: ["read", "execute"]
+                  consent: true
+                  autobook_price: 1000
+                  autobook_leadtime: 14
+                  autobook_risklevel: 50
+      responses:
+        "201":
+          description: Persona created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PersonaResponse"
+        "400":
+          description: Validation error or duplicate persona title
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                duplicateTitle:
+                  value:
+                    detail: "Persona with title 'traveler' already exists for this user. Each user can only have one persona per title."
+                invalidTitle:
+                  value:
+                    detail: "Invalid persona title 'foo'. Allowed: admin, booking-assistant, office-manager, travel-agent, traveler"
+                maxPersonas:
+                  value:
+                    detail: "Maximum 5 personas per user. Delete an existing persona first."
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    get:
+      summary: List personas for the authenticated user
+      description: >
+        Returns all personas belonging to the authenticated user.
+        Optionally filter by status.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: "Filter by persona status"
+          schema:
+            type: string
+            enum: [active, inactive, suspended, expired]
+            example: active
+      responses:
+        "200":
+          description: List of personas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListPersonasResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/personas/{persona_id}:
+    get:
+      summary: Get a persona by ID
+      description: >
+        Returns a specific persona. The persona must belong to the authenticated user
+        (unless called by a service account).
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: persona_id
+          in: path
+          required: true
+          description: "Persona UUID"
+          schema:
+            type: string
+            format: uuid
+            example: "df3438a6-7523-4a59-8339-41e073be3148"
+      responses:
+        "200":
+          description: Persona details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PersonaResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Persona not found or access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    put:
+      summary: Update a persona
+      description: >
+        Update a persona (partial update). The persona must belong to the authenticated user.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: persona_id
+          in: path
+          required: true
+          description: "Persona UUID"
+          schema:
+            type: string
+            format: uuid
+            example: "df3438a6-7523-4a59-8339-41e073be3148"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePersonaRequest"
+      responses:
+        "200":
+          description: Persona updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PersonaResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Persona not found or access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      summary: Delete a persona
+      description: >
+        Delete a persona. The persona must belong to the authenticated user.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: persona_id
+          in: path
+          required: true
+          description: "Persona UUID"
+          schema:
+            type: string
+            format: uuid
+            example: "df3438a6-7523-4a59-8339-41e073be3148"
+      responses:
+        "204":
+          description: Persona deleted successfully (no content)
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Persona not found or access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+        service:
+          type: string
+          example: flowpilot-user-profile-api
+      required:
+        - status
+
+    UserInfo:
+      type: object
+      description: User information for delegation candidates
+      properties:
+        sub:
+          type: string
+          description: User subject UUID
+          example: bcadc299-f463-4f7d-bab5-2221761387f4
+        email:
+          type: string
+          nullable: true
+          description: User email address
+          example: agent@example.com
+        persona:
+          type: string
+          description: User persona
+          example: travel-agent
+      required:
+        - sub
+        - persona
+
+    ListUsersResponse:
+      type: object
+      description: List of users matching the persona filter
+      properties:
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserInfo"
+      required:
+        - users
+
+    CreatePersonaRequest:
+      type: object
+      description: Request body for creating a new persona
+      properties:
+        title:
+          type: string
+          description: Persona title
+          enum: [traveler, business-traveler, travel-agent, office-manager, booking-assistant, admin]
+          example: traveler
+        scope:
+          type: array
+          items:
+            type: string
+          description: List of actions allowed for this persona
+          example: ["read", "execute"]
+          default: ["read", "execute"]
+        valid_from:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when persona becomes active (defaults to now)
+          example: "2024-01-01T00:00:00Z"
+        valid_till:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when persona expires (defaults to 365 days from now)
+          example: "2026-12-31T23:59:59Z"
+        consent:
+          type: boolean
+          description: Consent for AI agent auto-booking
+          example: true
+          default: false
+        autobook_price:
+          type: integer
+          minimum: 0
+          description: Maximum price agent can auto-book
+          example: 1000
+          default: 0
+        autobook_leadtime:
+          type: integer
+          minimum: 0
+          description: Maximum days in advance agent can auto-book
+          example: 14
+          default: 0
+        autobook_risklevel:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Risk tolerance (0-100)
+          example: 50
+          default: 0
+      required:
+        - title
+
+    UpdatePersonaRequest:
+      type: object
+      description: Request body for updating a persona (partial update)
+      properties:
+        title:
+          type: string
+          description: Persona title
+          enum: [traveler, business-traveler, travel-agent, office-manager, booking-assistant, admin]
+          example: traveler
+        scope:
+          type: array
+          items:
+            type: string
+          description: List of actions allowed for this persona
+          example: ["read", "execute"]
+        valid_from:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when persona becomes active
+          example: "2024-01-01T00:00:00Z"
+        valid_till:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when persona expires
+          example: "2026-12-31T23:59:59Z"
+        status:
+          type: string
+          enum: [active, inactive, suspended, expired]
+          description: Persona status
+          example: active
+        consent:
+          type: boolean
+          description: Consent for AI agent auto-booking
+          example: true
+        autobook_price:
+          type: integer
+          minimum: 0
+          description: Maximum price agent can auto-book
+          example: 1000
+        autobook_leadtime:
+          type: integer
+          minimum: 0
+          description: Maximum days in advance agent can auto-book
+          example: 14
+        autobook_risklevel:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Risk tolerance (0-100)
+          example: 50
+
+    PersonaResponse:
+      type: object
+      description: Persona data
+      properties:
+        persona_id:
+          type: string
+          format: uuid
+          description: Persona UUID
+          example: "df3438a6-7523-4a59-8339-41e073be3148"
+        user_sub:
+          type: string
+          description: Owner user subject UUID
+          example: "bcadc299-f463-4f7d-bab5-2221761387f4"
+        title:
+          type: string
+          description: Persona title
+          example: traveler
+        scope:
+          type: array
+          items:
+            type: string
+          description: List of actions allowed for this persona
+          example: ["read", "execute"]
+        valid_from:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when persona becomes active
+          example: "2024-01-01T00:00:00Z"
+        valid_till:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when persona expires
+          example: "2026-12-31T23:59:59Z"
+        status:
+          type: string
+          enum: [active, inactive, suspended, expired]
+          description: Persona status
+          example: active
+        created_at:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when persona was created
+          example: "2024-01-01T12:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when persona was last updated
+          example: "2024-01-01T12:00:00Z"
+        consent:
+          type: boolean
+          description: Consent for AI agent auto-booking
+          example: true
+        autobook_price:
+          type: integer
+          description: Maximum price agent can auto-book
+          example: 1000
+        autobook_leadtime:
+          type: integer
+          description: Maximum days in advance agent can auto-book
+          example: 14
+        autobook_risklevel:
+          type: integer
+          description: Risk tolerance (0-100)
+          example: 50
+      required:
+        - persona_id
+        - user_sub
+        - title
+        - scope
+        - valid_from
+        - valid_till
+        - status
+        - created_at
+        - updated_at
+        - consent
+        - autobook_price
+        - autobook_leadtime
+        - autobook_risklevel
+
+    ListPersonasResponse:
+      type: object
+      description: List of personas for a user
+      properties:
+        personas:
+          type: array
+          items:
+            $ref: "#/components/schemas/PersonaResponse"
+      required:
+        - personas
+
+    ErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+          description: Error message
+          example: "Profile not found for user"
+      required:
+        - detail
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        JWT bearer token for authentication.
+        
+        **Local Development (Docker Compose):**
+        - JWT from Keycloak OIDC provider
+        - Service-to-service calls use client credentials grant
+        
+        **GCP Cloud Run:**
+        - User tokens: Firebase ID tokens (RS256)
+        - Service tokens: HS256 JWTs with shared secret
+        
+        Example: `Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...`

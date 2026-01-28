@@ -1,0 +1,40 @@
+{
+  "domain": "nursing",
+  "workflow_id": "w_daily_care_001",
+  "workflow_kind": "nursing",
+  "workflow_title": "Daily Care Plan (Demo)",
+  "owner": {
+    "type": "user",
+    "id": "PATIENT_SUB_UUID",
+    "persona": "patient"
+  },
+  "items": [
+    {
+      "workflow_item_id": "i_vitals_morning",
+      "workflow_item_kind": "daily_care",
+      "title": "Morning vitals check",
+      "planned_effort_minutes": 8,
+      "due_datetime": "2026-01-17T08:30:00Z",
+      "care_risk_score": 1,
+      "notes": "Collect BP, temperature, and oxygen saturation. Escalate if outside thresholds."
+    },
+    {
+      "workflow_item_id": "i_medication_1",
+      "workflow_item_kind": "daily_care",
+      "title": "Medication reminder and intake confirmation",
+      "planned_effort_minutes": 5,
+      "due_datetime": "2026-01-17T09:00:00Z",
+      "care_risk_score": 2,
+      "notes": "Confirm intake; record missed dose and notify nurse if missed."
+    },
+    {
+      "workflow_item_id": "i_mobility_1",
+      "workflow_item_kind": "daily_care",
+      "title": "Mobility support: assisted walk",
+      "planned_effort_minutes": 15,
+      "due_datetime": "2026-01-17T11:00:00Z",
+      "care_risk_score": 3,
+      "notes": "Encourage short walk; stop if dizziness; notify nurse if issues."
+    }
+  ]
+}
