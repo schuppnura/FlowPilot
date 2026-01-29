@@ -240,44 +240,56 @@ export function CreatePersonaModal({
                 All standard persona types are already in use. Consider deactivating an existing persona.
               </p>
             )}
+            <p className="text-xs text-gray-500 mt-2">
+              Permissions are determined by the selected persona type
+            </p>
           </div>
 
-          {/* Scope */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Permissions
-            </label>
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.scope.includes('read')}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setFormData({ ...formData, scope: [...formData.scope, 'read'] });
-                    } else {
-                      setFormData({ ...formData, scope: formData.scope.filter(s => s !== 'read') });
-                    }
-                  }}
-                  className="w-4 h-4 text-nura-orange rounded focus:ring-2 focus:ring-nura-orange"
-                />
-                <span className="text-sm text-gray-700">Read (view workflows)</span>
+          {/* Persona Lifecycle */}
+          <div className="space-y-4 pt-4 border-t">
+            <h3 className="font-medium text-gray-900">Persona Lifecycle</h3>
+            
+            {/* Valid From */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Valid From
               </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.scope.includes('execute')}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setFormData({ ...formData, scope: [...formData.scope, 'execute'] });
-                    } else {
-                      setFormData({ ...formData, scope: formData.scope.filter(s => s !== 'execute') });
-                    }
-                  }}
-                  className="w-4 h-4 text-nura-orange rounded focus:ring-2 focus:ring-nura-orange"
-                />
-                <span className="text-sm text-gray-700">Execute (book workflows)</span>
+              <input
+                type="datetime-local"
+                value={formatDateForInput(formData.valid_from)}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    valid_from: new Date(e.target.value).toISOString(),
+                  })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-nura-orange focus:border-transparent"
+              />
+              <p className="text-xs text-gray-500 mt-1">When this persona becomes active (default: now)</p>
+            </div>
+
+            {/* Valid Until */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Valid Until
               </label>
+              <input
+                type="datetime-local"
+                value={formatDateForInput(formData.valid_till)}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    valid_till: new Date(e.target.value).toISOString(),
+                  })
+                }
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-nura-orange focus:border-transparent ${
+                  errors.valid_till ? 'border-red-500' : 'border-gray-300'
+                }`}
+              />
+              <p className="text-xs text-gray-500 mt-1">When this persona expires (default: 1 year from now)</p>
+              {errors.valid_till && (
+                <p className="text-xs text-red-600 mt-1">{errors.valid_till}</p>
+              )}
             </div>
           </div>
 
@@ -385,49 +397,6 @@ export function CreatePersonaModal({
               </div>
               {errors.autobook_risklevel && (
                 <p className="text-xs text-red-600 mt-1">{errors.autobook_risklevel}</p>
-              )}
-            </div>
-
-            {/* Valid From */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Valid From
-              </label>
-              <input
-                type="datetime-local"
-                value={formatDateForInput(formData.valid_from)}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    valid_from: new Date(e.target.value).toISOString(),
-                  })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-nura-orange focus:border-transparent"
-              />
-              <p className="text-xs text-gray-500 mt-1">Default: Current date/time</p>
-            </div>
-
-            {/* Valid Until */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Valid Until
-              </label>
-              <input
-                type="datetime-local"
-                value={formatDateForInput(formData.valid_till)}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    valid_till: new Date(e.target.value).toISOString(),
-                  })
-                }
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-nura-orange focus:border-transparent ${
-                  errors.valid_till ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
-              <p className="text-xs text-gray-500 mt-1">Default: 1 year from now</p>
-              {errors.valid_till && (
-                <p className="text-xs text-red-600 mt-1">{errors.valid_till}</p>
               )}
             </div>
           </div>
