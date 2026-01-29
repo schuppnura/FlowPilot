@@ -3,6 +3,7 @@ import { useState } from 'react';
 interface CreatePersonaData {
   title: string;
   scope: string[];
+  status: string;
   consent: boolean;
   autobook_price: number;
   autobook_leadtime: number;
@@ -59,6 +60,7 @@ export function CreatePersonaModal({
   const [formData, setFormData] = useState<CreatePersonaData>({
     title: '',
     scope: ['read', 'execute'],
+    status: 'active',
     consent: DEFAULT_CONSENT,
     autobook_price: DEFAULT_PRICE,
     autobook_leadtime: DEFAULT_LEADTIME,
@@ -127,6 +129,7 @@ export function CreatePersonaModal({
       setFormData({
         title: '',
         scope: ['read', 'execute'],
+        status: 'active',
         consent: DEFAULT_CONSENT,
         autobook_price: DEFAULT_PRICE,
         autobook_leadtime: DEFAULT_LEADTIME,
@@ -148,6 +151,7 @@ export function CreatePersonaModal({
     setFormData({
       title: '',
       scope: ['read', 'execute'],
+      status: 'active',
       consent: DEFAULT_CONSENT,
       autobook_price: DEFAULT_PRICE,
       autobook_leadtime: DEFAULT_LEADTIME,
@@ -200,8 +204,8 @@ export function CreatePersonaModal({
                 <h4 className="text-sm font-medium text-blue-900 mb-1">Demo Mode</h4>
                 <p className="text-sm text-blue-800">
                   For demonstration purposes, you can freely create and assign personas to yourself. 
-                  In a production environment, personas would be provisioned through a formal onboarding 
-                  process with proper authorization and verification.
+                  In a production environment, personas (including their lifecycle) would be provisioned 
+                  through a formal onboarding process with proper authorization and verification.
                 </p>
               </div>
             </div>
@@ -248,6 +252,25 @@ export function CreatePersonaModal({
           {/* Persona Lifecycle */}
           <div className="space-y-4 pt-4 border-t">
             <h3 className="font-medium text-gray-900">Persona Lifecycle</h3>
+            
+            {/* Status */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Status
+              </label>
+              <select
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-nura-orange focus:border-transparent"
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="suspended">Suspended</option>
+                <option value="pending">Pending</option>
+                <option value="revoked">Revoked</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">Current lifecycle status (default: active)</p>
+            </div>
             
             {/* Valid From */}
             <div>
