@@ -1789,7 +1789,7 @@
 - the authorization architecture can evolve without breaking callers</p>
 <p>AuthZEN is not a formal international standard, but it provides a well-defined and interoperable contract that aligns with modern zero-trust and policy-as-code architectures.</p>
 <h2 id="manifest-structure">Manifest Structure</h2>
-<p>The manifest has an <code>attributes</code> section that in addition to custom persona attributes, also defines the corresponding properties of a workflow item (the 'properties' of a 'resource') in the AuthZEN document.</p>
+<p>The manifest has an <code>attributes</code> section that in addition to custom persona attributes, also defines the corresponding properties of a workflow item (the <code>properties</code> of a <code>resource</code>) in the AuthZEN document.</p>
 <p>Their values are coerced automatically by the authz-api to the type specified. Their values are also defaulted in case they are optional and a default value is provided. A default value of <code>null</code> means that the attribute will only be created when it explicitly has a value. </p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">attributes</span><span class="p">:</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="c1"># Persona custom attributes</span>
@@ -1818,7 +1818,7 @@
 <a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Airline</span><span class="nv"> </span><span class="s">risk</span><span class="nv"> </span><span class="s">score</span><span class="nv"> </span><span class="s">(1.0=lowest</span><span class="nv"> </span><span class="s">risk,</span><span class="nv"> </span><span class="s">5.0=highest</span><span class="nv"> </span><span class="s">risk).</span><span class="nv"> </span><span class="s">Only</span><span class="nv"> </span><span class="s">present</span><span class="nv"> </span><span class="s">for</span><span class="nv"> </span><span class="s">flight</span><span class="nv"> </span><span class="s">items.&quot;</span>
 </code></pre></div>
 <h2 id="authzen-examples">AuthZEN Examples</h2>
-<p>This is an example of an AuthZEN document sent as payload to the authz-api:</p>
+<p>This is an example of an AuthZEN document sent as payload by the PEP to the authz-api (as PIP orchestrator for the PDP):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="w">  </span><span class="nt">&quot;request_body&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;agent&quot;</span><span class="p">,</span>
