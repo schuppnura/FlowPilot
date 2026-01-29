@@ -156,6 +156,7 @@ logs/
 
 # Internal scripts (provisioning, secrets management, etc.)
 scripts/
+!infra/opa/scripts/
 bin/
 
 # GCP Cloud Run deployment configurations (contain production URLs and internal IPs)

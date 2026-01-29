@@ -7,7 +7,7 @@ FROM python:3.11-alpine AS generator
 RUN pip install --no-cache-dir --root-user-action=ignore --disable-pip-version-check pyyaml
 
 # Copy generation script and policy manifests
-COPY scripts/generate-opa-persona-config.py /tmp/generate.py
+COPY infra/opa/scripts/generate-opa-persona-config.py /tmp/generate.py
 COPY infra/opa/policies /tmp/policies
 
 # Generate persona_config.json for each policy domain
