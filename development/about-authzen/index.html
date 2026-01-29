@@ -1789,7 +1789,7 @@
 - the authorization architecture can evolve without breaking callers</p>
 <p>AuthZEN is not a formal international standard, but it provides a well-defined and interoperable contract that aligns with modern zero-trust and policy-as-code architectures.</p>
 <h2 id="manifest-structure">Manifest Structure</h2>
-<p>The manifest has an àttributes`that not only dfefines the persona custom attributes but also the corresponding properties of a workflow item in the AuthZEN document.</p>
+<p>The manifest has an <code>attributes</code> section that in addition to custom persona attributes, also defines the corresponding properties of a workflow item (the 'properties' of a 'resource') in the AuthZEN document.</p>
 <p>Their values are coerced automatically by the authz-api to the type specified. Their values are also defaulted in case they are optional and a default value is provided. A default value of <code>null</code> means that the attribute will only be created when it explicitly has a value. </p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">attributes</span><span class="p">:</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="c1"># Persona custom attributes</span>

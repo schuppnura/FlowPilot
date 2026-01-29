@@ -1812,7 +1812,7 @@
 <li>temporal validity (<code>expires_at</code>)</li>
 <li>revocation status (<code>revoked_at</code>)</li>
 <li>Delegations support <strong>transitive chains</strong> (A → B → C) with configurable depth limits</li>
-<li>Delegations are <strong>fail-closed</strong>: if no valid delegation exists, authorization fails</li>
+<li>Delegations are <strong>fail-closed</strong>: if no delegation path with required permissions exists, authorization fails</li>
 <li>Delegations are <strong>explicitly granted</strong>: there are no implicit or inherited delegations</li>
 </ul>
 <h3 id="why-delegations-matter">Why Delegations Matter</h3>
@@ -1965,12 +1965,13 @@
 - Available actions are configured via <code>DELEGATION_ALLOWED_ACTIONS</code> environment variable</p>
 <p><strong>Important:</strong> The <code>scope</code> field defines what actions are <em>permitted</em> by the delegation relationship. Final authorization still requires policy (OPA) approval.</p>
 <h3 id="delegation-states">Delegation States</h3>
-<p>A delegation is considered <strong>valid</strong> if:
-- It exists in the database
-- <code>revoked_at</code> is <code>NULL</code> (not revoked)
-- <code>expires_at</code> is in the future (not expired)
-- It matches the requested workflow scope (if workflow-scoped)
-- A valid delegation chain exists within the configured hop limit (max_depth)</p>
+<p>A delegation path exists and grants permissions for an action if:
+- A delegation chain exists from owner to delegate
+- All delegations in the chain have <code>revoked_at</code> = <code>NULL</code> (not revoked)
+- All delegations in the chain have <code>expires_at</code> in the future (not expired)
+- All delegations match the requested workflow scope (if workflow-scoped)
+- The chain is within the configured hop limit (max_depth)
+- The requested action is in the intersection of all <code>scope</code> arrays in the chain</p>
 <h3 id="example-delegation-document">Example Delegation Document</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
@@ -2116,24 +2117,25 @@ The database enforces a unique constraint on <code>(principal_id, delegate_id, w
 <a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="p">}</span>
 </code></pre></div></p>
 <h3 id="validate">Validate</h3>
-<p>Validate whether a delegation chain exists:</p>
+<p>Validate whether a delegation chain exists and determine which actions are available:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="err">GET /v1/delegations/validate?principal_id=carlo-uuid&amp;delegate_id=yannick-uuid&amp;workflow_id=workflow-123</span>
 <a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="err">Authorization: Bearer &lt;service-token&gt;</span>
 </code></pre></div>
-<p><strong>Response (valid delegation):</strong>
+<p><strong>Response (delegation exists):</strong>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="p">{</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="nt">&quot;valid&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span><span class="nt">&quot;delegation_chain&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;carlo-uuid-1234&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;yannick-uuid-5678&quot;</span><span class="p">],</span>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">  </span><span class="nt">&quot;delegated_actions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;read&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span><span class="p">]</span>
-<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="p">}</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="nt">&quot;delegation_chain&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;carlo-uuid-1234&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;yannick-uuid-5678&quot;</span><span class="p">],</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span><span class="nt">&quot;delegated_actions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;read&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span><span class="p">]</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="p">}</span>
 </code></pre></div></p>
-<p><strong>Response (invalid delegation):</strong>
+<p><strong>Response (no delegation):</strong>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="p">{</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="nt">&quot;valid&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span><span class="nt">&quot;delegation_chain&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
-<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">  </span><span class="nt">&quot;delegated_actions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span>
-<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="p">}</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="nt">&quot;delegation_chain&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span><span class="nt">&quot;delegated_actions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="p">}</span>
 </code></pre></div></p>
+<p><strong>Interpretation:</strong>
+- If <code>delegated_actions</code> is non-empty, a valid delegation path exists with those permissions
+- If <code>delegated_actions</code> is empty, no valid delegation path exists (or no permissions granted)</p>
 <p><strong>Authorization:</strong> This endpoint is typically called by service accounts (authz-api) during authorization evaluation.</p>
 <h3 id="revoke">Revoke</h3>
 <p>Revoke a delegation:</p>
@@ -2202,8 +2204,8 @@ The database enforces a unique constraint on <code>(principal_id, delegate_id, w
 <li>Delegation-api performs BFS graph search:</li>
 <li>Finds direct edge: carlo-uuid → yannick-uuid</li>
 <li>Validates: not revoked, not expired, workflow matches (or unscoped)</li>
-<li>Returns: <code>{"valid": true, "delegation_chain": ["carlo-uuid", "yannick-uuid"], "delegated_actions": ["execute"]}</code></li>
-<li>Authz-api proceeds to OPA policy evaluation with delegation context</li>
+<li>Returns: <code>{"delegation_chain": ["carlo-uuid", "yannick-uuid"], "delegated_actions": ["execute"]}</code></li>
+<li>Authz-api proceeds to OPA policy evaluation with delegation context (<code>delegated_actions</code> is non-empty)</li>
 <li>OPA evaluates business rules (autobook preferences, risk limits, etc.)</li>
 <li>Decision: <strong>Allow</strong> or <strong>Deny</strong> based on policy gates</li>
 </ol>
@@ -2223,8 +2225,8 @@ The database enforces a unique constraint on <code>(principal_id, delegate_id, w
 <li>Edge 1 (carlo → martine): scope <code>["read", "execute"]</code></li>
 <li>Edge 2 (martine → sophie): scope <code>["execute"]</code></li>
 <li>Computes effective actions: <code>["read", "execute"] ∩ ["execute"] = ["execute"]</code></li>
-<li>Returns: <code>{"valid": true, "delegation_chain": ["carlo-uuid", "martine-uuid", "sophie-uuid"], "delegated_actions": ["execute"]}</code></li>
-<li>Authz-api proceeds to policy evaluation</li>
+<li>Returns: <code>{"delegation_chain": ["carlo-uuid", "martine-uuid", "sophie-uuid"], "delegated_actions": ["execute"]}</code></li>
+<li>Authz-api proceeds to policy evaluation (<code>delegated_actions</code> contains "execute")</li>
 <li>Decision: <strong>Allow</strong> or <strong>Deny</strong> based on policy</li>
 </ol>
 <p><strong>Key Points:</strong>
@@ -2270,7 +2272,7 @@ The database enforces a unique constraint on <code>(principal_id, delegate_id, w
 <li>Delegation-api extracts <code>sub=martine-uuid</code> from Martine's JWT</li>
 <li>Delegation-api validates Martine's permissions:</li>
 <li>Queries: <code>validate_delegation(principal_id=carlo-uuid, delegate_id=martine-uuid)</code></li>
-<li>Returns: <code>{"valid": true, "delegated_actions": ["read"]}</code></li>
+<li>Returns: <code>{"delegated_actions": ["read"]}</code></li>
 <li>Delegation-api checks: <code>["execute"] ⊆ ["read"]</code> → <strong>False</strong></li>
 <li>Result: <strong>400 Bad Request</strong> - "Cannot delegate [execute]. You only have [read] permissions."</li>
 </ol>
@@ -2290,7 +2292,7 @@ The database enforces a unique constraint on <code>(principal_id, delegate_id, w
 <li>AI-agent-api calls domain-services-api with service token</li>
 <li>AuthZEN request: <code>subject.persona="ai-agent"</code>, <code>context.principal.id=carlo-uuid</code></li>
 <li>Authz-api queries delegation-api: <code>validate_delegation(principal_id=carlo-uuid, delegate_id=ai-agent)</code></li>
-<li>Delegation-api returns: <code>{"valid": false}</code> (no delegation exists)</li>
+<li>Delegation-api returns: <code>{"delegated_actions": []}</code> (no delegation exists)</li>
 <li>Authz-api checks OPA policy gate: <code>has_consent</code></li>
 <li>Carlo's persona has <code>autobook_consent=true</code></li>
 <li>Policy allows autonomous execution without delegation</li>
