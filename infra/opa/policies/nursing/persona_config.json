@@ -72,7 +72,7 @@
     "active",
     "inactive",
     "suspended",
-    "expired"
+    "revoked"
   ],
   "delegation_personas": {
     "read": [

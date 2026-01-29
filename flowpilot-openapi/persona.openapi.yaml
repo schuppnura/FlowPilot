@@ -148,7 +148,7 @@ paths:
           description: "Filter by persona status"
           schema:
             type: string
-            enum: [active, inactive, suspended, expired]
+            enum: [active, inactive, suspended, revoked]
             example: active
       responses:
         "200":
@@ -405,7 +405,7 @@ components:
           example: "2026-12-31T23:59:59Z"
         status:
           type: string
-          enum: [active, inactive, suspended, expired]
+          enum: [active, inactive, suspended, revoked]
           description: Persona status
           example: active
         consent:
@@ -464,7 +464,7 @@ components:
           example: "2026-12-31T23:59:59Z"
         status:
           type: string
-          enum: [active, inactive, suspended, expired]
+          enum: [active, inactive, suspended, revoked]
           description: Persona status
           example: active
         created_at:

@@ -161,7 +161,7 @@ def get_allowed_persona_statuses(
         manifest_dir: Base directory containing policy subdirectories
         
     Returns:
-        List of allowed persona status strings (e.g., ["pending", "active", "inactive", "suspended", "expired"])
+        List of allowed persona status strings (e.g., ["pending", "active", "inactive", "suspended", "revoked"])
         
     Raises:
         ValueError: If persona_statuses not defined in manifest

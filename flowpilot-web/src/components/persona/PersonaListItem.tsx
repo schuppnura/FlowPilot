@@ -38,7 +38,7 @@ const STATUS_COLORS: Record<string, string> = {
   'active': 'bg-green-100 text-green-800',
   'inactive': 'bg-gray-100 text-gray-800',
   'suspended': 'bg-orange-100 text-orange-800',
-  'expired': 'bg-red-100 text-red-800',
+  'revoked': 'bg-red-100 text-red-800',
 };
 
 export function PersonaListItem({

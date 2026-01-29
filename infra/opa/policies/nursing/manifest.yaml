@@ -17,7 +17,7 @@ persona_config:
     - active
     - inactive
     - suspended
-    - expired
+    - revoked
 
   persona_titles:
     - title: patient

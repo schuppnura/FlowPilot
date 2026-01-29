@@ -10,7 +10,7 @@
 # - scope (JSON array): Actions (e.g., ["read", "execute"])
 # - valid_from (ISO 8601): When persona becomes active
 # - valid_till (ISO 8601): When persona expires
-# - status (string): "active", "inactive", "suspended", "expired"
+# - status (string): "active", "inactive", "suspended", "revoked"
 # - created_at (ISO 8601): Creation timestamp
 # - updated_at (ISO 8601): Last update timestamp
 # - consent (boolean): Auto-booking consent
@@ -152,7 +152,7 @@ class PersonaDB:
             scope: List of actions (defaults to ["read", "execute"])
             valid_from: When persona becomes active (ISO 8601, defaults to now)
             valid_till: When persona expires (ISO 8601, defaults to 365 days from now)
-            status: Status (active, inactive, suspended, expired). Defaults to "active" if not provided.
+            status: Status (active, inactive, suspended, revoked). Defaults to "active" if not provided.
             **custom_attributes: Dynamic policy-specific attributes (e.g., consent, autobook_price, etc.)
             
         Returns:
@@ -263,7 +263,7 @@ class PersonaDB:
         
         Args:
             user_sub: User subject ID
-            status: Optional status filter ("active", "inactive", "suspended", "expired")
+            status: Optional status filter ("active", "inactive", "suspended", "revoked")
             
         Returns:
             List of persona dictionaries
@@ -410,7 +410,7 @@ class PersonaDB:
         
         Args:
             title: Persona title to filter by
-            status: Optional status filter ("active", "inactive", "suspended", "expired")
+            status: Optional status filter ("active", "inactive", "suspended", "revoked")
             
         Returns:
             List of persona dictionaries

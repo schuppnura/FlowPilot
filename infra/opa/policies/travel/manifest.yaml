@@ -23,13 +23,13 @@ resource_types:
 # Persona configuration
 persona_config:
   # Valid persona status values
-  # Status lifecycle: pending → active → suspended/inactive/expired
+  # Status lifecycle: pending → active → suspended/inactive/revoked
   persona_statuses:
     - pending      # Persona created but not yet activated
     - active       # Persona is active and can be used
     - inactive     # Persona temporarily disabled by user
     - suspended    # Persona suspended by admin (e.g., compliance issue)
-    - expired      # Persona validity period has ended
+    - revoked      # Persona validity period has ended or explicitly revoked
   
   # Persona titles with rich metadata
   persona_titles:

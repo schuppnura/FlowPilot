@@ -115,7 +115,7 @@ class PersonaService:
             scope: List of actions (defaults to [])
             valid_from: When persona becomes active (ISO 8601)
             valid_till: When persona expires (ISO 8601)
-            status: Status (active, inactive, suspended, expired). Defaults to "active" if not provided.
+            status: Status (active, inactive, suspended, revoked). Defaults to "active" if not provided.
             **custom_attributes: Policy-specific attributes (dynamically loaded from manifest)
                 Examples for travel policy: consent, autobook_price, autobook_leadtime, autobook_risklevel
                 Examples for nursing policy: shift_type, certification_level, etc.
