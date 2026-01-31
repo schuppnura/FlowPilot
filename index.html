@@ -527,17 +527,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-this-enables" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What This Enables
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#non-goals" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1875,11 +1864,8 @@
 <p><strong>Policy-as-code</strong></p>
 <p>FlowPilot follows a policy-as-code approach. Authorization logic is expressed declaratively and treated like any other critical system artifact: it is versionable, testable, reviewable, and deployable alongside application code or infrastructure configuration. This allows governance to evolve transparently, supports automated regression testing, and makes behavior reproducible across environments.</p>
 <p>Because policies are explicit and machine-readable, FlowPilot is designed to work naturally with GenAI. GenAI can be used to draft initial policy rules, refine constraints, and translate high-level intent into concrete authorization logic. It can also assist in generating test cases and regression scenarios that validate expected behavior across personas, delegations, and edge conditions.</p>
-<p>While FlowPilot embraces GenAI for authoring and validation, authorization decisions remain deterministic, policy-driven, and fully explainable. Decisions are enforced early and consistently, and every outcome can be expressed in human terms, supporting auditability, operational clarity, and trust.</p>
+<p>While FlowPilot embraces GenAI for authoring and validation, all authorization decisions remain deterministic, policy-driven, and fully explainable. Decisions are enforced early and consistently, and every outcome can be expressed in human terms, supporting auditability, operational clarity, and trust.</p>
 <p>Rather than introducing a proprietary control model, FlowPilot is designed to work alongside existing and emerging standards. It embraces standard concepts such as explicit policy evaluation, clear separation between decision and enforcement, and interoperability with identity and authorization ecosystems.</p>
-<h2 id="what-this-enables">What This Enables</h2>
-<p>FlowPilot enables automation that remains accountable, collaboration without loss of control, and delegation that is safe by design. It supports clear governance, predictable revocation, and auditable decision-making across human and automated actors.</p>
-<p>Most importantly, it allows systems to act only when they should, and to make that decision explicit.</p>
 <h2 id="non-goals">Non-Goals</h2>
 <p>FlowPilot is not intended to replace identity providers, authentication mechanisms, or directory services. It does not attempt to be a general workflow engine or a UI framework.</p>
 <p>FlowPilot is also not an ontology-definition framework. Unlike initiatives such as ODRL and IDSA, it does not attempt to define or standardize domain-specific vocabularies, sector ontologies, or semantic models of consent, assets, or relationships. The creation and governance of such ontologies is intentionally left to sectors, standards bodies, and domain communities where it belongs.</p>
