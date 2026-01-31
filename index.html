@@ -1866,12 +1866,17 @@
 </blockquote>
 <p>By using personas as the core access-control primitive, FlowPilot avoids implicit privilege accumulation. Authority is always contextual, visible, and reversible. This makes access control easier to reason about, safer to operate, and better aligned with how real organizations function — whether actions are taken by people or by autonomous systems.</p>
 <p><strong>Delegation to humans and AI</strong></p>
-<p>Delegation is explicit and bounded. Permissions are granted deliberately, scoped by action, and revocable at any time. Delegations may be transitive where appropriate, but access is retained only while every link in the chain remains valid. Revocation takes effect immediately and predictably.</p>
+<p>In FlowPilot, delegation is an explicit expression of trust. Trust is never assumed or implicit; it is granted deliberately, scoped by action, and bound to clearly defined personas. Delegation always occurs persona to persona, reflecting the reality that people — and systems — act in specific capacities. AI agents are treated no differently: they are simply another participant in the trust chain, comparable to a human assistant or agent acting on someone’s behalf.</p>
+<blockquote>
+<p>Trust in AI agents is delegated, not transferred - and can be constrained by the user</p>
+</blockquote>
+<p>Trust in FlowPilot is contextual and conditional. A delegated persona may act only within the scope it has been granted, and only as long as the trust relationship remains valid. Delegation can extend transitively where appropriate, allowing trust to be shared across multiple actors, but access is retained only while every link in the chain is intact. The moment trust is withdrawn at any point, downstream authority stops immediately and predictably.</p>
+<p>Crucially, the ability to extend trust further can itself be governed. Users can decide whether a delegate may sub-delegate, to which personas, and under which constraints. This allows trust to be composed without becoming uncontrolled. FlowPilot enforces these trust relationships continuously at runtime, ensuring that authority remains explicit, auditable, and aligned with the intent of the person who granted it.</p>
 <p><strong>GenAI authoring</strong></p>
 <p>FlowPilot follows a policy-as-code approach. Authorization logic is expressed declaratively and treated like any other critical system artifact: it is versionable, testable, reviewable, and deployable alongside application code or infrastructure configuration. This allows governance to evolve transparently, supports automated regression testing, and makes behavior reproducible across environments.</p>
 <p>Because policies are explicit and machine-readable, FlowPilot is designed to work naturally with GenAI. GenAI can be used to draft initial policy rules, refine constraints, and translate high-level intent into concrete authorization logic. It can also assist in generating test cases and regression scenarios that validate expected behavior across personas, delegations, and edge conditions.</p>
 <blockquote>
-<p>While AI helps author the rules, FlowPilot enforces them on every request.</p>
+<p>While AI helps author the rules, FlowPilot enforces them continuously at runtime</p>
 </blockquote>
 <p>While FlowPilot embraces GenAI for authoring and validation, all authorization decisions remain deterministic, policy-driven, and fully explainable. Decisions are enforced early and consistently, and every outcome can be expressed in human terms, supporting auditability, operational clarity, and trust.</p>
 <p>Rather than introducing a proprietary control model, FlowPilot is designed to work alongside existing and emerging standards. It embraces standard concepts such as explicit policy evaluation, clear separation between decision and enforcement, and interoperability with identity and authorization ecosystems.</p>
