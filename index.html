@@ -1868,7 +1868,7 @@
 <p><strong>Delegation to humans and AI</strong></p>
 <p>In FlowPilot, delegation is an explicit expression of trust. Trust is never assumed or implicit; it is granted deliberately, scoped by action, and bound to clearly defined personas. Delegation always occurs persona to persona, reflecting the reality that people — and systems — act in specific capacities. AI agents are treated no differently: they are simply another participant in the trust chain, comparable to a human assistant or agent acting on someone’s behalf.</p>
 <blockquote>
-<p>AI agents act on your behalf. Trust is delegated; control remains yours</p>
+<p>Trust can be delegated to AI agents, while FlowPilot keeps control explicit and in your hands</p>
 </blockquote>
 <p>Trust in FlowPilot is contextual and conditional. A delegated persona may act only within the scope it has been granted, and only as long as the trust relationship remains valid. Delegation can extend transitively where appropriate, allowing trust to be shared across multiple actors, but access is retained only while every link in the chain is intact. The moment trust is withdrawn at any point, downstream authority stops immediately and predictably.</p>
 <p>Crucially, the ability to extend trust further can itself be governed. Users can decide whether a delegate may sub-delegate, to which personas, and under which constraints. This allows trust to be composed without becoming uncontrolled. FlowPilot enforces these trust relationships continuously at runtime, ensuring that authority remains explicit, auditable, and aligned with the intent of the person who granted it.</p>
@@ -1918,14 +1918,14 @@
 <li>OAuth: "This is Alice"</li>
 <li>FlowPilot: "Alice (as a traveler) can delegate to Agent-X, who can auto-book if risk &lt; 50 and consent = true"</li>
 </ul>
-<p>FlowPilot integrates <strong>with</strong> your auth provider (Firebase, Auth0, Keycloak, etc.), not instead of it.</p>
+<p>FlowPilot integrates <strong>with</strong> your Identity Provider (Auth0, PingFederate, Firebase, Keycloak, etc.), not instead of it.</p>
 <p>FlowPilot implements a three-tier token architecture that separates authentication from authorization:</p>
 <ol>
 <li><strong>ID tokens</strong> (from your IdP) - Contain user PII, used client-side for UI display only</li>
 <li><strong>FlowPilot access tokens</strong> - Pseudonymous tokens (UUID only), used for all backend API calls  </li>
-<li><strong>Service tokens</strong> - For internal service-to-service communication</li>
+<li><strong>Service tokens</strong> - For efficient internal service-to-service communication</li>
 </ol>
-<p>When your app authenticates a user with the Identity Provider of your choice (Firebase/Auth0/etc.) you exchange the id-token for a pseudonymous FlowPilot access-token via the <code>/v1/token/exchange</code> endpoint. This access-token contains only the user's UUID (<code>sub</code>) with zero PII, preventing personal information from proliferating across your backend services.</p>
+<p>When your app authenticates a user with the Identity Provider of your choice you exchange the id-token for a pseudonymous FlowPilot access-token via the <code>/v1/token/exchange</code> endpoint. This access-token contains only the user's UUID (<code>sub</code>) with zero PII, preventing personal information from proliferating across your backend services.</p>
 <p>Personas (business roles) are passed as request parameters selected by the user, not embedded in tokens. This allows users to switch personas without re-authentication and prevents token bloat. The combination of a persona <code>title</code> and the user's <code>sub</code> uniquely identifies the persona record of the user.</p>
 <h2 id="quick-links">Quick Links</h2>
 <div class="grid cards">
