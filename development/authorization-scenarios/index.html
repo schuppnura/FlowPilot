@@ -1849,11 +1849,13 @@
 
 <h1 id="demonstrating-the-flowpilot-policy-persona-and-delegation-model">Demonstrating the FlowPilot Policy, Persona, and Delegation Model</h1>
 <p>The regression suite is not just testing “access allowed vs denied”. It systematically demonstrates how FlowPilot’s authorization model behaves under real-world conditions: consent, personas, constraints, delegation chains, revocation, scope changes, and temporal validity.</p>
-<p>At a high level, FlowPilot evaluates every action along four axes:
-- Who is acting (principal)
-- In which persona they are acting
-- Under which delegation or invitation
-- Against which policy constraints, both at workflow and item level</p>
+<p>At a high level, FlowPilot evaluates every action along four axes:</p>
+<ul>
+<li>Who is acting (principal)</li>
+<li>In which persona they are acting</li>
+<li>Under which delegation or invitation</li>
+<li>Against which policy constraints, both at workflow and item level</li>
+</ul>
 <p>What follows is a human-readable explanation of what the tests prove.</p>
 <h2 id="1-fail-fast-authorization-at-the-right-level">1. Fail-Fast Authorization at the Right Level</h2>
 <p>FlowPilot distinguishes between workflow-level authorization and item-level authorization.
