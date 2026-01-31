@@ -1855,9 +1855,11 @@
 <p>Agentic AI automates decisions, trigger actions, and operates with a level of autonomy that was previously reserved for humans. Yet most authorization models still assume that access is static, implicit, and largely context-free.</p>
 <p>That assumption no longer holds.</p>
 <p>When software can act, the relevant question is no longer “who has access?”, but who is acting, in which capacity, on whose behalf, and under which conditions. Without making those elements explicit, automation becomes difficult to trust, hard to audit, and risky to operate.</p>
-<p><strong>Explainable authorization</strong></p>
+<blockquote>
+<p>Making authorization explainable, maintainable, testable and auditable</p>
+</blockquote>
 <p>FlowPilot addresses this by treating authorization as a first-class concern. Actions are evaluated in context, combining identity, active persona, delegation scope, and policy constraints. If these elements do not align, the action does not proceed. There is no implicit privilege and no assumption that authority transfers automatically.</p>
-<p><strong>Personas as a first-class model</strong></p>
+<p><strong>Personas as a natural model</strong></p>
 <p>A central concept in FlowPilot is the persona. People and systems do not merely authenticate; they act in a defined capacity. A persona represents an explicit operating context and determines which actions are permitted at a given moment. The same individual may act in multiple personas, but privileges never blend across them. Switching persona immediately changes what the system will allow.</p>
 <p>This model feels natural because it mirrors how people already think about responsibility. Acting as a traveler, an assistant, or a manager is intuitive. Assigning a persona, revoking one when someone changes role or leaves, or temporarily acting in a different capacity requires little explanation. Governance becomes a matter of managing clearly defined capacities rather than maintaining abstract permission sets.</p>
 <p>FlowPilot treats AI agents in exactly the same way. An AI agent is simply another persona, subject to the same rules, scopes, constraints, and revocation mechanisms as any human assistant. Thinking of an AI agent as a digital secretary, travel agent, or operations assistant becomes straightforward: it can act only within the persona it is assigned, and only for the actions explicitly permitted.</p>
