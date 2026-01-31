@@ -1841,7 +1841,7 @@
 <li><strong>Persona-based Policies</strong> - Same user, different roles (traveler, agent, admin)</li>
 <li><strong>Persona-based Delegation</strong> - Users delegate authority to agents or other users</li>
 <li><strong>Privacy-First Design</strong> - No PII proliferation, minimal token claims</li>
-<li><strong>Sovereign Deployment</strong> - Self-hosting and sovereignty as a first-class principle</li>
+<li><strong>Sovereign Deployment</strong> - Self-hosting and sovereignty as a key principle</li>
 </ul>
 <h2 id="how-it-works">How It Works</h2>
 <ol>
@@ -1857,13 +1857,22 @@
 <p>When software can act, the relevant question is no longer “who has access?”, but who is acting, in which capacity, on whose behalf, and under which conditions. Without making those elements explicit, automation becomes difficult to trust, hard to audit, and risky to operate.</p>
 <p><strong>Explainable authorization</strong></p>
 <p>FlowPilot addresses this by treating authorization as a first-class concern. Actions are evaluated in context, combining identity, active persona, delegation scope, and policy constraints. If these elements do not align, the action does not proceed. There is no implicit privilege and no assumption that authority transfers automatically.</p>
-<p><strong>Persona-based</strong></p>
-<p>A central concept in FlowPilot is the persona. People do not merely authenticate; they act in a defined capacity. Personas represent explicit operating contexts and determine which actions are permitted. The same individual may act in multiple personas, but privileges never blend across them. Switching persona immediately changes what the system allows.</p>
+<p><strong>Personas as a first-class model</strong></p>
+<p>A central concept in FlowPilot is the persona. People and systems do not merely authenticate; they act in a defined capacity. A persona represents an explicit operating context and determines which actions are permitted at a given moment. The same individual may act in multiple personas, but privileges never blend across them. Switching persona immediately changes what the system will allow.</p>
+<p>This model feels natural because it mirrors how people already think about responsibility. Acting as a traveler, an assistant, or a manager is intuitive. Assigning a persona, revoking one when someone changes role or leaves, or temporarily acting in a different capacity requires little explanation. Governance becomes a matter of managing clearly defined capacities rather than maintaining abstract permission sets.</p>
+<p>FlowPilot treats AI agents in exactly the same way. An AI agent is simply another persona, subject to the same rules, scopes, constraints, and revocation mechanisms as any human assistant. Thinking of an AI agent as a digital secretary, travel agent, or operations assistant becomes straightforward: it can act only within the persona it is assigned, and only for the actions explicitly permitted.</p>
+<blockquote>
+<p>AI agents are governed like people, not special cases</p>
+</blockquote>
+<p>By using personas as the core access-control primitive, FlowPilot avoids implicit privilege accumulation. Authority is always contextual, visible, and reversible. This makes access control easier to reason about, safer to operate, and better aligned with how real organizations function — whether actions are taken by people or by autonomous systems.</p>
 <p><strong>Delegation to humans and AI</strong></p>
 <p>Delegation is explicit and bounded. Permissions are granted deliberately, scoped by action, and revocable at any time. Delegations may be transitive where appropriate, but access is retained only while every link in the chain remains valid. Revocation takes effect immediately and predictably.</p>
 <p><strong>GenAI authoring</strong></p>
 <p>FlowPilot follows a policy-as-code approach. Authorization logic is expressed declaratively and treated like any other critical system artifact: it is versionable, testable, reviewable, and deployable alongside application code or infrastructure configuration. This allows governance to evolve transparently, supports automated regression testing, and makes behavior reproducible across environments.</p>
 <p>Because policies are explicit and machine-readable, FlowPilot is designed to work naturally with GenAI. GenAI can be used to draft initial policy rules, refine constraints, and translate high-level intent into concrete authorization logic. It can also assist in generating test cases and regression scenarios that validate expected behavior across personas, delegations, and edge conditions.</p>
+<blockquote>
+<p>While AI helps author the rules, FlowPilot enforces them on every request.</p>
+</blockquote>
 <p>While FlowPilot embraces GenAI for authoring and validation, all authorization decisions remain deterministic, policy-driven, and fully explainable. Decisions are enforced early and consistently, and every outcome can be expressed in human terms, supporting auditability, operational clarity, and trust.</p>
 <p>Rather than introducing a proprietary control model, FlowPilot is designed to work alongside existing and emerging standards. It embraces standard concepts such as explicit policy evaluation, clear separation between decision and enforcement, and interoperability with identity and authorization ecosystems.</p>
 <h2 id="non-goals">Non-Goals</h2>
