@@ -1872,7 +1872,7 @@
 </blockquote>
 <p>Trust in FlowPilot is contextual and conditional. A delegated persona may act only within the scope it has been granted, and only as long as the trust relationship remains valid. Delegation can extend transitively where appropriate, allowing trust to be shared across multiple actors, but access is retained only while every link in the chain is intact. The moment trust is withdrawn at any point, downstream authority stops immediately and predictably.</p>
 <p>Crucially, the ability to extend trust further can itself be governed. Users can decide whether a delegate may sub-delegate, to which personas, and under which constraints. This allows trust to be composed without becoming uncontrolled. FlowPilot enforces these trust relationships continuously at runtime, ensuring that authority remains explicit, auditable, and aligned with the intent of the person who granted it.</p>
-<p><strong>GenAI authoring</strong></p>
+<p><strong>Using AI for rule authoring</strong></p>
 <p>FlowPilot follows a policy-as-code approach. Authorization logic is expressed declaratively and treated like any other critical system artifact: it is versionable, testable, reviewable, and deployable alongside application code or infrastructure configuration. This allows governance to evolve transparently, supports automated regression testing, and makes behavior reproducible across environments.</p>
 <p>Because policies are explicit and machine-readable, FlowPilot is designed to work naturally with GenAI. GenAI can be used to draft initial policy rules, refine constraints, and translate high-level intent into concrete authorization logic. It can also assist in generating test cases and regression scenarios that validate expected behavior across personas, delegations, and edge conditions.</p>
 <blockquote>
@@ -1883,7 +1883,9 @@
 <h2 id="non-goals">Non-Goals</h2>
 <p>FlowPilot is not intended to replace identity providers, authentication mechanisms, or directory services. It does not attempt to be a general workflow engine or a UI framework.</p>
 <p>FlowPilot is also not an ontology-definition framework. Unlike initiatives such as ODRL and IDSA, it does not attempt to define or standardize domain-specific vocabularies, sector ontologies, or semantic models of consent, assets, or relationships. The creation and governance of such ontologies is intentionally left to sectors, standards bodies, and domain communities where it belongs.</p>
-<p>Instead, FlowPilot focuses on a complementary problem: turning declarative policy models into operational, real-time authorization decisions.</p>
+<blockquote>
+<p>FlowPilot focuses on a complementary problem: turning declarative policy models into operational, real-time authorization decisions</p>
+</blockquote>
 <p>FlowPilot is designed to consume externally defined policy representations and compile them into executable authorization rules that can be evaluated deterministically at runtime. Its scope is the enforcement layer: evaluating personas, delegation chains, scopes, constraints, and context efficiently and explainably when an action is requested.</p>
 <p>In other words, FlowPilot does not seek to define what policies should mean across industries. Instead, FlowPilot focuses narrowly on one problem: making authorization decisions explicit, explainable, and enforceable in systems where actions matter and with a model that is easy to grasp and maintain. And doing this safely, consistently, efficiently and at scale in real systems.</p>
 <h2 id="multiple-policies-one-platform">Multiple Policies, One Platform</h2>
