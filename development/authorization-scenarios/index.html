@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#demonstrating-the-flowpilot-policy-persona-and-delegation-model" class="md-skip">
+        <a href="#policy-testing" class="md-skip">
           Skip to content
         </a>
       
@@ -1847,7 +1847,7 @@
   
 
 
-<h1 id="demonstrating-the-flowpilot-policy-persona-and-delegation-model">Demonstrating the FlowPilot Policy, Persona, and Delegation Model</h1>
+<h1 id="policy-testing">Policy Testing</h1>
 <p>The regression suite is not just testing “access allowed vs denied”. It systematically demonstrates how FlowPilot’s authorization model behaves under real-world conditions: consent, personas, constraints, delegation chains, revocation, scope changes, and temporal validity.</p>
 <p>At a high level, FlowPilot evaluates every action along four axes:</p>
 <ul>
@@ -1858,93 +1858,124 @@
 </ul>
 <p>What follows is a human-readable explanation of what the tests prove.</p>
 <h2 id="1-fail-fast-authorization-at-the-right-level">1. Fail-Fast Authorization at the Right Level</h2>
-<p>FlowPilot distinguishes between workflow-level authorization and item-level authorization.
-- Only when workflow-level checks pass does FlowPilot evaluate item-level constraints.</p>
-<p>This is visible throughout the tests:
-- Users without consent are denied immediately.
-- Users with read-only delegation are denied immediately on execute.
-- Persona mismatches are rejected before any item logic runs.</p>
+<p>FlowPilot distinguishes between workflow-level authorization and item-level authorization. Only when workflow-level checks pass does FlowPilot evaluate item-level constraints.</p>
+<p>This is visible throughout the tests:</p>
+<ul>
+<li>Users without consent are denied immediately.</li>
+<li>Users with read-only delegation are denied immediately on execute.</li>
+<li>Persona mismatches are rejected before any item logic runs.</li>
+</ul>
 <p>This fail-fast behavior is intentional: it prevents partial execution and avoids leaking information about items the principal should not even see.</p>
 <h2 id="2-consent-is-a-first-class-policy-primitive">2. Consent Is a First-Class Policy Primitive</h2>
-<p>Consent is not implied by ownership, delegation, or persona.
-- A user with no autobook consent is denied even if everything else appears correct.
-- Consent is evaluated before cost limits, airline risk, or other business rules.</p>
+<p>Consent is not implied by ownership, delegation, or persona.</p>
+<ul>
+<li>A user with no autobook consent is denied even if everything else appears correct.</li>
+<li>Consent is evaluated before cost limits, airline risk, or other business rules.</li>
+</ul>
 <p>This ensures that automation is never triggered implicitly or accidentally, even by trusted delegates.</p>
 <h2 id="3-persona-is-not-cosmetic-it-is-enforced">3. Persona Is Not Cosmetic — It Is Enforced</h2>
 <p>Personas in FlowPilot are authoritative execution contexts, not labels.</p>
-<p>The tests demonstrate that:
-- A workflow is bound to a specific persona type.
-- Executing with a different persona — even by the owner — is denied.
-- Delegates must explicitly select a delegation persona, not an invitation persona.
-- Switching persona mid-flow immediately changes what actions are permitted.</p>
-<p>In practice, this means:
-- “Who you are” is less important than “who you are acting as.”
-- Owners cannot bypass constraints by switching personas.
-- Delegates cannot escalate privileges by selecting the wrong persona.</p>
+<p>The tests demonstrate that:</p>
+<ul>
+<li>A workflow is bound to a specific persona type.</li>
+<li>Executing with a different persona — even by the owner — is denied.</li>
+<li>Delegates must explicitly select a delegation persona, not an invitation persona.</li>
+<li>Switching persona mid-flow immediately changes what actions are permitted.</li>
+</ul>
+<p>In practice, this means:</p>
+<ul>
+<li>“Who you are” is less important than “who you are acting as.”</li>
+<li>Owners cannot bypass constraints by switching personas.</li>
+<li>Delegates cannot escalate privileges by selecting the wrong persona.</li>
+</ul>
 <h2 id="4-delegation-is-explicit-scoped-and-revocable">4. Delegation Is Explicit, Scoped, and Revocable</h2>
-<p>Delegation in FlowPilot is:
-- Explicit (must be created)
-- Scoped (read vs execute)
-- Persona-aware
-- Revocable, with immediate effect</p>
-<p>The tests show that:
-- Changing delegation scope requires revoke + recreate, avoiding ambiguous state.
-- Read-only delegates can view but never execute.
-- Revoking an intermediate delegation breaks the entire transitive chain.
-- Restoring delegation restores access predictably.</p>
+<p>Delegation in FlowPilot is:</p>
+<ul>
+<li>Explicit (must be created)</li>
+<li>Scoped (read vs execute)</li>
+<li>Persona-aware</li>
+<li>Revocable, with immediate effect</li>
+</ul>
+<p>The tests show that:</p>
+<ul>
+<li>Changing delegation scope requires revoke + recreate, avoiding ambiguous state.</li>
+<li>Read-only delegates can view but never execute.</li>
+<li>Revoking an intermediate delegation breaks the entire transitive chain.</li>
+<li>Restoring delegation restores access predictably.</li>
+</ul>
 <p>This makes delegation auditable, deterministic, and safe to reason about.</p>
 <h2 id="5-transitive-delegation-works-and-stops-where-it-should">5. Transitive Delegation Works — and Stops Where It Should</h2>
-<p>FlowPilot supports multi-hop delegation:
-- Owner → Delegate → Sub-delegate → …</p>
-<p>As long as:
-- Each hop has valid scope
-- Personas are compatible
-- No delegation in the chain is revoked</p>
-<p>Once a single link is revoked or downgraded:
-- Access is immediately denied downstream
-- There is no partial or cached privilege</p>
+<p>FlowPilot supports multi-hop delegation:</p>
+<ul>
+<li>Owner → Delegate → Sub-delegate → …</li>
+</ul>
+<p>As long as:</p>
+<ul>
+<li>Each hop has valid scope</li>
+<li>Personas are compatible</li>
+<li>No delegation in the chain is revoked</li>
+</ul>
+<p>Once a single link is revoked or downgraded:</p>
+<ul>
+<li>Access is immediately denied downstream</li>
+<li>There is no partial or cached privilege</li>
+</ul>
 <p>This enables realistic enterprise scenarios (assistants, agencies, back-office chains) without losing control.</p>
 <h2 id="6-item-level-constraints-are-applied-only-when-appropriate">6. Item-Level Constraints Are Applied Only When Appropriate</h2>
-<p>Once workflow-level authorization succeeds, FlowPilot applies fine-grained item policies, such as:
-- Cost ceilings
-- Risk thresholds
-- Time-based constraints (e.g. minimum advance notice)</p>
-<p>The tests demonstrate mixed outcomes:
-- Some items allowed
-- Some denied with precise reason codes
-- No errors or undefined behavior</p>
+<p>Once workflow-level authorization succeeds, FlowPilot applies fine-grained item policies, such as:</p>
+<ul>
+<li>Cost ceilings</li>
+<li>Risk thresholds</li>
+<li>Time-based constraints (e.g. minimum advance notice)</li>
+</ul>
+<p>The tests demonstrate mixed outcomes:</p>
+<ul>
+<li>Some items allowed</li>
+<li>Some denied with precise reason codes</li>
+<li>No errors or undefined behavior</li>
+</ul>
 <p>This shows that FlowPilot can safely combine coarse authorization with fine-grained business rules in a single execution.</p>
 <h2 id="7-time-and-status-matter">7. Time and Status Matter</h2>
-<p>Personas and delegations are not static:
-- Personas can be inactive, suspended, or not yet valid.
-- Delegations can expire or be revoked.</p>
-<p>The tests confirm that:
-- Personas not yet valid cannot be used to create or execute workflows.
-- Inactive personas immediately invalidate access.
-- Temporal validity is enforced consistently at creation and execution time.</p>
+<p>Personas and delegations are not static:</p>
+<ul>
+<li>Personas can be inactive, suspended, or not yet valid.</li>
+<li>Delegations can expire or be revoked.</li>
+</ul>
+<p>The tests confirm that:</p>
+<ul>
+<li>Personas not yet valid cannot be used to create or execute workflows.</li>
+<li>Inactive personas immediately invalidate access.</li>
+<li>Temporal validity is enforced consistently at creation and execution time.</li>
+</ul>
 <p>This is critical for compliance, onboarding/offboarding, and regulated environments.</p>
 <h2 id="8-crudx-is-persona-bound-not-role-assumed">8. CRUDX Is Persona-Bound, Not Role-Assumed</h2>
 <p>Allowed actions are defined per persona, not per user.</p>
-<p>The tests show that:
-- Visitor personas can read but not update or execute.
-- Office-manager personas cannot execute autobook workflows.
-- Even with delegation, actions outside a persona’s allowed-actions are denied.</p>
+<p>The tests show that:</p>
+<ul>
+<li>Visitor personas can read but not update or execute.</li>
+<li>Office-manager personas cannot execute autobook workflows.</li>
+<li>Even with delegation, actions outside a persona’s allowed-actions are denied.</li>
+</ul>
 <p>This avoids “role explosion” and keeps authorization declarative and predictable.</p>
 <h2 id="9-known-limitations-are-explicit-and-test-covered">9. Known Limitations Are Explicit and Test-Covered</h2>
 <p>One test intentionally documents a known limitation:
 - Persona type is not yet enforced for read access under invitation.</p>
-<p>This is valuable because:
-- The behavior is explicit, not accidental
-- The test suite already captures the expected future behavior
-- Policy evolution can be regression-tested safely</p>
+<p>This is valuable because:</p>
+<ul>
+<li>The behavior is explicit, not accidental</li>
+<li>The test suite already captures the expected future behavior</li>
+<li>Policy evolution can be regression-tested safely</li>
+</ul>
 <h2 id="what-this-demonstrates-overall">What This Demonstrates Overall</h2>
-<p>Taken together, these tests demonstrate that FlowPilot provides:
-- Deterministic authorization
-- Strong separation between consent, delegation, persona, and policy
-- Safe transitive delegation
-- Immediate revocation effects
-- Fail-fast behavior where it matters
-- Fine-grained item control without leaking privilege</p>
+<p>Taken together, these tests demonstrate that FlowPilot provides:</p>
+<ul>
+<li>Deterministic authorization</li>
+<li>Strong separation between consent, delegation, persona, and policy</li>
+<li>Safe transitive delegation</li>
+<li>Immediate revocation effects</li>
+<li>Fail-fast behavior where it matters</li>
+<li>Fine-grained item control without leaking privilege</li>
+</ul>
 <p>In short: authorization is no longer implicit, role-based, or context-blind — it is explicit, composable, and explainable.</p>
 
 
