@@ -505,6 +505,50 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How It Works
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-this-matters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why This Matters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-this-enables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What This Enables
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#non-goals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Non-Goals
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#multiple-policies-one-platform" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -703,6 +747,34 @@
     
   
     Policy Orchestration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="development/authorization-scenarios/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Policy Test Scenarios
   
 
     
@@ -1792,13 +1864,33 @@
 <li><strong>Persona-based Delegation</strong> - Users delegate authority to agents or other users</li>
 <li><strong>Privacy-First Design</strong> - No PII proliferation, minimal token claims</li>
 </ul>
-<h3 id="how-it-works">How It Works</h3>
+<h2 id="how-it-works">How It Works</h2>
 <ol>
 <li>Your app authenticates users with Firebase (or bring your own identity provider)</li>
 <li>Your app makes REST API calls to FlowPilot for authorization decisions</li>
 <li>FlowPilot evaluates policies, delegation chains, and user attributes</li>
 <li>Your app enforces the decision (allow/deny with reason codes)</li>
 </ol>
+<h2 id="why-this-matters">Why This Matters</h2>
+<p>Agentic AI automates decisions, trigger actions, and operate with a level of autonomy that was previously reserved for humans. Yet most authorization models still assume that access is static, implicit, and largely context-free.</p>
+<p>That assumption no longer holds.</p>
+<p>When software can act, the relevant question is no longer “who has access?”, but who is acting, in which capacity, on whose behalf, and under which conditions. Without making those elements explicit, automation becomes difficult to trust, hard to audit, and risky to operate.</p>
+<p><strong>Explainable authorisation</strong>
+FlowPilot addresses this by treating authorization as a first-class concern. Actions are evaluated in context, combining identity, active persona, delegation scope, and policy constraints. If these elements do not align, the action does not proceed. There is no implicit privilege and no assumption that authority transfers automatically.</p>
+<p><strong>Persona-based</strong>
+A central concept in FlowPilot is the persona. People do not merely authenticate; they act in a defined capacity. Personas represent explicit operating contexts and determine which actions are permitted. The same individual may act in multiple personas, but privileges never blend across them. Switching persona immediately changes what the system allows.</p>
+<p><strong>Delegation to humans and AI</strong>
+Delegation is explicit and bounded. Permissions are granted deliberately, scoped by action, and revocable at any time. Delegations may be transitive where appropriate, but access is retained only while every link in the chain remains valid. Revocation takes effect immediately and predictably.</p>
+<p><strong>Policy-as-code</strong>
+FlowPilot follows a policy-as-code approach. Authorization logic is declarative, versionable, testable, and reviewable in the same way as application code or infrastructure configuration. This allows governance to evolve transparently, supports automated regression testing, and makes behavior reproducible across environments.</p>
+<p>Decisions are enforced early and consistently and every decision is explainable in human terms, supporting auditability and operational clarity.</p>
+<p>Rather than introducing a proprietary control model, FlowPilot is designed to work alongside existing and emerging standards. It embraces standard concepts such as explicit policy evaluation, clear separation between decision and enforcement, and interoperability with identity and authorization ecosystems.</p>
+<h2 id="what-this-enables">What This Enables</h2>
+<p>FlowPilot enables automation that remains accountable, collaboration without loss of control, and delegation that is safe by design. It supports clear governance, predictable revocation, and auditable decision-making across human and automated actors.</p>
+<p>Most importantly, it allows systems to act only when they should, and to make that decision explicit.</p>
+<h2 id="non-goals">Non-Goals</h2>
+<p>FlowPilot is not intended to replace identity providers, authentication mechanisms, or directory services. It does not attempt to be a general workflow engine, a UI framework, or a business rules engine. It also does not rely on implicit roles, static permissions, or undocumented conventions.</p>
+<p>Instead, FlowPilot focuses narrowly on one problem: making authorization decisions explicit, explainable, and enforceable in systems where actions matter and with a model that is easy to grasp and maintain.</p>
 <h2 id="multiple-policies-one-platform">Multiple Policies, One Platform</h2>
 <p>FlowPilot supports multiple authorization policies side-by-side:</p>
 <ul>

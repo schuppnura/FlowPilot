@@ -12,13 +12,13 @@
         <meta name="author" content="Nura">
       
       
-        <link rel="canonical" href="https://docs.nura.pro/development/identities/">
+        <link rel="canonical" href="https://docs.nura.pro/development/authorization-scenarios/">
       
       
-        <link rel="prev" href="../personas/">
+        <link rel="prev" href="../about-authzen/">
       
       
-        <link rel="next" href="../delegations/">
+        <link rel="next" href="../personas/">
       
       
         
@@ -29,7 +29,7 @@
     
     
       
-        <title>Persona vs Identity - FlowPilot Documentation</title>
+        <title>Policy Test Scenarios - FlowPilot Documentation</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#persona-vs-identity" class="md-skip">
+        <a href="#demonstrating-the-flowpilot-policy-persona-and-delegation-model" class="md-skip">
           Skip to content
         </a>
       
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Persona vs Identity
+              Policy Test Scenarios
             
           </span>
         </div>
@@ -244,10 +244,12 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
+      <li class="md-tabs__item md-tabs__item--active">
         <a href="../policies/" class="md-tabs__link">
           
   
@@ -264,12 +266,10 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
+      <li class="md-tabs__item">
         <a href="../personas/" class="md-tabs__link">
           
   
@@ -460,28 +460,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
-        
-          
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
             
   
   
@@ -499,7 +502,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -598,10 +601,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../authorization-scenarios/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Policy Test Scenarios
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -617,6 +647,136 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-fail-fast-authorization-at-the-right-level" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Fail-Fast Authorization at the Right Level
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-consent-is-a-first-class-policy-primitive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Consent Is a First-Class Policy Primitive
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-persona-is-not-cosmetic-it-is-enforced" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Persona Is Not Cosmetic — It Is Enforced
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-delegation-is-explicit-scoped-and-revocable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Delegation Is Explicit, Scoped, and Revocable
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-transitive-delegation-works-and-stops-where-it-should" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Transitive Delegation Works — and Stops Where It Should
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-item-level-constraints-are-applied-only-when-appropriate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Item-Level Constraints Are Applied Only When Appropriate
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-time-and-status-matter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Time and Status Matter
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-crudx-is-persona-bound-not-role-assumed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. CRUDX Is Persona-Bound, Not Role-Assumed
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-known-limitations-are-explicit-and-test-covered" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Known Limitations Are Explicit and Test-Covered
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-this-demonstrates-overall" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What This Demonstrates Overall
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -633,31 +793,28 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   
@@ -675,7 +832,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -718,37 +875,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Persona vs Identity
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../identities/" class="md-nav__link">
         
   
   
@@ -764,92 +894,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#design-principles" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Design Principles
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#privacy-by-design" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Privacy by Design
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#how-user-identity-is-represented" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How User Identity Is Represented
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#relationship-to-personas" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Relationship to Personas
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#architectural-consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Architectural Consequences
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#related-documentation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Related Documentation
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1803,114 +1847,103 @@
   
 
 
-<h1 id="persona-vs-identity">Persona vs Identity</h1>
-<p>This document explains FlowPilot’s approach to <em>user accounts</em> and, just as importantly, what FlowPilot deliberately <strong>does not</strong> model or manage.</p>
-<p>FlowPilot is <strong>identity-provider agnostic</strong>. Authentication and account management are delegated entirely to an external Identity Provider (IdP). FlowPilot itself does <strong>not</strong> manage user accounts, credentials, or identity attributes. Instead, it focuses exclusively on <strong>authorization</strong>, using personas and persona-specific attributes under its own control.</p>
-<h2 id="design-principles">Design Principles</h2>
-<h3 id="bring-your-own-identity-provider">Bring Your Own Identity Provider</h3>
-<p>User authentication is handled by an external IdP such as Firebase (production) or Keycloak (local development) and thus FlowPilot supports a Bring Your Own Identity Provider. The IdP is responsible for:</p>
-<ul>
-<li>User account creation and lifecycle</li>
-<li>Credential management</li>
-<li>Authentication flows (passwords, MFA, federation, etc.)</li>
-<li>Issuance of OIDC ID tokens</li>
-</ul>
-<p>FlowPilot services do <strong>not</strong> depend on any IdP-managed user attributes:
-- no username
-- no email address
-- no name
-- no group or role claims</p>
-<p>From FlowPilot’s perspective, the only relevant output of authentication is a <strong>stable subject identifier (<code>sub</code>)</strong>.</p>
-<h3 id="no-identity-authentication-api-in-flowpilot">No Identity &amp; Authentication API in FlowPilot</h3>
-<p>FlowPilot intentionally does <strong>not</strong> provide an API to manage user profiles.</p>
-<p>User profiles, in the traditional sense (identity attributes, contact information, organizational metadata), are considered <strong>out of scope</strong> and belong to the IdP domain.</p>
-<p>As a result:</p>
-<ul>
-<li>Developers are free to model IdP accounts as they see fit</li>
-<li>FlowPilot does not read, store, or expose IdP attributes</li>
-<li>FlowPilot services never receive ID tokens after initial token exchange</li>
-</ul>
-<p>This keeps FlowPilot cleanly separated from identity concerns and avoids tight coupling to any specific IdP.</p>
-<h3 id="authorization-is-persona-driven">Authorization Is Persona-Driven</h3>
-<p>All authorization decisions in FlowPilot are based on <strong>personas</strong>, not on user profiles.</p>
-<p>A persona represents:
-- a business role
-- a mandate
-- or a responsibility assumed by a user in a given context</p>
-<p>Personas and persona-specific attributes are:</p>
-<ul>
-<li>explicitly modeled in FlowPilot</li>
-<li>owned and managed by the user (or delegated administrators)</li>
-<li>evaluated by authorization policies (OPA / Rego)</li>
-</ul>
-<p>This means that FlowPilot controls <strong>all data that influences authorization</strong>, independently from the IdP.</p>
-<h2 id="privacy-by-design">Privacy by Design</h2>
-<p>Because FlowPilot does not consume IdP attributes:</p>
-<ul>
-<li>No Personally Identifiable Information (PII) enters FlowPilot systems</li>
-<li>Tokens used between backend services contain <strong>only</strong> a pseudonymous UUID (<code>sub</code>)</li>
-<li>Persona attributes are fetched on demand and only for authorization decisions</li>
-<li>Domain services, AI agents, and logs never see identity data</li>
-</ul>
-<p>This architecture ensures:</p>
-<ul>
-<li>minimal data exposure</li>
-<li>reduced breach impact</li>
-<li>strong GDPR alignment</li>
-<li>clear separation between identity and authorization</li>
-</ul>
-<h2 id="how-user-identity-is-represented">How User Identity Is Represented</h2>
-<p>From FlowPilot’s point of view, a “user” is represented by:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;sub&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;89eb5366-bab3-46e4-b8e1-abc5f2ea4631&quot;</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">}</span>
-</code></pre></div>
-<p>This <code>sub</code> value:</p>
-<ul>
-<li>originates from the IdP</li>
-<li>is stable across sessions</li>
-<li>is opaque and non-meaningful</li>
-<li>is used solely as a key to:</li>
-<li>fetch personas</li>
-<li>resolve delegation relationships</li>
-<li>evaluate authorization policies</li>
-</ul>
-<p>No other identity attributes are required.</p>
-<h2 id="relationship-to-personas">Relationship to Personas</h2>
-<p>Personas are <strong>linked to users by <code>sub</code></strong>, part of each persona record. The <code>sub</code> is a pseudononymous identifier and not PII.</p>
-<p>Key distinctions:</p>
-<ul>
-<li><strong>User (IdP)</strong>  </li>
-<li>authenticated entity  </li>
-<li>managed externally  </li>
-<li>
-<p>opaque to FlowPilot  </p>
-</li>
-<li>
-<p><strong>Persona (FlowPilot)</strong>  </p>
-</li>
-<li>authorization construct  </li>
-<li>business-role specific  </li>
-<li>policy-relevant  </li>
-<li>explicitly modeled and validated  </li>
-</ul>
-<p>A single user (<code>sub</code>) may own multiple personas, each with its own lifecycle, attributes, and authorization semantics.</p>
-<h2 id="architectural-consequences">Architectural Consequences</h2>
-<p>This design has several important consequences:</p>
-<ul>
-<li>FlowPilot remains portable across IdPs</li>
-<li>Authorization logic is fully under FlowPilot’s control</li>
-<li>PII cannot accidentally leak into policies, logs, or AI prompts</li>
-<li>Identity concerns do not contaminate domain or policy logic</li>
-<li>Personas can evolve independently of authentication mechanisms</li>
-</ul>
-<p>In short: <strong>FlowPilot treats identity as an external fact and authorization as an internal responsibility</strong>.</p>
-<h2 id="related-documentation">Related Documentation</h2>
-<ul>
-<li><a href="../personas/">Persona Guide</a></li>
-<li><a href="../../architecture/authentication/">Authentication Architecture</a></li>
-<li><a href="../policies/">Policy Development Guide</a></li>
-</ul>
+<h1 id="demonstrating-the-flowpilot-policy-persona-and-delegation-model">Demonstrating the FlowPilot Policy, Persona, and Delegation Model</h1>
+<p>The regression suite is not just testing “access allowed vs denied”. It systematically demonstrates how FlowPilot’s authorization model behaves under real-world conditions: consent, personas, constraints, delegation chains, revocation, scope changes, and temporal validity.</p>
+<p>At a high level, FlowPilot evaluates every action along four axes:
+- Who is acting (principal)
+- In which persona they are acting
+- Under which delegation or invitation
+- Against which policy constraints, both at workflow and item level</p>
+<p>What follows is a human-readable explanation of what the tests prove.</p>
+<h2 id="1-fail-fast-authorization-at-the-right-level">1. Fail-Fast Authorization at the Right Level</h2>
+<p>FlowPilot distinguishes between workflow-level authorization and item-level authorization.
+- Only when workflow-level checks pass does FlowPilot evaluate item-level constraints.</p>
+<p>This is visible throughout the tests:
+- Users without consent are denied immediately.
+- Users with read-only delegation are denied immediately on execute.
+- Persona mismatches are rejected before any item logic runs.</p>
+<p>This fail-fast behavior is intentional: it prevents partial execution and avoids leaking information about items the principal should not even see.</p>
+<h2 id="2-consent-is-a-first-class-policy-primitive">2. Consent Is a First-Class Policy Primitive</h2>
+<p>Consent is not implied by ownership, delegation, or persona.
+- A user with no autobook consent is denied even if everything else appears correct.
+- Consent is evaluated before cost limits, airline risk, or other business rules.</p>
+<p>This ensures that automation is never triggered implicitly or accidentally, even by trusted delegates.</p>
+<h2 id="3-persona-is-not-cosmetic-it-is-enforced">3. Persona Is Not Cosmetic — It Is Enforced</h2>
+<p>Personas in FlowPilot are authoritative execution contexts, not labels.</p>
+<p>The tests demonstrate that:
+- A workflow is bound to a specific persona type.
+- Executing with a different persona — even by the owner — is denied.
+- Delegates must explicitly select a delegation persona, not an invitation persona.
+- Switching persona mid-flow immediately changes what actions are permitted.</p>
+<p>In practice, this means:
+- “Who you are” is less important than “who you are acting as.”
+- Owners cannot bypass constraints by switching personas.
+- Delegates cannot escalate privileges by selecting the wrong persona.</p>
+<h2 id="4-delegation-is-explicit-scoped-and-revocable">4. Delegation Is Explicit, Scoped, and Revocable</h2>
+<p>Delegation in FlowPilot is:
+- Explicit (must be created)
+- Scoped (read vs execute)
+- Persona-aware
+- Revocable, with immediate effect</p>
+<p>The tests show that:
+- Changing delegation scope requires revoke + recreate, avoiding ambiguous state.
+- Read-only delegates can view but never execute.
+- Revoking an intermediate delegation breaks the entire transitive chain.
+- Restoring delegation restores access predictably.</p>
+<p>This makes delegation auditable, deterministic, and safe to reason about.</p>
+<h2 id="5-transitive-delegation-works-and-stops-where-it-should">5. Transitive Delegation Works — and Stops Where It Should</h2>
+<p>FlowPilot supports multi-hop delegation:
+- Owner → Delegate → Sub-delegate → …</p>
+<p>As long as:
+- Each hop has valid scope
+- Personas are compatible
+- No delegation in the chain is revoked</p>
+<p>Once a single link is revoked or downgraded:
+- Access is immediately denied downstream
+- There is no partial or cached privilege</p>
+<p>This enables realistic enterprise scenarios (assistants, agencies, back-office chains) without losing control.</p>
+<h2 id="6-item-level-constraints-are-applied-only-when-appropriate">6. Item-Level Constraints Are Applied Only When Appropriate</h2>
+<p>Once workflow-level authorization succeeds, FlowPilot applies fine-grained item policies, such as:
+- Cost ceilings
+- Risk thresholds
+- Time-based constraints (e.g. minimum advance notice)</p>
+<p>The tests demonstrate mixed outcomes:
+- Some items allowed
+- Some denied with precise reason codes
+- No errors or undefined behavior</p>
+<p>This shows that FlowPilot can safely combine coarse authorization with fine-grained business rules in a single execution.</p>
+<h2 id="7-time-and-status-matter">7. Time and Status Matter</h2>
+<p>Personas and delegations are not static:
+- Personas can be inactive, suspended, or not yet valid.
+- Delegations can expire or be revoked.</p>
+<p>The tests confirm that:
+- Personas not yet valid cannot be used to create or execute workflows.
+- Inactive personas immediately invalidate access.
+- Temporal validity is enforced consistently at creation and execution time.</p>
+<p>This is critical for compliance, onboarding/offboarding, and regulated environments.</p>
+<h2 id="8-crudx-is-persona-bound-not-role-assumed">8. CRUDX Is Persona-Bound, Not Role-Assumed</h2>
+<p>Allowed actions are defined per persona, not per user.</p>
+<p>The tests show that:
+- Visitor personas can read but not update or execute.
+- Office-manager personas cannot execute autobook workflows.
+- Even with delegation, actions outside a persona’s allowed-actions are denied.</p>
+<p>This avoids “role explosion” and keeps authorization declarative and predictable.</p>
+<h2 id="9-known-limitations-are-explicit-and-test-covered">9. Known Limitations Are Explicit and Test-Covered</h2>
+<p>One test intentionally documents a known limitation:
+- Persona type is not yet enforced for read access under invitation.</p>
+<p>This is valuable because:
+- The behavior is explicit, not accidental
+- The test suite already captures the expected future behavior
+- Policy evolution can be regression-tested safely</p>
+<h2 id="what-this-demonstrates-overall">What This Demonstrates Overall</h2>
+<p>Taken together, these tests demonstrate that FlowPilot provides:
+- Deterministic authorization
+- Strong separation between consent, delegation, persona, and policy
+- Safe transitive delegation
+- Immediate revocation effects
+- Fail-fast behavior where it matters
+- Fine-grained item control without leaking privilege</p>
+<p>In short: authorization is no longer implicit, role-based, or context-blind — it is explicit, composable, and explainable.</p>
 
 
 
