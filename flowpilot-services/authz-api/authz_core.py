@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Any, Dict, List, Optional
 
 # Required imports for API logging and security
@@ -139,6 +140,11 @@ _DELEGATION_API_BASE_URL = read_env_string("DELEGATION_API_BASE_URL")
 # User Profile API configuration (required environment variables)
 _PERSONA_API_BASE_URL = read_env_string("PERSONA_API_BASE_URL")
 
+# Persona cache configuration
+# Cache size: 256 personas (sufficient for most deployments)
+# TTL: Handled by LRU eviction (stale data risk is acceptable for short-lived requests)
+_PERSONA_CACHE_SIZE = int(os.environ.get("PERSONA_CACHE_SIZE", "256"))
+
 
 def normalize_attributes(
     attributes_dict: dict[str, Any],
@@ -216,12 +222,17 @@ class EvaluateResult:
 # ============================================================================
 
 
+@lru_cache(maxsize=_PERSONA_CACHE_SIZE)
 def fetch_persona(persona_id: str) -> dict[str, Any]:
-    # Fetch persona from persona-api.
+    # Fetch persona from persona-api with LRU caching.
     # Returns full persona object with policy-specific attributes.
     #
     # This function acts as a Policy Information Point (PIP) - it fetches data
     # needed for authorization decisions.
+    #
+    # CACHING: Uses LRU cache to avoid repeated API calls for the same persona.
+    # Cache size is configurable via PERSONA_CACHE_SIZE environment variable (default: 256).
+    # Stale data risk is acceptable since personas rarely change during active sessions.
     #
     # IMPORTANT: persona-api pre-validates all persona attributes:
     # - Applies defaults from policy manifest for missing attributes
@@ -264,13 +275,21 @@ def fetch_persona(persona_id: str) -> dict[str, Any]:
         raise RuntimeError(f"Failed to fetch persona {persona_id}: {e}") from e
 
 
+@lru_cache(maxsize=_PERSONA_CACHE_SIZE)
 def fetch_persona_by_user_and_title(user_sub: str, persona_title: str, persona_circle: str | None = None) -> dict[str, Any]:
-    # Fetch persona by user_sub and title from persona-api.
+    # Fetch persona by user_sub and title from persona-api with LRU caching.
     # Returns the persona matching the title (and optionally circle), regardless of status.
     #
     # IMPORTANT: This function is a Policy Information Point (PIP) - it fetches data
     # but does NOT make policy decisions. It returns the persona regardless of status
     # (active, suspended, expired, etc.) and lets OPA decide if the status is acceptable.
+    #
+    # OPTIMIZATION: Uses direct document lookup via composite persona_id instead of
+    # listing all personas and filtering. Persona IDs follow format: {user_sub}_{title}_{circle}
+    # This reduces lookup time from O(n) to O(1) where n is the number of personas per user.
+    #
+    # CACHING: Uses LRU cache to avoid repeated API calls for the same persona lookup.
+    # Cache key includes all three parameters (user_sub, title, circle) for correctness.
     #
     # Args:
     #     user_sub: User subject ID
@@ -283,38 +302,33 @@ def fetch_persona_by_user_and_title(user_sub: str, persona_title: str, persona_c
     # Raises:
     #     RuntimeError: If service token is not available or API call fails
 
+    # STRICT REQUIREMENT: circle parameter must always be provided
+    if persona_circle is None:
+        raise RuntimeError(
+            f"Missing required parameter: 'circle' must be provided when fetching persona. "
+            f"User: {user_sub}, Title: {persona_title}"
+        )
+
     # Get service token for persona API authentication
     service_token = security.get_service_token()
     if not service_token:
         raise RuntimeError("Service token not available - cannot fetch personas")
 
+    # Construct composite persona_id for direct O(1) lookup
+    # Persona IDs in Firestore use format: {user_sub}_{title}_{circle}
+    persona_id = f"{user_sub}_{persona_title}_{persona_circle}"
+    
     headers = {"Authorization": f"Bearer {service_token.strip()}"}
-    url = f"{_PERSONA_API_BASE_URL.rstrip('/')}/v1/users/{user_sub}/personas"
+    url = f"{_PERSONA_API_BASE_URL.rstrip('/')}/v1/personas/{persona_id}"
 
     try:
-        # List all personas for the user (service account has access to all users' personas)
-        personas_data = http_get_json(url=url, headers=headers)
-        personas = personas_data.get("personas", [])
-
-        # STRICT REQUIREMENT: circle parameter must always be provided
-        if persona_circle is None:
-            raise RuntimeError(
-                f"Missing required parameter: 'circle' must be provided when fetching persona. "
-                f"User: {user_sub}, Title: {persona_title}"
-            )
-        
-        # Find persona with matching title AND circle
-        for persona in personas:
-            if persona.get("title") == persona_title and persona.get("circle") == persona_circle:
-                return persona
-        
-        # No matching persona found
-        return {}
+        # Direct document get - O(1) lookup instead of O(n) list+filter
+        return http_get_json(url=url, headers=headers)
     except RuntimeError as e:
-        # If no personas found (404), return empty dict
+        # If persona not found (404), return empty dict
         if "404" in str(e):
             return {}
-        raise RuntimeError(f"Failed to fetch personas for {user_sub}: {e}") from e
+        raise RuntimeError(f"Failed to fetch persona {persona_id}: {e}") from e
 
 
 def compute_delegation_chain(

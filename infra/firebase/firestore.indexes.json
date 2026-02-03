@@ -31,6 +31,24 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "personas",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "user_sub",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "title",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "circle",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []

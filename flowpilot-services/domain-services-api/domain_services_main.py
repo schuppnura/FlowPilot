@@ -227,9 +227,6 @@ def handle_post_workflows(
         auth_header = request.headers.get("Authorization", "")
         user_token = auth_header.replace("Bearer ", "") if auth_header.startswith("Bearer ") else None
         
-        # Log persona value for debugging
-        print(f"[DEBUG] Creating workflow: persona_title={repr(body.persona_title)}, persona_circle={repr(body.persona_circle)}", flush=True)
-        
         # Check authorization before creating workflow
         service.check_authorization(
             action="create",
@@ -249,7 +246,6 @@ def handle_post_workflows(
             persona_circle=body.persona_circle,
             domain=body.domain,
         )
-        print(f"[DEBUG] Workflow created: {result.get('workflow_id')}", flush=True)
 
         # Auto-create delegation for AI agent to access the workflow
         workflow_id = result.get("workflow_id")

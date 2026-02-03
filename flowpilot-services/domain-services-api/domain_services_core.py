@@ -331,13 +331,12 @@ class FlowPilotService:
         if workflow_id not in self._workflows:
             raise KeyError(f"Workflow not found: {workflow_id}")
         workflow = self._workflows[workflow_id]
-        owner_persona_value = workflow.get("owner_persona")
-        print(f"[DEBUG] get_workflow({workflow_id}): owner_persona from storage={repr(owner_persona_value)}", flush=True)
         result = {
             "workflow_id": str(workflow.get("workflow_id")),
             "template_id": str(workflow.get("template_id")),
             "owner_sub": str(workflow.get("owner_sub")),
-            "owner_persona": owner_persona_value,  # Required for authz checks
+            "owner_persona_title": workflow.get("owner_persona_title"),  # Required for authz checks
+            "owner_persona_circle": workflow.get("owner_persona_circle"),  # Required for authz checks
             "domain": workflow.get("domain"),  # Required for policy_hint
             "departure_date": workflow.get("departure_date"),  # Required for advance notice checks
             "created_at": str(workflow.get("created_at")),
@@ -347,7 +346,6 @@ class FlowPilotService:
                 else 0
             ),
         }
-        print(f"[DEBUG] get_workflow returning: owner_persona={repr(result.get('owner_persona'))}", flush=True)
         return result
 
     def get_workflow_items(self, workflow_id: str) -> dict[str, Any]:
