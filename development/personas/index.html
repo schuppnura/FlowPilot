@@ -1909,7 +1909,7 @@
 <tr>
 <td><code>persona_id</code></td>
 <td>String</td>
-<td>Composite unique identifier: <code>{user_sub}_{title}</code> - enforces uniqueness at database level</td>
+<td>Composite unique identifier: <code>{user_sub}_{title}_{circle}</code> - enforces uniqueness at database level</td>
 </tr>
 <tr>
 <td><code>user_sub</code></td>
@@ -1922,6 +1922,11 @@
 <td>Persona title (e.g., "traveler", "travel-agent")</td>
 </tr>
 <tr>
+<td><code>circle</code></td>
+<td>String</td>
+<td>Circle/community/business unit for which this persona is valid (e.g., "family", "acme-corp", "marketing-team")</td>
+</tr>
+<tr>
 <td><code>status</code></td>
 <td>String</td>
 <td>Current status: defined in policy manifest (e.g., "pending", "active", "inactive", "suspended", "revoked")</td>
@@ -1929,7 +1934,7 @@
 <tr>
 <td><code>scope</code></td>
 <td>Array[String]</td>
-<td>Denotes a community, organisation, family</td>
+<td>Actions allowed for this persona (e.g., ["read", "execute"])</td>
 </tr>
 <tr>
 <td><code>consent</code></td>
@@ -1958,7 +1963,18 @@
 </tr>
 </tbody>
 </table>
-<p><strong>Important:</strong> Each user can have only <strong>one persona per title</strong>. The <code>persona_id</code> is a composite key formed from <code>user_sub</code> and <code>title</code> (e.g., <code>PKbHpCqDnLcNywEo8pev8yQmoU43_traveler</code>). This enforces uniqueness at the database level and makes persona creation fully idempotent.</p>
+<p><strong>Important:</strong> Each user can have <strong>multiple personas with the same title</strong>, as long as they have different <code>circle</code> values. The <code>persona_id</code> is a composite key formed from <code>user_sub</code>, <code>title</code>, and <code>circle</code> (e.g., <code>PKbHpCqDnLcNywEo8pev8yQmoU43_traveler_family</code>). This enforces uniqueness at the database level based on the combination of (user, title, circle).</p>
+<h3 id="the-circle-attribute">The Circle Attribute</h3>
+<p>The <code>circle</code> attribute represents the <strong>community, business unit, or circle of trust</strong> for which a persona is valid. This allows users to have different instances of the same business role for different contexts.</p>
+<p><strong>Examples:</strong>
+- A user might have a "traveler" persona for their "family" and another "traveler" persona for their "acme-corp" company
+- A travel agent might serve multiple agencies: "travel-agent" with circle "best-travels" and "travel-agent" with circle "cheap-travels"
+- An office manager might have "office-manager" personas for different departments: "marketing-team", "sales-team", etc.</p>
+<p>The circle attribute enables:
+- <strong>Context-specific preferences:</strong> Different autobook limits for personal vs. business travel
+- <strong>Segregation of duties:</strong> Clear separation between different organizational contexts
+- <strong>Multi-tenancy at the persona level:</strong> Users can participate in multiple organizations with the same role
+- <strong>Fine-grained access control:</strong> Policies can enforce rules based on circle membership</p>
 <p>In addition to the persona lifecycle management attributes, each persona can also have a number of custom attributes specific to the business use case. These are configured in the manifest (see below).</p>
 <h3 id="persona-configuration">Persona Configuration</h3>
 <p>The persona titles, statuses and custom attributes are defined in the policy manifest as the <strong>single source of truth</strong> for both authorization policies and profil/persona management.</p>
@@ -2069,22 +2085,23 @@
 - <strong>Never edit <code>persona_config.json</code> directly</strong> - it will be overwritten</p>
 <h3 id="example-persona-document">Example Persona Document</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">&quot;persona_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PKbHpCqDnLcNywEo8pev8yQmoU43_business-traveler&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">&quot;persona_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PKbHpCqDnLcNywEo8pev8yQmoU43_business-traveler_acme-corp&quot;</span><span class="p">,</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">&quot;user_sub&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PKbHpCqDnLcNywEo8pev8yQmoU43&quot;</span><span class="p">,</span>
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;business-traveler&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;active&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span><span class="nt">&quot;scope&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;nike&quot;</span><span class="p">],</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span><span class="nt">&quot;valid_from&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-01-11T17:00:00Z&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span><span class="nt">&quot;valid_till&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-12-31T23:59:59Z&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">  </span><span class="nt">&quot;created_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-01-11T17:00:00Z&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">  </span><span class="nt">&quot;updated_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-01-13T17:00:00Z&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">  </span><span class="nt">&quot;consent&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">  </span><span class="nt">&quot;autobook_price&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10000</span><span class="p">,</span>
-<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="w">  </span><span class="nt">&quot;autobook_leadtime&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span>
-<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="w">  </span><span class="nt">&quot;autobook_risklevel&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span>
-<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="p">}</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span><span class="nt">&quot;circle&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;acme-corp&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;active&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span><span class="nt">&quot;scope&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;read&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span><span class="p">],</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span><span class="nt">&quot;valid_from&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-01-11T17:00:00Z&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">  </span><span class="nt">&quot;valid_till&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-12-31T23:59:59Z&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">  </span><span class="nt">&quot;created_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-01-11T17:00:00Z&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">  </span><span class="nt">&quot;updated_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-01-13T17:00:00Z&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">  </span><span class="nt">&quot;consent&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="w">  </span><span class="nt">&quot;autobook_price&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10000</span><span class="p">,</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="w">  </span><span class="nt">&quot;autobook_leadtime&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="w">  </span><span class="nt">&quot;autobook_risklevel&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="p">}</span>
 </code></pre></div>
-<p>Note the <code>persona_id</code> format: <code>{user_sub}_{title}</code>. This composite ID ensures that each user can have only one persona per title.</p>
+<p>Note the <code>persona_id</code> format: <code>{user_sub}_{title}_{circle}</code>. This composite ID ensures that each user can have multiple personas with the same title, differentiated by circle.</p>
 <h2 id="persona-lifecycle">Persona Lifecycle</h2>
 <h3 id="persona-api">Persona-API</h3>
 <p>Purpose: Persona lifecycle management (CRUD operations)</p>
@@ -2106,15 +2123,16 @@
 <p>Validation Rules:</p>
 <ul>
 <li><code>title</code> must be one of the allowed persona titles defined in <code>persona_config.persona_titles</code> in the policy manifest</li>
+<li><code>circle</code> is required and must be a non-empty string (represents the community/organization/context)</li>
 <li><code>status</code> must be one of the allowed statuses defined in <code>persona_config.persona_statuses</code> in the policy manifest</li>
 <li><code>scope</code> must be a non-empty array of action strings</li>
 <li><code>valid_from</code> &amp; <code>valid_till</code> must be valid ISO 8601 timestamps</li>
 <li>Custom attributes (e.g., <code>autobook_price</code>, <code>autobook_leadtime</code>, <code>autobook_risklevel</code>) are optional and validated according to the <code>attributes</code> section of the policy manifest</li>
-<li><strong>Uniqueness:</strong> Each user can have only one persona per title (enforced at database level via composite ID)</li>
+<li><strong>Uniqueness:</strong> Each user can have multiple personas with the same title, as long as they have different circles (enforced at database level via composite ID: user_sub + title + circle)</li>
 </ul>
 <p><strong>Important Notes:</strong>
 The service fails fast at startup if the policy manifest cannot be loaded, ensuring persona configuration is always consistent with authorization policies</p>
-<p><strong>Uniqueness Enforcement:</strong> Each user can have only one persona per title (enforced at database level via composite ID). Attempting to create a duplicate persona raises a <code>ValueError</code> with HTTP 400, suggesting to use PUT/PATCH for updates instead.</p>
+<p><strong>Uniqueness Enforcement:</strong> Each user can have multiple personas with the same title, as long as they have different circles. The uniqueness constraint is based on the combination of (user_sub, title, circle), enforced at the database level via composite ID. Attempting to create a duplicate persona (same user, title, AND circle) raises a <code>ValueError</code> with HTTP 400, suggesting to use PUT/PATCH for updates instead.</p>
 <p><strong>Idempotency Handling:</strong> The API is NOT idempotent by design. Duplicate creation attempts fail explicitly, requiring callers to check for existence before creating or catch the error and use update endpoints. This ensures intentional create vs update semantics.</p>
 <h3 id="create">Create</h3>
 <p>Personas are created via the persona-api POST /v1/personas endpoint.</p>
@@ -2125,35 +2143,37 @@ The service fails fast at startup if the policy manifest cannot be loaded, ensur
 <a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
 <a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="err">{</span>
 <a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="err">  &quot;title&quot;: &quot;traveler&quot;,</span>
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="err">  &quot;scope&quot;: [&quot;read&quot;, &quot;execute&quot;],</span>
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="err">  &quot;valid_from&quot;: &quot;2024-01-01T00:00:00Z&quot;,</span>
-<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="err">  &quot;valid_till&quot;: &quot;2026-12-31T23:59:59Z&quot;,</span>
-<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="err">  &quot;status&quot;: &quot;active&quot;,</span>
-<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="err">  &quot;autobook_consent&quot;: true,</span>
-<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="err">  &quot;autobook_price&quot;: 5000,</span>
-<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="err">  &quot;autobook_leadtime&quot;: 7,</span>
-<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="err">  &quot;autobook_risklevel&quot;: 3</span>
-<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="err">}</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="err">  &quot;circle&quot;: &quot;family&quot;,</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="err">  &quot;scope&quot;: [&quot;read&quot;, &quot;execute&quot;],</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="err">  &quot;valid_from&quot;: &quot;2024-01-01T00:00:00Z&quot;,</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="err">  &quot;valid_till&quot;: &quot;2026-12-31T23:59:59Z&quot;,</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="err">  &quot;status&quot;: &quot;active&quot;,</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="err">  &quot;autobook_consent&quot;: true,</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="err">  &quot;autobook_price&quot;: 5000,</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="err">  &quot;autobook_leadtime&quot;: 7,</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="err">  &quot;autobook_risklevel&quot;: 3</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="err">}</span>
 </code></pre></div></p>
 <p><strong>Response (HTTP 201):</strong>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p">{</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">&quot;persona_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PKbHpCqDnLcNywEo8pev8yQmoU43_traveler&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">&quot;persona_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PKbHpCqDnLcNywEo8pev8yQmoU43_traveler_family&quot;</span><span class="p">,</span>
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="nt">&quot;user_sub&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PKbHpCqDnLcNywEo8pev8yQmoU43&quot;</span><span class="p">,</span>
 <a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;traveler&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;active&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span><span class="nt">&quot;scope&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;read&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span><span class="p">],</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">  </span><span class="nt">&quot;valid_from&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2024-01-01T00:00:00Z&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">  </span><span class="nt">&quot;valid_till&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-12-31T23:59:59Z&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">  </span><span class="nt">&quot;created_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-01-13T17:00:00Z&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">  </span><span class="nt">&quot;updated_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-01-13T17:00:00Z&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">  </span><span class="nt">&quot;autobook_consent&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">  </span><span class="nt">&quot;autobook_price&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5000</span><span class="p">,</span>
-<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">  </span><span class="nt">&quot;autobook_leadtime&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span>
-<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">  </span><span class="nt">&quot;autobook_risklevel&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span>
-<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="p">}</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span><span class="nt">&quot;circle&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;family&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;active&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">  </span><span class="nt">&quot;scope&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;read&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;execute&quot;</span><span class="p">],</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">  </span><span class="nt">&quot;valid_from&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2024-01-01T00:00:00Z&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">  </span><span class="nt">&quot;valid_till&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-12-31T23:59:59Z&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">  </span><span class="nt">&quot;created_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-01-13T17:00:00Z&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">  </span><span class="nt">&quot;updated_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-01-13T17:00:00Z&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">  </span><span class="nt">&quot;autobook_consent&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">  </span><span class="nt">&quot;autobook_price&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5000</span><span class="p">,</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">  </span><span class="nt">&quot;autobook_leadtime&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="w">  </span><span class="nt">&quot;autobook_risklevel&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="p">}</span>
 </code></pre></div></p>
 <p><strong>Authorization:</strong> The user must be authenticated. The persona is created for the authenticated user (extracted from JWT <code>sub</code> claim).</p>
-<p><strong>Uniqueness:</strong> If a persona with the same <code>title</code> already exists for the authenticated user, the API returns HTTP 400 with an error message: "Persona with title '{title}' already exists for this user. Use PATCH/PUT (update) instead of POST (create) to modify it." This explicit failure ensures clear semantics between persona creation and modification.</p>
+<p><strong>Uniqueness:</strong> If a persona with the same <code>title</code> AND <code>circle</code> already exists for the authenticated user, the API returns HTTP 400 with an error message: "Persona with title '{title}' and circle '{circle}' already exists for this user. Use PATCH/PUT (update) instead of POST (create) to modify it." This explicit failure ensures clear semantics between persona creation and modification. Users can create multiple personas with the same title as long as they have different circles.</p>
 <p><strong>Idempotency Handling:</strong>
 The API is NOT idempotent by design. Duplicate creation attempts fail explicitly to:
 - Prevent accidental expiry modifications without explicit revocation
