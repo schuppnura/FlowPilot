@@ -1829,13 +1829,13 @@
 <p>This guide explains FlowPilot's <em>persona</em> model, including the data model, API operations, authorization rules, and technical implementation details.</p>
 <h2 id="overview">Overview</h2>
 <p>A <em>persona</em> represents a business role that a user assumes in a specific context. Personas are the core abstraction in FlowPilot’s authorization model and directly drive policy decisions for both <strong>autonomous AI execution</strong> and <strong>delegated access</strong>.</p>
-<p>Rather than binding static permissions to user accounts, FlowPilot evaluates authorization against the <strong>activated persona</strong> provided with each request. Persona activation is not a platform-wide setting; it is scoped to the client app. The client app determines which persona is active; either automatically, based on the app's intended audience, or explicitly via a user-driven persona selection.</p>
+<p>Rather than binding static permissions to user accounts, FlowPilot evaluates authorization against the <strong>selected persona</strong> provided with each request. Persona selection is not a platform-wide setting; it is done and maintained by the client app. The client app determines which persona is selected; either automatically, e.g. based on the app's intended audience, or explicitly via a user-driven persona selection.</p>
 <h3 id="key-concepts">Key concepts</h3>
 <ul>
 <li>A single user may have <strong>multiple personas</strong> (for example, <code>traveler</code> and <code>travel-agent</code>)</li>
 <li>Each authorization request is evaluated against <strong>exactly one selected persona</strong></li>
 <li>Personas have explicit <strong>lifecycle state</strong> with temporal validity (<code>valid_from</code>, <code>valid_till</code>) and operational status (configurable and policy-relevant, e.g. <code>active</code>, <code>inactive</code>, <code>suspended</code>, <code>pending</code>, <code>revoked</code>)</li>
-<li>Personas also encapsulate <strong>user's preferences</strong>, such as consent for autonomous decisions, limits on cost or effort and risk tolerance levels</li>
+<li>Personas also encapsulate <strong>user's preferences</strong>, such as consent for autonomous decisions, limits on cost or effort and risk tolerance levels, email address to be used for profession al purposes, etc.</li>
 <li>Personas are <strong>user-owned</strong>, independently configurable and their assignment is possibly subject to a strict onboarding process</li>
 </ul>
 <h3 id="why-personas-matter">Why Personas Matter</h3>
@@ -1857,11 +1857,13 @@
 <li>Security decisions are made closest to the source of truth</li>
 <li>No central administrator is required to continuously assign roles, groups, or permissions</li>
 </ul>
-<p>This improves:
-- timeliness
-- accuracy
-- appropriateness
-- freshness of authorization data</p>
+<p>This improves:</p>
+<ul>
+<li>timeliness</li>
+<li>accuracy</li>
+<li>appropriateness</li>
+<li>freshness of authorization data</li>
+</ul>
 <h4 id="3-segregation-of-duties-by-design">3. Segregation of duties by design</h4>
 <p>Segregation of duties becomes straightforward:</p>
 <ul>
@@ -1877,7 +1879,7 @@
 <li>Users are still subject to policies that remain declarative and auditable</li>
 </ul>
 <h4 id="architectural-impact">Architectural Impact</h4>
-<p>FlowPilot personas combine the strengths of <strong>RBAC</strong>, <strong>ABAC</strong> and <strong>ReBAC</strong>:</p>
+<p>FlowPilot personas combine the strengths of RBAC, ABAC and ReBAC:</p>
 <ul>
 <li>RBAC-like clarity through named business roles</li>
 <li>ABAC-like flexibility through persona-specific attributes</li>
@@ -1889,11 +1891,13 @@
 <li>No central permission assignment bottleneck</li>
 <li>No need to expose identity or PII to policies</li>
 </ul>
-<p>Instead, authorization becomes:
-- explicit
-- decentralized
-- policy-driven
-- scalable by design</p>
+<p>Instead, authorization becomes:</p>
+<ul>
+<li>explicit</li>
+<li>decentralized</li>
+<li>policy-driven</li>
+<li>scalable by design</li>
+</ul>
 <p>In FlowPilot, personas place users at the center of their own authorization model, controlling not just <em>who they are</em>, but <em>how</em> and <em>when</em> they may act.</p>
 <h2 id="persona-data-model">Persona Data Model</h2>
 <h3 id="core-attributes">Core Attributes</h3>
@@ -1966,29 +1970,37 @@
 <p><strong>Important:</strong> Each user can have <strong>multiple personas with the same title</strong>, as long as they have different <code>circle</code> values. The <code>persona_id</code> is a composite key formed from <code>user_sub</code>, <code>title</code>, and <code>circle</code> (e.g., <code>PKbHpCqDnLcNywEo8pev8yQmoU43_traveler_family</code>). This enforces uniqueness at the database level based on the combination of (user, title, circle).</p>
 <h3 id="the-circle-attribute">The Circle Attribute</h3>
 <p>The <code>circle</code> attribute represents the <strong>community, business unit, or circle of trust</strong> for which a persona is valid. This allows users to have different instances of the same business role for different contexts.</p>
-<p><strong>Examples:</strong>
-- A user might have a "traveler" persona for their "family" and another "traveler" persona for their "acme-corp" company
-- A travel agent might serve multiple agencies: "travel-agent" with circle "best-travels" and "travel-agent" with circle "cheap-travels"
-- An office manager might have "office-manager" personas for different departments: "marketing-team", "sales-team", etc.</p>
-<p>The circle attribute enables:
-- <strong>Context-specific preferences:</strong> Different autobook limits for personal vs. business travel
-- <strong>Segregation of duties:</strong> Clear separation between different organizational contexts
-- <strong>Multi-tenancy at the persona level:</strong> Users can participate in multiple organizations with the same role
-- <strong>Fine-grained access control:</strong> Policies can enforce rules based on circle membership</p>
+<p><strong>Examples:</strong></p>
+<ul>
+<li>A user might have a "traveler" persona for "family-williamson" and another "traveler" persona for their "corsica" travel mates</li>
+<li>A travel agent might indiciate their agency: "travel-agent" with <code>circle</code> "best-travels" versus "cheap-travels"</li>
+<li>An office manager might be working for "marketing-team", while another person may indiciate "sales-team" for heir <code>circle</code></li>
+</ul>
+<p>The circle attribute enables:</p>
+<ul>
+<li><strong>Context-specific preferences:</strong> Different autobook limits for personal vs. business travel</li>
+<li><strong>Segregation of duties:</strong> Clear separation between different organizational contexts</li>
+<li><strong>Multi-tenancy at the persona level:</strong> Users can participate in multiple organizations with the same role</li>
+<li><strong>Fine-grained access control:</strong> Policies can enforce rules based on circle membership</li>
+</ul>
 <p>In addition to the persona lifecycle management attributes, each persona can also have a number of custom attributes specific to the business use case. These are configured in the manifest (see below).</p>
 <h3 id="persona-configuration">Persona Configuration</h3>
 <p>The persona titles, statuses and custom attributes are defined in the policy manifest as the <strong>single source of truth</strong> for both authorization policies and profil/persona management.</p>
 <p>A system-defined persona <code>title</code> is <code>ai-agent</code>. This is used by the back-end and by agentic AI systems.</p>
 <p><strong>Configuration Location:</strong> <code>infra/opa/policies/travel/manifest.yaml</code></p>
-<p><strong>Key Benefits</strong> of using the manifest:
-- Customizable - Can easily be customized for a specific business use case
-- Single source of truth - All persona configuration in one manifest file and used by both applications and the policy
-- Centralized updates - Change persona configuration in one place
-- Policy alignment - Persona titles and statuses automatically match OPA policy expectations, which is use case specific</p>
-<p><strong>Important Note</strong> on validation and defaulting responsibility
-- persona-api: Validates that required attributes are PRESENT (not None) and sets a default value when not present. Does NOT validate ranges or policy-specific constraints
-- authz-api: Assumes persona-api did its job and is not bypassed. So it passes attributes to OPA without validation or defaulting
-- OPA policy: Performs ALL policy-specific validation (e.g., range checks) that is specific to the business use case</p>
+<p><strong>Key Benefits</strong> of using the manifest:</p>
+<ul>
+<li>Customizable - Can easily be customized for a specific business use case</li>
+<li>Single source of truth - All persona configuration in one manifest file and used by both applications and the policy</li>
+<li>Centralized updates - Change persona configuration in one place</li>
+<li>Policy alignment - Persona titles and statuses automatically match OPA policy expectations, which is use case specific</li>
+</ul>
+<p><strong>Important Note</strong> on validation and defaulting responsibility</p>
+<ul>
+<li>persona-api: Validates that required attributes are PRESENT (not None) and sets a default value when not present. Does NOT validate ranges or policy-specific constraints</li>
+<li>authz-api: Assumes persona-api did its job and is not bypassed. So it passes attributes to OPA without validation or defaulting</li>
+<li>OPA policy: Performs ALL policy-specific validation (e.g., range checks) that is specific to the business use case</li>
+</ul>
 <p>This separation ensures the system is extensible to other policies and business use cases without hardcoding policy logic in the API layer. This makes the platform truly a generic SaaS service</p>
 <h3 id="manifest-structure">Manifest Structure</h3>
 <p>The manifest's <code>persona_config</code> section defines <code>status</code>, <code>title</code> and a series of custom attributes. For the "travel" use case, FlowPilot defined the following <code>status</code>, <code>title</code> and autobook attributes. The latter enable and steer autonomous AI booking. Their values are validated and normalized by the persona-api and coerced to the type specified. Their values are also defaulted in case they are optional and a default value is provided. A default value of <code>null</code> means that the attribute will only be created when it explicitly has a value.</p>
@@ -2067,6 +2079,13 @@
 <a id="__codelineno-0-73" name="__codelineno-0-73" href="#__codelineno-0-73"></a><span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
 <a id="__codelineno-0-74" name="__codelineno-0-74" href="#__codelineno-0-74"></a><span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 <a id="__codelineno-0-75" name="__codelineno-0-75" href="#__codelineno-0-75"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Maximum</span><span class="nv"> </span><span class="s">airline</span><span class="nv"> </span><span class="s">risk</span><span class="nv"> </span><span class="s">score</span><span class="nv"> </span><span class="s">for</span><span class="nv"> </span><span class="s">autonomous</span><span class="nv"> </span><span class="s">booking</span><span class="nv"> </span><span class="s">(1-5</span><span class="nv"> </span><span class="s">scale)&quot;</span>
+<a id="__codelineno-0-76" name="__codelineno-0-76" href="#__codelineno-0-76"></a>
+<a id="__codelineno-0-77" name="__codelineno-0-77" href="#__codelineno-0-77"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">business_email</span>
+<a id="__codelineno-0-78" name="__codelineno-0-78" href="#__codelineno-0-78"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">email</span>
+<a id="__codelineno-0-79" name="__codelineno-0-79" href="#__codelineno-0-79"></a><span class="w">    </span><span class="nt">source</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">persona</span>
+<a id="__codelineno-0-80" name="__codelineno-0-80" href="#__codelineno-0-80"></a><span class="w">    </span><span class="nt">default</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
+<a id="__codelineno-0-81" name="__codelineno-0-81" href="#__codelineno-0-81"></a><span class="w">    </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<a id="__codelineno-0-82" name="__codelineno-0-82" href="#__codelineno-0-82"></a><span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Business</span><span class="nv"> </span><span class="s">email</span><span class="nv"> </span><span class="s">address</span><span class="nv"> </span><span class="s">for</span><span class="nv"> </span><span class="s">the</span><span class="nv"> </span><span class="s">persona&quot;</span>
 </code></pre></div>
 <h3 id="architecture-flow">Architecture Flow</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>manifest.yaml (SOURCE OF TRUTH)
