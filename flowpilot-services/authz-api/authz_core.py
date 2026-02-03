@@ -42,12 +42,9 @@ from utils import (
 # Configuration Constants
 # ============================================================================
 
-# Allowed action names (AuthZEN compliant, comma-separated)
-# Must be configured via ALLOWED_ACTIONS environment variable
-_ALLOWED_ACTIONS_STR = read_env_string("ALLOWED_ACTIONS")
-ALLOWED_ACTIONS = {
-    action.strip() for action in _ALLOWED_ACTIONS_STR.split(",") if action.strip()
-}
+# Allowed actions will be derived from policy manifests
+# See _build_policy_registry() which collects all allowed-actions from persona_config
+ALLOWED_ACTIONS: set[str] = set()  # Populated after registry is built
 
 
 @dataclass(frozen=True)
@@ -131,6 +128,10 @@ def _build_policy_registry() -> PolicyRegistry:
 
 # Policy registry instance (initialized on module load)
 _POLICY_REGISTRY = _build_policy_registry()
+
+# Populate allowed actions from all loaded policies
+ALLOWED_ACTIONS = _POLICY_REGISTRY.get_all_allowed_actions()
+print(f"Allowed actions (from policy manifests): {', '.join(sorted(ALLOWED_ACTIONS))}", flush=True)
 
 # Delegation API configuration (required environment variables)
 _DELEGATION_API_BASE_URL = read_env_string("DELEGATION_API_BASE_URL")
@@ -400,27 +401,40 @@ def build_opa_subject(authzen_request: dict[str, Any]) -> dict[str, Any]:
     # Extract subject.type (optional, defaults to "user")
     subject_type = request_subject.get("type", "user")
     
-    # Validate and extract subject.persona
-    subject_persona = request_subject.get("persona")
-    if not subject_persona:
-        raise ValueError("Request must be AuthZEN compliant: subject.persona is required")
+    # Validate and extract subject.properties.persona (required for users, optional for agents)
+    subject_properties = request_subject.get("properties", {})
+    if not isinstance(subject_properties, dict):
+        raise ValueError("Request must be AuthZEN compliant: subject.properties must be a dictionary")
     
-    # Handle list format (take first element)
-    if isinstance(subject_persona, list):
+    subject_persona = subject_properties.get("persona")
+    
+    # For agents/services, persona is optional (type is sufficient to identify them)
+    # For users, persona is required
+    if subject_type == "user":
         if not subject_persona:
-            raise ValueError("Request must be AuthZEN compliant: subject.persona cannot be empty list")
-        subject_persona = subject_persona[0]
+            raise ValueError("Request must contain subject.properties.persona for user subjects")
+        
+        # Handle list format (take first element)
+        if isinstance(subject_persona, list):
+            if not subject_persona:
+                raise ValueError("Request must contain non-empty subject.properties.persona")
+            subject_persona = subject_persona[0]
+        
+        # Ensure persona is a non-empty string
+        if not isinstance(subject_persona, str) or not subject_persona.strip():
+            raise ValueError("Request must contain a string for subject.properties.persona")
+        subject_persona = subject_persona.strip()
     
-    # Ensure persona is a non-empty string
-    if not isinstance(subject_persona, str) or not subject_persona.strip():
-        raise ValueError("Request must be AuthZEN compliant: subject.persona must be a non-empty string")
-    subject_persona = subject_persona.strip()
-    
-    return {
+    result = {
         "type": subject_type,
         "id": subject_id,
-        "persona": subject_persona,
     }
+    
+    # Only include persona if it's present (required for users, optional for agents)
+    if subject_persona:
+        result["persona"] = subject_persona
+    
+    return result
 
 
 def build_opa_action(authzen_request: dict[str, Any]) -> dict[str, Any]:
@@ -640,10 +654,9 @@ def evaluate_authorization_request(
         ValueError: If request is invalid or policy selection fails
     """
 
-    # Select policy based on resource type and hint
+    # Select policy based on required policy_hint
     try:
         selected_policy = _POLICY_REGISTRY.select_policy(
-            resource_type=authzen_request.get("resource", {}).get("type"),
             policy_hint=authzen_request.get("context", {}).get("policy_hint"),
         )
     except ValueError as e:

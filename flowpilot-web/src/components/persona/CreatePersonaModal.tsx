@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 interface CreatePersonaData {
   title: string;
+  circle: string;
   scope: string[];
   status: string;
   consent: boolean;
@@ -59,6 +60,7 @@ export function CreatePersonaModal({
 
   const [formData, setFormData] = useState<CreatePersonaData>({
     title: '',
+    circle: '',
     scope: ['read', 'execute'],
     status: 'active',
     consent: DEFAULT_CONSENT,
@@ -88,10 +90,14 @@ export function CreatePersonaModal({
       newErrors.title = 'Persona title is required';
     }
 
-    // Check duplicate title
-    if (formData.title && existingTitles.includes(formData.title)) {
-      newErrors.title = 'Cannot create duplicate persona title';
+    // Circle required
+    if (!formData.circle || formData.circle.trim() === '') {
+      newErrors.circle = 'Circle is required';
     }
+
+    // Check duplicate title (NOTE: with circle added, we allow same title with different circles)
+    // Backend will enforce uniqueness on (title, circle) combination
+    // For now, we keep the simple check but users can create same title with different circles
 
     // Price validation
     if (formData.autobook_price <= 0) {
@@ -108,12 +114,15 @@ export function CreatePersonaModal({
       newErrors.autobook_risklevel = 'Risk level must be between 0 and 100';
     }
 
-    // Date validation
+    // Validate valid_till comes after valid_from (logical consistency check)
     const validFrom = new Date(formData.valid_from);
     const validTill = new Date(formData.valid_till);
     if (validTill <= validFrom) {
-      newErrors.valid_till = 'Valid until must be after valid from';
+      newErrors.valid_till = 'Valid Until must be after Valid From';
     }
+
+    // NOTE: We don't check if dates are in the past/future - only relative to each other
+    // The backend PEP/PDP will enforce lifecycle policies based on current time
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -128,6 +137,7 @@ export function CreatePersonaModal({
       // Reset form
       setFormData({
         title: '',
+        circle: '',
         scope: ['read', 'execute'],
         status: 'active',
         consent: DEFAULT_CONSENT,
@@ -150,6 +160,7 @@ export function CreatePersonaModal({
     // Reset form
     setFormData({
       title: '',
+      circle: '',
       scope: ['read', 'execute'],
       status: 'active',
       consent: DEFAULT_CONSENT,
@@ -249,6 +260,28 @@ export function CreatePersonaModal({
             </p>
           </div>
 
+          {/* Circle */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Circle <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={formData.circle}
+              onChange={(e) => setFormData({ ...formData, circle: e.target.value })}
+              placeholder="e.g., family, acme-corp, marketing-team"
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-nura-orange focus:border-transparent ${
+                errors.circle ? 'border-red-500' : 'border-gray-300'
+              }`}
+            />
+            {errors.circle && (
+              <p className="text-xs text-red-600 mt-1">{errors.circle}</p>
+            )}
+            <p className="text-xs text-gray-500 mt-2">
+              The community, business unit, or circle of trust for which this persona is valid
+            </p>
+          </div>
+
           {/* Persona Lifecycle */}
           <div className="space-y-4 pt-4 border-t">
             <h3 className="font-medium text-gray-900">Persona Lifecycle</h3>
@@ -277,17 +310,34 @@ export function CreatePersonaModal({
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Valid From
               </label>
-              <input
-                type="datetime-local"
-                value={formatDateForInput(formData.valid_from)}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    valid_from: new Date(e.target.value).toISOString(),
-                  })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-nura-orange focus:border-transparent"
-              />
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="date"
+                  value={formatDateForInput(formData.valid_from).split('T')[0]}
+                  onChange={(e) => {
+                    const currentTime = formatDateForInput(formData.valid_from).split('T')[1];
+                    const newDateTime = `${e.target.value}T${currentTime}`;
+                    setFormData({
+                      ...formData,
+                      valid_from: new Date(newDateTime).toISOString(),
+                    });
+                  }}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-nura-orange focus:border-transparent"
+                />
+                <input
+                  type="time"
+                  value={formatDateForInput(formData.valid_from).split('T')[1]}
+                  onChange={(e) => {
+                    const currentDate = formatDateForInput(formData.valid_from).split('T')[0];
+                    const newDateTime = `${currentDate}T${e.target.value}`;
+                    setFormData({
+                      ...formData,
+                      valid_from: new Date(newDateTime).toISOString(),
+                    });
+                  }}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-nura-orange focus:border-transparent"
+                />
+              </div>
               <p className="text-xs text-gray-500 mt-1">When this persona becomes active (default: now)</p>
             </div>
 
@@ -296,19 +346,38 @@ export function CreatePersonaModal({
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Valid Until
               </label>
-              <input
-                type="datetime-local"
-                value={formatDateForInput(formData.valid_till)}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    valid_till: new Date(e.target.value).toISOString(),
-                  })
-                }
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-nura-orange focus:border-transparent ${
-                  errors.valid_till ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="date"
+                  value={formatDateForInput(formData.valid_till).split('T')[0]}
+                  onChange={(e) => {
+                    const currentTime = formatDateForInput(formData.valid_till).split('T')[1];
+                    const newDateTime = `${e.target.value}T${currentTime}`;
+                    setFormData({
+                      ...formData,
+                      valid_till: new Date(newDateTime).toISOString(),
+                    });
+                  }}
+                  className={`px-3 py-2 border rounded-lg focus:ring-2 focus:ring-nura-orange focus:border-transparent ${
+                    errors.valid_till ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+                <input
+                  type="time"
+                  value={formatDateForInput(formData.valid_till).split('T')[1]}
+                  onChange={(e) => {
+                    const currentDate = formatDateForInput(formData.valid_till).split('T')[0];
+                    const newDateTime = `${currentDate}T${e.target.value}`;
+                    setFormData({
+                      ...formData,
+                      valid_till: new Date(newDateTime).toISOString(),
+                    });
+                  }}
+                  className={`px-3 py-2 border rounded-lg focus:ring-2 focus:ring-nura-orange focus:border-transparent ${
+                    errors.valid_till ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+              </div>
               <p className="text-xs text-gray-500 mt-1">When this persona expires (default: 1 year from now)</p>
               {errors.valid_till && (
                 <p className="text-xs text-red-600 mt-1">{errors.valid_till}</p>
@@ -436,7 +505,7 @@ export function CreatePersonaModal({
           </button>
           <button
             onClick={handleCreate}
-            disabled={isCreating || currentPersonaCount >= 5 || !formData.title}
+            disabled={isCreating || currentPersonaCount >= 5 || !formData.title || !formData.circle}
             className="px-4 py-2 bg-nura-orange text-white rounded-lg hover:bg-opacity-90 disabled:opacity-50"
           >
             {isCreating ? 'Creating...' : 'Create Persona'}

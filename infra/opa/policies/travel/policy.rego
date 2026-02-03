@@ -16,6 +16,7 @@ package auto_book
 # - "update": Update workflow items (same requirements as execute)
 # - "delete": Delete workflow items (same requirements as execute)
 # - "read": View workflows (requires delegation and matching persona)
+# - "validate_persona": Validate persona status and validity (no workflow required)
 #
 # Execute conditions:
 # 1. Anti-spoofing check (principal_id matches owner_id OR delegation is valid)
@@ -60,6 +61,11 @@ allow if {
   allow_delete
 }
 
+allow if {
+  input.action.name == "validate_persona"
+  allow_validate_persona
+}
+
 # Create action: check allowed-actions, authorization, and persona validity
 allow_create if {
   action_allowed_for_persona  # Persona must have 'create' in allowed-actions
@@ -102,6 +108,18 @@ allow_delete if {
   acceptable_risk
   within_cost_limit
   sufficient_advance
+}
+
+# Validate persona action: check if persona is valid (status=active, within time range)
+# This is used by the web-app to warn users about invalid personas
+# No workflow/resource required - only validates persona attributes in context.principal
+allow_validate_persona if {
+  # Principal must have a persona specified
+  principal_persona := input.context.principal.persona
+  principal_persona != ""
+  
+  # Persona must be active and within valid time range
+  valid_persona
 }
 
 # Reason codes for create, execute, update, and delete
@@ -176,6 +194,21 @@ reasons[code] if {
   principal_id != owner_id
   not input.action.name in input.context.delegation.delegated_actions
   code := "read.no_read_delegation"
+}
+
+reasons[code] if {
+  input.action.name == "validate_persona"
+  principal_persona := input.context.principal.persona
+  principal_persona == ""
+  code := "validate_persona.no_persona"
+}
+
+reasons[code] if {
+  input.action.name == "validate_persona"
+  principal_persona := input.context.principal.persona
+  principal_persona != ""
+  not valid_persona
+  code := "validate_persona.persona_invalid"
 }
 
 
@@ -289,7 +322,15 @@ has_consent if {
 }
 
 # Cost gate - autobook settings belong to the resource owner (in resource.properties.owner)
+# If planned_price is missing (workflow-level check), skip this gate (pass)
 within_cost_limit if {
+  # If no planned_price exists, skip check (workflow-level authorization)
+  not "planned_price" in object.keys(input.resource.properties)
+}
+
+within_cost_limit if {
+  # If planned_price exists (item-level authorization), check it's within limits
+  "planned_price" in object.keys(input.resource.properties)
   planned_price := input.resource.properties.planned_price
   max_cost := input.resource.properties.owner.autobook_price
   planned_price <= max_cost

@@ -14,22 +14,16 @@
 name: travel
 package: auto_book
 
-# Resource types this policy handles (for policy selection routing)
-resource_types:
-  - workflow
-  - workflow_item
-  - trip
-
 # Persona configuration
 persona_config:
-  # Valid persona status values
+
   # Status lifecycle: pending → active → suspended/inactive/revoked
   persona_statuses:
     - pending      # Persona created but not yet activated
     - active       # Persona is active and can be used
-    - inactive     # Persona temporarily disabled by user
-    - suspended    # Persona suspended by admin (e.g., compliance issue)
-    - revoked      # Persona validity period has ended or explicitly revoked
+    - inactive     # Persona is disabled by user
+    - suspended    # Persona temporarily disabled by admin (e.g., suspected behaviour)
+    - revoked      # Persona permanently disabled (e.g., mistake or compliance issue)
   
   # Persona titles with rich metadata
   persona_titles:
@@ -43,13 +37,13 @@ persona_config:
       description: "End users who book travel for themselves and for whom autobook preferences apply to their itineraries"
       can-be-invited: true
       can-be-delegated-to: false
-      allowed-actions: [read, create, update, execute, delete]
+      allowed-actions: [read, create, update, execute, delete, validate_persona]
     
     - title: business-traveler
       description: "End users who book travel for business purposes with specific autobook preferences"
       can-be-invited: true
       can-be-delegated-to: false
-      allowed-actions: [read, create, update, execute, delete]
+      allowed-actions: [read, create, update, execute, delete, validate_persona]
     
     - title: travel-agent
       description: "Travel agent who can execute workflows on behalf of travelers, if explicitly delegated"

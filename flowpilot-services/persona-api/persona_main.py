@@ -78,6 +78,7 @@ class PersonaResponse(BaseModel):
     persona_id: str
     user_sub: str
     title: str
+    circle: str
     scope: list[str]
     valid_from: str
     valid_till: str
@@ -99,6 +100,7 @@ class CreatePersonaRequest(BaseModel):
     model_config = {"extra": "allow"}  # Allow additional fields
     
     title: str = Field(..., min_length=1, max_length=50, description="Persona title")
+    circle: str = Field(..., min_length=1, max_length=100, description="Circle/community/business unit")
     scope: list[str] | None = Field(None, description="List of actions (can be empty)")
     valid_from: str | None = Field(None, description="When persona becomes active (ISO 8601)")
     valid_till: str | None = Field(None, description="When persona expires (ISO 8601)")
@@ -113,6 +115,7 @@ class UpdatePersonaRequest(BaseModel):
     model_config = {"extra": "allow"}  # Allow additional fields
     
     title: str | None = Field(None, min_length=1, max_length=50, description="Persona title")
+    circle: str | None = Field(None, min_length=1, max_length=100, description="Circle/community/business unit")
     scope: list[str] | None = Field(None, description="List of actions")
     valid_from: str | None = Field(None, description="When persona becomes active (ISO 8601)")
     valid_till: str | None = Field(None, description="When persona expires (ISO 8601)")
@@ -192,7 +195,7 @@ def extract_persona_attributes(
 ) -> dict[str, Any]:
     """Extract standard and custom persona attributes from request body.
     
-    Separates standard attributes (title, scope, etc.) from policy-specific
+    Separates standard attributes (title, circle, scope, etc.) from policy-specific
     custom attributes and builds kwargs dict for service calls.
     
     Args:
@@ -203,7 +206,7 @@ def extract_persona_attributes(
     Returns:
         Dictionary with all attributes ready for service call
     """
-    standard_attrs = {"title", "scope", "valid_from", "valid_till", "status"}
+    standard_attrs = {"title", "circle", "scope", "valid_from", "valid_till", "status"}
     
     # Build kwargs with optional identifiers
     kwargs: dict[str, Any] = {}

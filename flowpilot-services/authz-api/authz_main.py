@@ -170,8 +170,6 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     )
 
 
-
-
 def build_error_response(
     status_code: int,
     message: str,

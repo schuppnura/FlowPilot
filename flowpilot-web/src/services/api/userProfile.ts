@@ -32,6 +32,7 @@ interface Persona {
   persona_id: string;
   user_sub: string;
   title: string;
+  circle: string;
   scope: string[];
   status: string;
   valid_from: string;
@@ -114,8 +115,8 @@ export class UserProfileClient {
     const response = await this.client.get<ListPersonasResponse>('/v1/personas');
     console.log('UserProfileClient.listPersonas: Response:', response.data);
     // Extract persona titles from the response and deduplicate
+    // NOTE: Include all personas regardless of status - PEP/PDP will validate if they're valid for operations
     const titles = response.data.personas
-      .filter((p) => p.status === 'active')
       .map((p) => p.title);
     // Remove duplicates using Set
     return Array.from(new Set(titles));

@@ -44,7 +44,6 @@ class PolicyManifest:
     name: str  # Policy identifier (e.g., "travel", "nursing")
     package: str  # OPA package name (e.g., "auto_book", "nursing_care")
     attributes: list[PolicyAttribute]  # All required attributes (unified list with source field)
-    resource_types: list[str] = None  # Resource types this policy handles (for routing)
     persona_config: dict[str, Any] = None  # Persona configuration (allowed titles, delegation rules)
 
     def __post_init__(self):
@@ -104,15 +103,12 @@ def load_policy_manifest(policy_name: str, manifest_dir: str) -> PolicyManifest:
     # Extract required fields
     name = data.get("name")
     package = data.get("package")
-    resource_types = data.get("resource_types", [])
 
     # Validate manifest structure
     if not name:
         raise ValueError(f"Policy manifest missing required field 'name': {manifest_path}")
     if not package:
         raise ValueError(f"Policy manifest missing required field 'package': {manifest_path}")
-    if resource_types and not isinstance(resource_types, list):
-        raise ValueError(f"'resource_types' must be a list, got: {type(resource_types)}")
 
     # Validate name matches expected policy_name
     if name != policy_name:
@@ -175,7 +171,6 @@ def load_policy_manifest(policy_name: str, manifest_dir: str) -> PolicyManifest:
         name=name,
         package=package,
         attributes=all_attributes,
-        resource_types=resource_types if resource_types else [],
         persona_config=persona_config,
     )
 
@@ -228,60 +223,33 @@ class PolicyRegistry:
 
     def select_policy(
         self,
-        resource_type: str = None,
-        policy_hint: str = None,
+        policy_hint: str,
     ) -> PolicyManifest:
-        """Select appropriate policy based on resource type or explicit hint.
-        
-        Selection priority:
-        1. policy_hint (explicit override in context.policy_hint)
-        2. resource_type match (resource.type matches manifest.resource_types)
-        3. ERROR - no default fallback for safety
+        """Select policy by explicit policy_hint.
         
         Args:
-            resource_type: Resource type from request (e.g., "workflow_item")
-            policy_hint: Explicit policy name from context.policy_hint
+            policy_hint: Explicit policy name from context.policy_hint (REQUIRED)
         
         Returns:
             PolicyManifest for the selected policy
         
         Raises:
-            ValueError: If no policy can be determined or policy not found
+            ValueError: If policy_hint is missing or policy not found
         """
-        # Priority 1: Explicit policy hint
-        if policy_hint:
-            if policy_hint not in self.policies:
-                available = ", ".join(self.policies.keys())
-                raise ValueError(
-                    f"Policy hint '{policy_hint}' not found. Available policies: {available}"
-                )
-            return self.policies[policy_hint]
-
-        # Priority 2: Resource type matching
-        if resource_type:
-            matching_policies = [
-                (name, manifest)
-                for name, manifest in self.policies.items()
-                if resource_type in manifest.resource_types
-            ]
-
-            if len(matching_policies) == 1:
-                return matching_policies[0][1]
-            elif len(matching_policies) > 1:
-                policy_names = ", ".join([name for name, _ in matching_policies])
-                raise ValueError(
-                    f"Multiple policies match resource type '{resource_type}': {policy_names}. "
-                    f"Use context.policy_hint to specify which policy to use."
-                )
-            # No matches - fall through to error
-
-        # Priority 3: ERROR - no default fallback
-        available = ", ".join(self.policies.keys())
-        raise ValueError(
-            f"Cannot determine policy for resource_type='{resource_type}', policy_hint='{policy_hint}'. "
-            f"Available policies: {available}. "
-            f"Provide context.policy_hint or resource.type that matches a policy's resource_types."
-        )
+        if not policy_hint:
+            available = ", ".join(self.policies.keys())
+            raise ValueError(
+                f"Policy selection requires context.policy_hint. "
+                f"Available policies: {available}"
+            )
+        
+        if policy_hint not in self.policies:
+            available = ", ".join(self.policies.keys())
+            raise ValueError(
+                f"Policy '{policy_hint}' not found. Available policies: {available}"
+            )
+        
+        return self.policies[policy_hint]
 
     def get_policy_by_name(self, policy_name: str) -> PolicyManifest:
         """Get policy manifest by name.
@@ -303,6 +271,29 @@ class PolicyRegistry:
     def list_policies(self) -> list[str]:
         """List all available policy names."""
         return list(self.policies.keys())
+
+    def get_all_allowed_actions(self) -> set[str]:
+        """Get all allowed actions across all loaded policies.
+        
+        Collects unique actions from:
+        - All persona_titles.allowed-actions in persona_config
+        - Standard CRUD actions (if any personas exist)
+        
+        Returns:
+            Set of all allowed action names
+        """
+        actions = set()
+        
+        for policy in self.policies.values():
+            if policy.persona_config:
+                persona_titles = policy.persona_config.get("persona_titles", [])
+                for persona_def in persona_titles:
+                    if isinstance(persona_def, dict):
+                        allowed = persona_def.get("allowed-actions", [])
+                        if isinstance(allowed, list):
+                            actions.update(allowed)
+        
+        return actions
 
 
 def get_policy_manifest_from_env() -> PolicyManifest:

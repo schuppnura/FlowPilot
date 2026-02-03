@@ -7,11 +7,13 @@ import { CreatePersonaModal } from '../persona/CreatePersonaModal';
 import { ColdStartNotice } from '../common/ColdStartNotice';
 import { PanelHeader } from '../common/PanelHeader';
 import { UserProfileClient } from '../../services/api/userProfile';
+import { AuthZClient } from '../../services/api/authz';
 
 interface Persona {
   persona_id: string;
   user_sub: string;
   title: string;
+  circle: string;
   scope: string[];
   status: string;
   valid_from: string;
@@ -33,9 +35,11 @@ export function MyAccountPanel() {
   const [selectedPersonaForModal, setSelectedPersonaForModal] = useState<Persona | null>(null);
   const [modalMode, setModalMode] = useState<'view' | 'edit'>('view');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [personaValidationWarning, setPersonaValidationWarning] = useState<string | null>(null);
   
-  // Initialize UserProfileClient
+  // Initialize API clients
   const userProfileClient = new UserProfileClient(getToken, openSignInModal);
+  const authzClient = new AuthZClient(getToken, openSignInModal);
 
   // Fetch detailed personas when user is authenticated
   useEffect(() => {
@@ -44,9 +48,44 @@ export function MyAccountPanel() {
     }
   }, [authLoading, user]);
 
+  const validateFirstPersona = async (persona: Persona) => {
+    if (!user) return;
+    
+    try {
+      console.log('Validating first persona via authz-api:', persona);
+      const result = await authzClient.validatePersona(
+        user.uid,
+        persona.title,
+        {
+          status: persona.status,
+          valid_from: persona.valid_from,
+          valid_till: persona.valid_till,
+        }
+      );
+      
+      console.log('Persona validation result:', result);
+      
+      // If persona is invalid, show warning
+      if (result.decision === 'deny') {
+        setPersonaValidationWarning(
+          `Your persona "${persona.title}" is not currently valid. ` +
+          `Without a valid active persona, you cannot create workflows or perform any operations. ` +
+          `Please activate this persona or create a new active one.`
+        );
+      } else {
+        // Persona is valid - clear any previous warning
+        setPersonaValidationWarning(null);
+      }
+    } catch (error: any) {
+      console.error('Failed to validate persona:', error);
+      // Don't show error to user - validation is best-effort
+    }
+  };
+
   const loadPersonas = async () => {
     setLoadingPersonas(true);
     setPersonasError(null);
+    setPersonaValidationWarning(null);
     try {
       const detailed = await userProfileClient.getPersonasDetailed();
       setPersonasDetailed(detailed);
@@ -54,6 +93,15 @@ export function MyAccountPanel() {
       // Auto-open create modal if no personas exist
       if (detailed.length === 0) {
         setShowCreateModal(true);
+      }
+      
+      // If this is the first and only persona, validate it via authz-api
+      console.log('MyAccountPanel: Checking if should validate persona. Length:', detailed.length, 'User:', !!user);
+      if (detailed.length === 1 && user) {
+        console.log('MyAccountPanel: Will validate first persona');
+        await validateFirstPersona(detailed[0]);
+      } else {
+        console.log('MyAccountPanel: Skipping validation - need exactly 1 persona, have', detailed.length);
       }
     } catch (error: any) {
       console.error('Failed to load personas:', error);
@@ -67,7 +115,7 @@ export function MyAccountPanel() {
     const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
     try {
       await userProfileClient.updatePersona(personaId, { status: newStatus });
-      await loadPersonas(); // Reload list
+      await loadPersonas(); // Reload list (this will re-validate if needed)
     } catch (error: any) {
       alert(`Failed to update persona: ${error.message}`);
     }
@@ -159,6 +207,12 @@ export function MyAccountPanel() {
                 <div className="text-center py-8 text-gray-500">
                   Loading personas...
                 </div>
+              </div>
+            )}
+
+            {personaValidationWarning && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-700 mb-4">
+                {personaValidationWarning}
               </div>
             )}
 

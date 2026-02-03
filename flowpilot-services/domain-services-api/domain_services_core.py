@@ -38,8 +38,6 @@ from utils import (
 
 # Service identity configuration (required environment variable)
 SERVICE_ID = read_env_string("SERVICE_ID")
-# Service persona configuration (with default "domain-services")
-SERVICE_PERSONA = os.environ.get("SERVICE_PERSONA", "domain-services")
 
 
 class PolicyDeniedError(PermissionError):
@@ -140,10 +138,11 @@ class FlowPilotService:
         template_id: str,
         owner_sub: str,
         start_date: str,
-        persona: str | None = None,
+        persona: str,  # REQUIRED - persona must be specified when creating workflows
         domain: str | None = None,
     ) -> dict[str, Any]:
         # Create a workflow and itinerary items from a template
+        # IMPORTANT: persona parameter is now required (no longer optional)
         # side effect: stores a new workflow in memory.
         template_id = require_non_empty_string(template_id, "template_id")
         owner_sub = require_non_empty_string(owner_sub, "owner_sub")
@@ -195,6 +194,7 @@ class FlowPilotService:
         # Use provided domain or fall back to config default
         workflow_domain = domain if domain else self._config.get("domain", "travel")
         
+        print(f"[DEBUG] Storing workflow {workflow_id} with persona={repr(persona)}", flush=True)
         workflow: dict[str, Any] = {
             "workflow_id": workflow_id,
             "template_id": template_id,
@@ -206,6 +206,7 @@ class FlowPilotService:
             "items": items,
         }
         self._workflows[workflow_id] = workflow
+        print(f"[DEBUG] Workflow stored. Retrieving to verify: owner_persona={repr(self._workflows[workflow_id].get('owner_persona'))}", flush=True)
 
         return {
             "workflow_id": workflow_id,
@@ -339,10 +340,15 @@ class FlowPilotService:
         if workflow_id not in self._workflows:
             raise KeyError(f"Workflow not found: {workflow_id}")
         workflow = self._workflows[workflow_id]
-        return {
+        owner_persona_value = workflow.get("owner_persona")
+        print(f"[DEBUG] get_workflow({workflow_id}): owner_persona from storage={repr(owner_persona_value)}", flush=True)
+        result = {
             "workflow_id": str(workflow.get("workflow_id")),
             "template_id": str(workflow.get("template_id")),
             "owner_sub": str(workflow.get("owner_sub")),
+            "owner_persona": owner_persona_value,  # Required for authz checks
+            "domain": workflow.get("domain"),  # Required for policy_hint
+            "departure_date": workflow.get("departure_date"),  # Required for advance notice checks
             "created_at": str(workflow.get("created_at")),
             "item_count": (
                 len(workflow.get("items", []))
@@ -350,6 +356,8 @@ class FlowPilotService:
                 else 0
             ),
         }
+        print(f"[DEBUG] get_workflow returning: owner_persona={repr(result.get('owner_persona'))}", flush=True)
+        return result
 
     def get_workflow_items(self, workflow_id: str) -> dict[str, Any]:
         # Return workflow items for agent-runner
@@ -589,10 +597,10 @@ class FlowPilotService:
         token = security.get_service_token()
 
         # Subject is the service making the call
+        # For agents, type is sufficient - no persona needed
         subject: dict[str, Any] = {
             "type": "agent",
             "id": service_id,
-            "persona": SERVICE_PERSONA,
         }
 
         # Build resource (with or without id)

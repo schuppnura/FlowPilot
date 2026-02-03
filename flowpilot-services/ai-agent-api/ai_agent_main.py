@@ -190,19 +190,36 @@ def handle_post_workflow_runs(
         # The agent acts on behalf of the user with the user's token
         agent_sub = "agent-runner"
 
-        # AuthZEN: Check authorization before starting workflow execution (anti-spoofing)
+        # AuthZEN: Check workflow-level authorization before starting execution
+        # This prevents wasted work by checking if ANY item could be executed
         authz_result = check_workflow_execution_authorization(
             config=config,
             workflow_id=workflow_id,
             principal_user=principal_user,
             agent_sub=agent_sub,
+            user_token=user_token,
         )
 
         if authz_result.get("decision") != "allow":
-            raise HTTPException(
-                status_code=403,
-                detail=f"Workflow execution not authorized: {authz_result.get('reason_codes', [])}",
-            )
+            # Return structured denial with reason codes instead of raising HTTPException
+            # This allows the client to see WHY the workflow cannot be executed
+            reason_codes = authz_result.get("reason_codes", [])
+            advice = authz_result.get("advice", [])
+            
+            # Return early with empty results and error information
+            return {
+                "run_id": "wr_" + workflow_id[:10],  # Generate placeholder run_id
+                "workflow_id": workflow_id,
+                "principal_sub": principal_user.get("id", ""),
+                "principal_user": principal_user,
+                "dry_run": bool(body.dry_run),
+                "results": [],
+                "error": {
+                    "message": "Workflow execution not authorized",
+                    "reason_codes": reason_codes,
+                    "advice": advice,
+                },
+            }
 
         # Execute workflow with principal-user object (AuthZEN: pass principal info, not token)
         # Pass user token for service-to-service calls (agent acts on behalf of user)

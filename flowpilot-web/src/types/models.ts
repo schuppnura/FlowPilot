@@ -78,6 +78,11 @@ export interface AgentRunResponse {
   principal_sub: string;
   dry_run: boolean;
   results: AgentRunItemResult[];
+  error?: {
+    message: string;
+    reason_codes: string[];
+    advice?: Advice[];
+  };
 }
 
 export interface AgentRunItemResult {

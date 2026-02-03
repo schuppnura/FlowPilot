@@ -2,6 +2,7 @@ interface Persona {
   persona_id: string;
   user_sub: string;
   title: string;
+  circle: string;
   scope: string[];
   status: string;
   valid_from: string;
@@ -73,6 +74,9 @@ export function PersonaListItem({
                 </span>
               )}
             </h3>
+            <p className="text-xs text-gray-600 mt-0.5">
+              Circle: {persona.circle}
+            </p>
             <span className={`inline-block text-xs px-2 py-1 rounded-full mt-1 ${statusColor}`}>
               {persona.status.charAt(0).toUpperCase() + persona.status.slice(1)}
             </span>

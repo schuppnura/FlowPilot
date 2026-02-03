@@ -1,0 +1,111 @@
+site_name: FlowPilot Documentation
+site_description: Authorization architecture for agentic workflows
+site_author: Nura
+site_url: https://docs.nura.pro
+
+repo_url: https://github.com/schuppnura/FlowPilot
+repo_name: FlowPilot
+
+docs_dir: flowpilot-docs
+
+theme:
+  name: material
+  palette:
+    # Light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - toc.integrate
+    - search.suggest
+    - search.highlight
+    - content.tabs.link
+    - content.code.annotation
+    - content.code.copy
+  icon:
+    repo: fontawesome/brands/github
+
+plugins:
+  - search
+  - swagger-ui-tag
+
+exclude_docs: |
+  README.md
+
+markdown_extensions:
+  - toc:
+      toc_depth: 2
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - admonition
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - attr_list
+  - md_in_html
+  - tables
+
+nav:
+  - Home: index.md
+  - Policies:
+      - Policy Development: development/policies.md
+      - Policy Governance: development/policies-governance.md
+      - Policy Orchestration: development/about-authzen.md
+      - Policy Test Scenarios: development/authorization-scenarios.md
+  - Personas:
+      - Persona Management: development/personas.md
+      - Persona vs Identity: development/identities.md
+      - Persona Based Delegation: development/delegations.md
+  - Architecture:
+      - Overview: architecture/overview.md
+      - Authorization Model: architecture/authorization.md
+      - Authentication Model: architecture/authentication.md
+      - Security: architecture/security.md
+      - Microservices: architecture/services.md
+      - CORS Configuration: architecture/cors.md
+  - API Reference:
+      - AuthZ API: api/authz.md
+      - Domain Services API: api/domain-services.md
+      - Delegation API: api/delegation.md
+      - Persona API: api/persona.md
+      - AI Agent API: api/ai-agent.md
+  - Getting Started:
+      - Integration Guide: getting-started/integration.md
+      - Authentication Setup: getting-started/authentication.md
+      - First Workflow: getting-started/first-workflow.md
+  - Hosting Guide:
+      - Overview: deployment/overview.md
+      - Local Development: deployment/local.md
+      - GCP Cloud Run: deployment/gcp.md
+      - Environment Configuration: deployment/environment.md
+  - About:
+      - Code of Conduct: contributing/code-of-conduct.md
+      - Contributing Guide: contributing/contributing.md
+      - Security: contributing/security.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/yourusername/flowpilot

@@ -4,6 +4,7 @@ interface Persona {
   persona_id: string;
   user_sub: string;
   title: string;
+  circle: string;
   scope: string[];
   status: string;
   valid_from: string;
@@ -43,10 +44,13 @@ export function PersonaDetailsModal({
 }: PersonaDetailsModalProps) {
   const [isEditing, setIsEditing] = useState(mode === 'edit');
   const [formData, setFormData] = useState({
+    circle: persona.circle,
+    status: persona.status,
     consent: persona.consent,
     autobook_price: persona.autobook_price,
     autobook_leadtime: persona.autobook_leadtime,
     autobook_risklevel: persona.autobook_risklevel,
+    valid_from: persona.valid_from,
     valid_till: persona.valid_till,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -55,10 +59,13 @@ export function PersonaDetailsModal({
   useEffect(() => {
     setIsEditing(mode === 'edit');
     setFormData({
+      circle: persona.circle,
+      status: persona.status,
       consent: persona.consent,
       autobook_price: persona.autobook_price,
       autobook_leadtime: persona.autobook_leadtime,
       autobook_risklevel: persona.autobook_risklevel,
+      valid_from: persona.valid_from,
       valid_till: persona.valid_till,
     });
     setErrors({});
@@ -70,6 +77,11 @@ export function PersonaDetailsModal({
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
+
+    // Circle required
+    if (!formData.circle || formData.circle.trim() === '') {
+      newErrors.circle = 'Circle is required';
+    }
 
     if (formData.autobook_price <= 0) {
       newErrors.autobook_price = 'Price must be a positive number';
@@ -83,11 +95,15 @@ export function PersonaDetailsModal({
       newErrors.autobook_risklevel = 'Risk level must be between 0 and 100';
     }
 
-    const validFrom = new Date(persona.valid_from);
+    // Validate valid_till comes after valid_from (logical consistency check)
+    const validFrom = new Date(formData.valid_from);
     const validTill = new Date(formData.valid_till);
     if (validTill <= validFrom) {
-      newErrors.valid_till = 'Valid until must be after valid from';
+      newErrors.valid_till = 'Valid Until must be after Valid From';
     }
+
+    // NOTE: We don't check if dates are in the past/future - only relative to each other
+    // The backend PEP/PDP will enforce lifecycle policies based on current time
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -111,10 +127,13 @@ export function PersonaDetailsModal({
 
   const handleCancel = () => {
     setFormData({
+      circle: persona.circle,
+      status: persona.status,
       consent: persona.consent,
       autobook_price: persona.autobook_price,
       autobook_leadtime: persona.autobook_leadtime,
       autobook_risklevel: persona.autobook_risklevel,
+      valid_from: persona.valid_from,
       valid_till: persona.valid_till,
     });
     setErrors({});
@@ -180,41 +199,171 @@ export function PersonaDetailsModal({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Status
+                Persona Title
               </label>
-              <span
-                className={`inline-block text-sm px-3 py-1 rounded-full ${
-                  persona.status === 'active'
-                    ? 'bg-green-100 text-green-800'
-                    : persona.status === 'inactive'
-                    ? 'bg-gray-100 text-gray-800'
-                    : persona.status === 'suspended'
-                    ? 'bg-orange-100 text-orange-800'
-                    : 'bg-red-100 text-red-800'
-                }`}
-              >
-                {persona.status.charAt(0).toUpperCase() + persona.status.slice(1)}
-              </span>
+              <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded border">
+                {persona.title}
+              </p>
             </div>
 
+            {/* Circle */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Scope
+                Circle <span className="text-red-500">*</span>
               </label>
-              <div className="flex gap-2">
-                {persona.scope.map((s) => (
-                  <span
-                    key={s}
-                    className="text-sm px-3 py-1 bg-blue-50 text-blue-700 rounded-full"
-                  >
-                    {s}
-                  </span>
-                ))}
-              </div>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={formData.circle}
+                  onChange={(e) => setFormData({ ...formData, circle: e.target.value })}
+                  placeholder="e.g., family, acme-corp, marketing-team"
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-nura-orange focus:border-transparent ${
+                    errors.circle ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+              ) : (
+                <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded border">
+                  {formData.circle}
+                </p>
+              )}
+              {errors.circle && (
+                <p className="text-xs text-red-600 mt-1">{errors.circle}</p>
+              )}
+              <p className="text-xs text-gray-500 mt-1">
+                The community, business unit, or circle of trust for which this persona is valid
+              </p>
             </div>
           </div>
 
-          {/* Editable fields */}
+          {/* Lifecycle */}
+          <div className="space-y-4 pt-4 border-t">
+            <h3 className="font-medium text-gray-900">Lifecycle</h3>
+
+            {/* Status */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Status
+              </label>
+              {isEditing ? (
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-nura-orange focus:border-transparent"
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="suspended">Suspended</option>
+                  <option value="pending">Pending</option>
+                  <option value="revoked">Revoked</option>
+                </select>
+              ) : (
+                <span
+                  className={`inline-block text-sm px-3 py-1 rounded-full ${
+                    formData.status === 'active'
+                      ? 'bg-green-100 text-green-800'
+                      : formData.status === 'inactive'
+                      ? 'bg-gray-100 text-gray-800'
+                      : formData.status === 'suspended'
+                      ? 'bg-orange-100 text-orange-800'
+                      : 'bg-red-100 text-red-800'
+                  }`}
+                >
+                  {formData.status.charAt(0).toUpperCase() + formData.status.slice(1)}
+                </span>
+              )}
+            </div>
+
+            {/* Valid From */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Valid From
+              </label>
+              {isEditing ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="date"
+                    value={formatDateForInput(formData.valid_from).split('T')[0]}
+                    onChange={(e) => {
+                      const currentTime = formatDateForInput(formData.valid_from).split('T')[1];
+                      const newDateTime = `${e.target.value}T${currentTime}`;
+                      setFormData({
+                        ...formData,
+                        valid_from: new Date(newDateTime).toISOString(),
+                      });
+                    }}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-nura-orange focus:border-transparent"
+                  />
+                  <input
+                    type="time"
+                    value={formatDateForInput(formData.valid_from).split('T')[1]}
+                    onChange={(e) => {
+                      const currentDate = formatDateForInput(formData.valid_from).split('T')[0];
+                      const newDateTime = `${currentDate}T${e.target.value}`;
+                      setFormData({
+                        ...formData,
+                        valid_from: new Date(newDateTime).toISOString(),
+                      });
+                    }}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-nura-orange focus:border-transparent"
+                  />
+                </div>
+              ) : (
+                <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded border">
+                  {formatDate(formData.valid_from)}
+                </p>
+              )}
+            </div>
+
+            {/* Valid Until */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Valid Until
+              </label>
+              {isEditing ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="date"
+                    value={formatDateForInput(formData.valid_till).split('T')[0]}
+                    onChange={(e) => {
+                      const currentTime = formatDateForInput(formData.valid_till).split('T')[1];
+                      const newDateTime = `${e.target.value}T${currentTime}`;
+                      setFormData({
+                        ...formData,
+                        valid_till: new Date(newDateTime).toISOString(),
+                      });
+                    }}
+                    className={`px-3 py-2 border rounded-lg focus:ring-2 focus:ring-nura-orange focus:border-transparent ${
+                      errors.valid_till ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  />
+                  <input
+                    type="time"
+                    value={formatDateForInput(formData.valid_till).split('T')[1]}
+                    onChange={(e) => {
+                      const currentDate = formatDateForInput(formData.valid_till).split('T')[0];
+                      const newDateTime = `${currentDate}T${e.target.value}`;
+                      setFormData({
+                        ...formData,
+                        valid_till: new Date(newDateTime).toISOString(),
+                      });
+                    }}
+                    className={`px-3 py-2 border rounded-lg focus:ring-2 focus:ring-nura-orange focus:border-transparent ${
+                      errors.valid_till ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  />
+                </div>
+              ) : (
+                <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded border">
+                  {formatDate(formData.valid_till)}
+                </p>
+              )}
+              {errors.valid_till && (
+                <p className="text-xs text-red-600 mt-1">{errors.valid_till}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Autobook Preferences */}
           <div className="space-y-4 pt-4 border-t">
             <h3 className="font-medium text-gray-900">Autobook Preferences</h3>
 
@@ -337,45 +486,6 @@ export function PersonaDetailsModal({
               )}
               {errors.autobook_risklevel && (
                 <p className="text-xs text-red-600 mt-1">{errors.autobook_risklevel}</p>
-              )}
-            </div>
-
-            {/* Valid From */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Valid From
-              </label>
-              <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded border">
-                {formatDate(persona.valid_from)}
-              </p>
-            </div>
-
-            {/* Valid Until */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Valid Until
-              </label>
-              {isEditing ? (
-                <input
-                  type="datetime-local"
-                  value={formatDateForInput(formData.valid_till)}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      valid_till: new Date(e.target.value).toISOString(),
-                    })
-                  }
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-nura-orange focus:border-transparent ${
-                    errors.valid_till ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                />
-              ) : (
-                <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded border">
-                  {formatDate(formData.valid_till)}
-                </p>
-              )}
-              {errors.valid_till && (
-                <p className="text-xs text-red-600 mt-1">{errors.valid_till}</p>
               )}
             </div>
           </div>

@@ -68,6 +68,7 @@ class Persona:
     persona_id: str
     user_sub: str
     title: str
+    circle: str
     scope: list[str]
     valid_from: str
     valid_till: str
@@ -100,6 +101,7 @@ class PersonaService:
         self,
         user_sub: str,
         title: str,
+        circle: str,
         scope: list[str] | None = None,
         valid_from: str | None = None,
         valid_till: str | None = None,
@@ -112,6 +114,7 @@ class PersonaService:
         Args:
             user_sub: User subject ID
             title: Persona title
+            circle: Circle/community/business unit (e.g., "family", "acme-corp")
             scope: List of actions (defaults to [])
             valid_from: When persona becomes active (ISO 8601)
             valid_till: When persona expires (ISO 8601)
@@ -167,6 +170,7 @@ class PersonaService:
         create_kwargs = {
             "user_sub": user_sub,
             "title": title,
+            "circle": circle,
             "scope": scope,
             "valid_from": valid_from,
             "valid_till": valid_till,
@@ -227,6 +231,7 @@ class PersonaService:
         persona_id: str,
         user_sub: str,
         title: str | None = None,
+        circle: str | None = None,
         scope: list[str] | None = None,
         valid_from: str | None = None,
         valid_till: str | None = None,
@@ -240,6 +245,7 @@ class PersonaService:
             persona_id: Persona ID
             user_sub: User subject ID (for ownership validation)
             title: Optional new title
+            circle: Optional new circle
             scope: Optional new scope
             valid_from: Optional new valid_from
             valid_till: Optional new valid_till
@@ -301,6 +307,7 @@ class PersonaService:
         update_db_kwargs = {
             "persona_id": persona_id,
             "title": title,
+            "circle": circle,
             "scope": scope,
             "valid_from": valid_from,
             "valid_till": valid_till,

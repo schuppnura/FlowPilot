@@ -7,24 +7,20 @@
 name: nursing
 package: nursing_workflow
 
-resource_types:
-  - workflow
-  - workflow_item
-
 persona_config:
   persona_statuses:
-    - pending
-    - active
-    - inactive
-    - suspended
-    - revoked
+    - pending      # Persona created but not yet activated
+    - active       # Persona is active and can be used
+    - inactive     # Persona is disabled by user
+    - suspended    # Persona temporarily disabled by admin (e.g., suspected behaviour)
+    - revoked      # Persona permanently disabled (e.g., mistake or compliance issue)
 
   persona_titles:
     - title: patient
       description: "Patient (or resident) who owns the care workflow and can delegate tasks."
       can-be-invited: true
       can-be-delegated-to: false
-      allowed-actions: [read, update]
+      allowed-actions: [read, update, validate_persona]
 
     - title: caregiver
       description: "Family member who can coordinate administrative steps for a patient when delegated."

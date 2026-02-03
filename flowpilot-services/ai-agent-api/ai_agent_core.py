@@ -150,16 +150,111 @@ def parse_policy_deny_from_body(response_text: str) -> tuple[list[str], str]:
     return reason_codes, message
 
 
+def _call_authz_for_workflow(
+    config: dict[str, Any],
+    workflow: dict[str, Any],
+    principal_user: dict[str, Any],
+    agent_sub: str,
+    action: str = "execute",
+    user_token: str = None,
+) -> dict[str, Any]:
+    # Call AuthZ /v1/evaluate for workflow operations
+    # Handles workflow-level actions: create, read, update, delete, execute
+    # This follows the same pattern as domain-services-api for consistency
+    authz_base_url = require_non_empty_string(
+        str(config.get("authz_base_url", "")), "authz_base_url"
+    )
+    
+    # Extract workflow properties
+    workflow_id = str(workflow.get("workflow_id", ""))
+    workflow_domain = workflow.get("domain", "travel")
+    owner_sub = str(workflow.get("owner_sub", ""))
+    owner_persona = workflow.get("owner_persona")
+    departure_date = workflow.get("departure_date")
+    
+    # Validate that owner_persona is present (required for authz checks)
+    if not owner_persona:
+        raise ValueError(f"Workflow {workflow_id} is missing owner_persona - cannot perform authorization check")
+    
+    # Build resource properties
+    resource_properties: dict[str, Any] = {
+        "workflow_id": workflow_id,
+        "domain": workflow_domain,
+    }
+    
+    # Add departure_date if available
+    if departure_date:
+        resource_properties["departure_date"] = departure_date
+    
+    # Add owner to resource properties
+    if owner_sub:
+        owner_dict: dict[str, Any] = {"type": "user", "id": owner_sub}
+        if owner_persona:
+            owner_dict["persona"] = str(owner_persona)
+        resource_properties["owner"] = owner_dict
+    
+    # Build AuthZEN request
+    url = build_url(authz_base_url, "/v1/evaluate")
+    
+    # AuthZEN: Build context with principal-user object
+    context: dict[str, Any] = {
+        "principal": principal_user,
+        "policy_hint": workflow_domain,  # Dynamic policy selection based on domain
+    }
+    
+    # Subject is the agent making the call
+    subject: dict[str, Any] = {
+        "type": "agent",
+        "id": agent_sub,
+    }
+    
+    # Build resource
+    resource: dict[str, Any] = {
+        "type": "workflow",
+        "id": workflow_id,
+        "properties": resource_properties,
+    }
+    
+    # Build options
+    options: dict[str, Any] = {"explain": True, "metrics": False}
+    
+    body: dict[str, Any] = {
+        "subject": subject,
+        "action": {"name": action},
+        "resource": resource,
+        "context": context,
+        "options": options,
+    }
+    
+    # Always use service token for authz-api calls (user identity is in context.principal)
+    # This matches how domain-services-api calls authz-api
+    import security
+    service_token = security.get_service_token()
+    headers = {"Authorization": f"Bearer {service_token}"} if service_token else {}
+    
+    # Log warning if no service token is available
+    if not service_token:
+        print(f"WARNING: No service token available for authz API call. This may cause authorization failures.", flush=True)
+    
+    # Use centralized http_post_json for logging and error handling
+    return http_post_json(
+        url=url,
+        payload=body,
+        timeouts=build_timeouts(connect_seconds=int(config.get("request_timeout_seconds", 10))),
+        headers=headers if headers else None,
+    )
+
+
 def check_workflow_execution_authorization(
     config: dict[str, Any],
     workflow_id: str,
     principal_user: dict[str, Any],
     agent_sub: str,
+    user_token: str = None,
 ) -> dict[str, Any]:
-    # AuthZEN: Basic anti-spoofing check - verify principal is valid
-    # why: prevent trivial principal spoofing before starting workflow execution
-    # note: Full authorization happens at workflow item level via domain-services-api
-    # side effects: minimal validation, no network I/O required
+    # Check workflow-level authorization via authz-api before executing any items
+    # why: prevent wasted work by checking if ANY item could be executed
+    # side effects: network I/O to authz-api and domain-services-api
     require_non_empty_string(workflow_id, "workflow_id")
     if not isinstance(principal_user, dict) or not principal_user.get("id"):
         return {
@@ -176,10 +271,66 @@ def check_workflow_execution_authorization(
             "reason_codes": ["missing_principal_id"],
             "advice": [{"type": "error", "message": "Principal ID is required"}],
         }
-
-    # For now, allow if principal is valid (full authorization happens at item level)
-    # In the future, this could check delegation relationships via authz-api
-    return {"decision": "allow", "reason_codes": [], "advice": []}
+    
+    principal_persona = principal_user.get("persona", "").strip()
+    if not principal_persona:
+        return {
+            "decision": "deny",
+            "reason_codes": ["missing_principal_persona"],
+            "advice": [{"type": "error", "message": "Principal persona is required"}],
+        }
+    
+    if not user_token:
+        return {
+            "decision": "deny",
+            "reason_codes": ["missing_user_token"],
+            "advice": [{"type": "error", "message": "User token is required for authorization check"}],
+        }
+    
+    # Get workflow from domain-services to extract owner and domain
+    workflow_base_url = require_non_empty_string(
+        str(config.get("workflow_base_url", "")), "workflow_base_url"
+    )
+    workflow_url = build_url(workflow_base_url, f"/v1/workflows/{workflow_id}")
+    
+    headers = {"Authorization": f"Bearer {user_token}"}
+    
+    # Build query parameters with persona (required by domain-services API)
+    params = {"persona": principal_persona}
+    
+    try:
+        # Fetch workflow metadata
+        workflow = http_get_json(
+            url=workflow_url,
+            params=params,
+            timeout_seconds=int(config.get("request_timeout_seconds", 10)),
+            headers=headers,
+        )
+        
+        # Call authz-api using the shared helper function
+        result = _call_authz_for_workflow(
+            config=config,
+            workflow=workflow,
+            principal_user=principal_user,
+            agent_sub=agent_sub,
+            action="execute",
+            user_token=user_token,
+        )
+        
+        return {
+            "decision": result.get("decision", "deny"),
+            "reason_codes": result.get("reason_codes", []),
+            "advice": result.get("advice", []),
+        }
+    
+    except RuntimeError as exc:
+        # Authorization check failed - treat as deny
+        error_str = str(exc)
+        return {
+            "decision": "deny",
+            "reason_codes": ["workflow_authorization_check_failed"],
+            "advice": [{"type": "error", "message": f"Failed to check authorization: {error_str}"}],
+        }
 
 
 def post_execute_workflow_item(

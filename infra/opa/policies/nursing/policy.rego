@@ -31,6 +31,11 @@ allow if {
   allow_update
 }
 
+allow if {
+  input.action.name == "validate_persona"
+  allow_validate_persona
+}
+
 # Execute action: all gates must pass
 allow_execute if {
   authorized_principal
@@ -52,7 +57,7 @@ allow_read if {
 # Service accounts (ai-agent, domain-services) need to read workflows to decide which items to execute
 allow_read if {
   service_personas := {"ai-agent", "domain-services"}
-  input.subject.persona in service_personas
+  input.subject.properties.persona in service_personas
 }
 
 allow_read if {
@@ -62,6 +67,18 @@ allow_read if {
   input.context.delegation.valid == true
   input.action.name in input.context.delegation.delegated_actions
   read_persona_valid
+}
+
+# Validate persona action: check if persona is valid (status=active, within time range)
+# This is used by the web-app to warn users about invalid personas
+# No workflow/resource required - only validates persona attributes in context.principal
+allow_validate_persona if {
+  # Principal must have a persona specified
+  principal_persona := input.context.principal.persona
+  principal_persona != ""
+  
+  # Persona must be active and within valid time range
+  valid_persona
 }
 
 # Update action: conservative
@@ -148,6 +165,21 @@ reasons[code] if {
   code := "nursing.risk_too_high"
 }
 
+reasons[code] if {
+  input.action.name == "validate_persona"
+  principal_persona := input.context.principal.persona
+  principal_persona == ""
+  code := "validate_persona.no_persona"
+}
+
+reasons[code] if {
+  input.action.name == "validate_persona"
+  principal_persona := input.context.principal.persona
+  principal_persona != ""
+  not valid_persona
+  code := "validate_persona.persona_invalid"
+}
+
 # Anti-spoofing and delegation check
 # 1. Owner directly (non-service-persona)
 # 2. Service persona (ai-agent, domain-services) activated by owner (context.principal == owner)
@@ -157,17 +189,17 @@ reasons[code] if {
 service_personas := {"ai-agent", "domain-services"}
 
 authorized_principal if {
-  not input.subject.persona in service_personas
+  not input.subject.properties.persona in service_personas
   input.subject.id == input.resource.properties.owner.id
 }
 
 authorized_principal if {
-  input.subject.persona in service_personas
+  input.subject.properties.persona in service_personas
   input.context.principal.id == input.resource.properties.owner.id
 }
 
 authorized_principal if {
-  input.subject.persona in service_personas
+  input.subject.properties.persona in service_personas
   input.resource.properties.owner.consent == true
   not input.context.delegation.valid
 }
@@ -206,7 +238,7 @@ valid_invitation_personas contains persona if {
 # - Service persona activation: check principal persona semantics
 
 appropriate_persona if {
-  input.subject.persona in service_personas
+  input.subject.properties.persona in service_personas
   principal_id := input.context.principal.id
   owner_id := input.resource.properties.owner.id
   principal_id != owner_id
@@ -216,7 +248,7 @@ appropriate_persona if {
 }
 
 appropriate_persona if {
-  input.subject.persona in service_personas
+  input.subject.properties.persona in service_personas
   principal_id := input.context.principal.id
   owner_id := input.resource.properties.owner.id
   principal_id == owner_id
@@ -225,52 +257,52 @@ appropriate_persona if {
 }
 
 appropriate_persona if {
-  not input.subject.persona in service_personas
+  not input.subject.properties.persona in service_personas
   principal_id := input.subject.id
   owner_id := input.resource.properties.owner.id
   principal_id != owner_id
-  input.subject.persona != ""
-  valid_agent_personas[input.subject.persona]
+  input.subject.properties.persona != ""
+  valid_agent_personas[input.subject.properties.persona]
 }
 
 appropriate_persona if {
-  not input.subject.persona in service_personas
+  not input.subject.properties.persona in service_personas
   principal_id := input.subject.id
   owner_id := input.resource.properties.owner.id
   principal_id == owner_id
-  input.subject.persona == input.resource.properties.owner.persona
-  input.subject.persona != ""
+  input.subject.properties.persona == input.resource.properties.owner.persona
+  input.subject.properties.persona != ""
 }
 
 # Read persona validation: delegation personas OR invitation personas OR matching owner persona
 read_persona_valid if {
   # Delegation personas can always read (if they have delegation)
-  input.subject.persona != ""
-  valid_agent_personas[input.subject.persona]
+  input.subject.properties.persona != ""
+  valid_agent_personas[input.subject.properties.persona]
 }
 
 read_persona_valid if {
   # Invitation personas can read (if they have invitation/delegation)
-  input.subject.persona != ""
-  valid_invitation_personas[input.subject.persona]
+  input.subject.properties.persona != ""
+  valid_invitation_personas[input.subject.properties.persona]
 }
 
 read_persona_valid if {
-  input.subject.persona == input.resource.properties.owner.persona
-  input.subject.persona != ""
+  input.subject.properties.persona == input.resource.properties.owner.persona
+  input.subject.properties.persona != ""
 }
 
 # Update persona validation
 # - Family caregiver can update admin-heavy workflows (not clinical decisions)
 # - Nurses and care coordinators can update when delegated
 update_persona_valid if {
-  input.subject.persona != ""
-  valid_agent_personas[input.subject.persona]
+  input.subject.properties.persona != ""
+  valid_agent_personas[input.subject.properties.persona]
 }
 
 update_persona_valid if {
-  input.subject.persona == input.resource.properties.owner.persona
-  input.subject.persona != ""
+  input.subject.properties.persona == input.resource.properties.owner.persona
+  input.subject.properties.persona != ""
 }
 
 # Consent gate

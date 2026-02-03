@@ -692,6 +692,79 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         persona,
       });
       
+      // Check for workflow-level authorization error
+      if (result.error) {
+        const reasonCodes = result.error.reason_codes || [];
+        let errorMessage = result.error.message || 'Workflow execution not authorized';
+        
+        // Map reason codes to user-friendly messages with actionable guidance
+        if (reasonCodes.some(code => code.includes('no_consent'))) {
+          errorMessage = '🚫 Booking Not Allowed\n\n' +
+            'You have not given consent for autonomous booking.\n\n' +
+            'To enable booking:\n' +
+            '1. Go to "My Account" (top right)\n' +
+            '2. Click "Edit Persona"\n' +
+            '3. Enable "Auto-booking Consent"\n' +
+            '4. Save your changes and try again';
+        } else if (reasonCodes.some(code => code.includes('cost_limit_exceeded'))) {
+          errorMessage = '💰 Cost Limit Exceeded\n\n' +
+            'This workflow\'s total cost exceeds your maximum auto-booking price limit.\n\n' +
+            'To proceed:\n' +
+            '• Increase your "Max Price" setting in your persona preferences, or\n' +
+            '• Remove expensive items from the workflow';
+        } else if (reasonCodes.some(code => code.includes('airline_risk_too_high'))) {
+          errorMessage = '⚠️ Risk Score Too High\n\n' +
+            'One or more flight items have an airline risk score that exceeds your configured tolerance.\n\n' +
+            'To proceed:\n' +
+            '• Increase your "Max Risk Level" in persona settings, or\n' +
+            '• Choose flights with lower risk ratings';
+        } else if (reasonCodes.some(code => code.includes('insufficient_advance_notice'))) {
+          errorMessage = '📅 Insufficient Advance Notice\n\n' +
+            'The departure date is too soon based on your minimum lead time requirement.\n\n' +
+            'To proceed:\n' +
+            '• Reduce your "Min Lead Time (days)" in persona settings, or\n' +
+            '• Choose a later departure date';
+        } else if (reasonCodes.some(code => code.includes('persona_invalid'))) {
+          errorMessage = '👤 Persona Not Valid\n\n' +
+            'Your persona is not currently active or is outside its validity period.\n\n' +
+            'To proceed:\n' +
+            '1. Go to "My Account"\n' +
+            '2. Check your persona status and validity dates\n' +
+            '3. Activate your persona or adjust the validity period';
+        } else if (reasonCodes.some(code => code.includes('persona_mismatch'))) {
+          errorMessage = '👤 Persona Type Mismatch\n\n' +
+            'Your current persona type is not authorized to perform this action.\n\n' +
+            'You may need to switch to a different persona or request delegation.';
+        } else if (reasonCodes.some(code => code.includes('unauthorized_principal'))) {
+          errorMessage = '🔒 Access Denied\n\n' +
+            'You do not have permission to execute this workflow.\n\n' +
+            'The workflow owner needs to delegate execution rights to you.';
+        } else if (reasonCodes.length > 0) {
+          // Check if user is the workflow owner to provide context-appropriate message
+          const currentState = stateRef.current;
+          const workflow = currentState.workflows.find(w => w.workflow_id === workflowId);
+          const isOwner = workflow && workflow.owner_sub === user.uid;
+          
+          if (isOwner) {
+            errorMessage = `❌ Authorization Failed\n\nReason: ${reasonCodes.join(', ')}\n\n` +
+              'This workflow cannot be executed due to policy restrictions. ' +
+              'Please review your persona settings and preferences.';
+          } else {
+            errorMessage = `❌ Authorization Failed\n\nReason: ${reasonCodes.join(', ')}\n\n` +
+              'This workflow cannot be executed due to policy restrictions. ' +
+              'You may need delegation from the workflow owner or to adjust your persona settings.';
+          }
+        }
+        
+        setState((prev) => ({
+          ...prev,
+          errorMessage,
+          loading: false,
+          statusMessage: '',
+        }));
+        return;
+      }
+      
       // Calculate counts
       const allowedCount = result.results.filter((r) => r.decision.toLowerCase() === 'allow').length;
       const deniedCount = result.results.filter((r) => r.decision.toLowerCase() === 'deny').length;

@@ -43,9 +43,6 @@ from utils import (
 # Environment flag for detailed error messages (disable in production)
 INCLUDE_ERROR_DETAILS = os.environ.get("INCLUDE_ERROR_DETAILS", "1") == "1"
 
-# Service persona configuration (fallback for agent service account)
-SERVICE_PERSONA = os.environ.get("SERVICE_PERSONA", "domain-services")
-
 
 DEFAULT_CONFIG: dict[str, Any] = {
     "service_name": "flowpilot-api",
@@ -223,6 +220,9 @@ def handle_post_workflows(
         auth_header = request.headers.get("Authorization", "")
         user_token = auth_header.replace("Bearer ", "") if auth_header.startswith("Bearer ") else None
         
+        # Log persona value for debugging
+        print(f"[DEBUG] Creating workflow: persona from body={repr(body.persona)}, type={type(body.persona).__name__}", flush=True)
+        
         # Check authorization before creating workflow
         service.check_authorization(
             action="create",
@@ -240,6 +240,7 @@ def handle_post_workflows(
             persona=body.persona,
             domain=body.domain,
         )
+        print(f"[DEBUG] Workflow created: {result.get('workflow_id')}", flush=True)
 
         # Auto-create delegation for AI agent to access the workflow
         workflow_id = result.get("workflow_id")
@@ -386,11 +387,8 @@ def handle_get_workflow_items(
                     status_code=401, detail="Invalid token: missing sub claim"
                 )
 
-        # If no persona provided and this is the agent service account, use configured service persona
+        # Use the provided persona
         user_persona = persona
-        agent_sub = request.app.state.config.get("agent_sub")
-        if not user_persona and agent_sub and user_sub == agent_sub:
-            user_persona = SERVICE_PERSONA
 
         # Extract raw token from request header for service-to-service calls
         auth_header = request.headers.get("authorization", "")
@@ -493,7 +491,7 @@ def create_app(config: dict[str, Any]) -> FastAPI:
     # side effect: reads filesystem for templates and stores service in app state.
     api = FastAPI(
         title="FlowPilot API",
-        version="0.9.0",
+        version="0.9.1",  # Updated: persona parameter now required
         # Limit request body size to 1MB (protects against large payload attacks)
         swagger_ui_parameters={"defaultModelsExpandDepth": -1},
     )

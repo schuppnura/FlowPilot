@@ -66,6 +66,7 @@ class PersonaDB:
         self,
         user_sub: str,
         title: str,
+        circle: str,
         scope: list[str] | None = None,
         valid_from: str | None = None,
         valid_till: str | None = None,
@@ -75,12 +76,13 @@ class PersonaDB:
         """
         Create a new persona.
         
-        Uses composite document ID (user_sub + title) to enforce uniqueness at database level.
-        Raises ValueError if a persona with the same title already exists for this user.
+        Uses composite document ID (user_sub + title + circle) to enforce uniqueness at database level.
+        Raises ValueError if a persona with the same title and circle already exists for this user.
         
         Args:
             user_sub: User subject ID (owner)
             title: Persona title (e.g., "traveler")
+            circle: Circle/community/business unit (e.g., "family", "acme-corp")
             scope: List of actions (defaults to ["read", "execute"])
             valid_from: When persona becomes active (ISO 8601, defaults to now)
             valid_till: When persona expires (ISO 8601, defaults to 365 days from now)
@@ -90,9 +92,9 @@ class PersonaDB:
         Returns:
             Dictionary with created persona (or existing persona if already exists)
         """
-        # Generate composite document ID from user_sub and title
-        # This enforces uniqueness: each user can only have one persona per title
-        persona_id = f"{user_sub}_{title}"
+        # Generate composite document ID from user_sub, title, and circle
+        # This enforces uniqueness: each user can have multiple personas per title but unique per (title, circle)
+        persona_id = f"{user_sub}_{title}_{circle}"
         now = datetime.now(timezone.utc).isoformat()
 
         if scope is None:
@@ -116,7 +118,7 @@ class PersonaDB:
             # Persona already exists - raise error suggesting PATCH
             existing_data = self._doc_to_dict(existing_doc)
             raise ValueError(
-                f"Persona with title '{title}' already exists for this user. "
+                f"Persona with title '{title}' and circle '{circle}' already exists for this user. "
                 f"Use PATCH/PUT (update) instead of POST (create) to modify it. "
                 f"Existing persona_id: {persona_id}"
             )
@@ -125,6 +127,7 @@ class PersonaDB:
         persona_data = {
             "user_sub": user_sub,
             "title": title,
+            "circle": circle,
             "scope": scope,
             "valid_from": valid_from,
             "valid_till": valid_till,
@@ -187,6 +190,7 @@ class PersonaDB:
         self,
         persona_id: str,
         title: str | None = None,
+        circle: str | None = None,
         scope: list[str] | None = None,
         valid_from: str | None = None,
         valid_till: str | None = None,
@@ -199,6 +203,7 @@ class PersonaDB:
         Args:
             persona_id: Persona ID
             title: Optional new title
+            circle: Optional new circle
             scope: Optional new scope
             valid_from: Optional new valid_from
             valid_till: Optional new valid_till
@@ -219,6 +224,8 @@ class PersonaDB:
 
         if title is not None:
             updates["title"] = title
+        if circle is not None:
+            updates["circle"] = circle
         if scope is not None:
             updates["scope"] = scope
         if valid_from is not None:

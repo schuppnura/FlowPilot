@@ -47,6 +47,14 @@ paths:
       description: >
         Evaluates whether a subject (agent or user) may perform an action on a resource.
         Uses AuthZEN-like structure with subject/action/resource/context/options.
+        
+        Supported actions:
+        - create: Create a new workflow
+        - read: View workflows
+        - execute: Execute workflow items (book travel)
+        - update: Update workflow items
+        - delete: Delete workflow items
+        - validate_persona: Check if a persona is valid (active status, within time range)
       requestBody:
         required: true
         content:
@@ -59,6 +67,8 @@ paths:
                   subject:
                     type: agent
                     id: agent_flowpilot_1
+                    properties:
+                      persona: domain-service
                   action:
                     name: book
                     properties: {}
@@ -72,6 +82,28 @@ paths:
                     principal:
                       id: 1460e175-74f9-43af-aac3-7b4fc0547f05
                     attributes: {}
+                  options:
+                    dry_run: true
+                    explain: true
+              validatePersona:
+                value:
+                  subject:
+                    type: user
+                    id: 1460e175-74f9-43af-aac3-7b4fc0547f05
+                    properties:
+                      persona: traveler
+                  action:
+                    name: validate_persona
+                  resource:
+                    type: persona
+                    id: "persona:1460e175-74f9-43af-aac3-7b4fc0547f05:traveler"
+                  context:
+                    principal:
+                      id: 1460e175-74f9-43af-aac3-7b4fc0547f05
+                      persona: traveler
+                      persona_status: active
+                      persona_valid_from: "2024-01-01T00:00:00Z"
+                      persona_valid_till: "2025-12-31T23:59:59Z"
                   options:
                     dry_run: true
                     explain: true
@@ -159,6 +191,15 @@ components:
           type: string
           description: Actor identifier (agent_sub or user_sub)
           example: agent_flowpilot_1
+        properties:
+          type: object
+          description: Subject properties (persona, etc.)
+          properties:
+            persona:
+              type: string
+              description: Persona/role of the subject
+              example: domain-service
+          additionalProperties: true
       required: [type, id]
       additionalProperties: true
 
