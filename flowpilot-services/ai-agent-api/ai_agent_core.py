@@ -310,9 +310,11 @@ def check_workflow_execution_authorization(
     
     headers = {"Authorization": f"Bearer {user_token}"}
     
-    # Build query parameters with persona title (required by domain-services API)
-    # Note: API still uses 'persona' param name for backward compatibility, but it means title
-    params = {"persona": principal_persona_title}
+    # Build query parameters with persona title and circle (required by domain-services API)
+    params = {
+        "persona_title": principal_persona_title,
+        "persona_circle": principal_persona_circle,
+    }
     
     try:
         # Fetch workflow metadata

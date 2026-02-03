@@ -177,7 +177,7 @@ components:
           type: boolean
           description: If true, simulate execution without side effects
           default: true
-        persona:
+        persona_title:
           type: string
           description: User's selected persona title (e.g., "traveler", "travel-agent")
         persona_circle:
@@ -198,7 +198,7 @@ components:
         dry_run:
           type: boolean
           default: true
-        persona:
+        persona_title:
           type: string
           description: User's selected persona title
         persona_circle:
