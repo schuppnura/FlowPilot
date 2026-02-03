@@ -27,15 +27,17 @@ export function CreateTripModal({ isOpen, onClose }: CreateTripModalProps) {
   const handleSubmit = async () => {
     if (!selectedTemplateId || !principalSub) return;
 
-    const persona = selectedPersona || (personas.length > 0 ? personas[0] : undefined);
+    const personaTitle = selectedPersona?.title || (personas.length > 0 ? personas[0] : undefined);
+    const personaCircle = selectedPersona?.circle;
     console.log('CreateTripModal: Creating workflow with:', {
       selectedPersona,
       personas,
-      resolvedPersona: persona,
+      resolvedPersonaTitle: personaTitle,
+      resolvedPersonaCircle: personaCircle,
       templateId: selectedTemplateId,
     });
 
-    if (!persona) {
+    if (!personaTitle) {
       alert('No persona selected. Please select a persona from My Account.');
       return;
     }
@@ -44,7 +46,8 @@ export function CreateTripModal({ isOpen, onClose }: CreateTripModalProps) {
       template_id: selectedTemplateId,
       principal_sub: principalSub,
       start_date: startDate,
-      persona,
+      persona: personaTitle,
+      persona_circle: personaCircle,
     });
 
     onClose();

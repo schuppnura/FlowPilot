@@ -65,8 +65,11 @@ class WorkflowRunRequest(BaseModel):
         ..., min_length=1, max_length=255, description="Principal subject"
     )
     dry_run: bool = Field(default=True, description="Dry run flag")
-    persona: str = Field(
-        ..., min_length=1, max_length=255, description="Selected persona for the user (required)"
+    persona_title: str = Field(
+        ..., min_length=1, max_length=255, description="Selected persona title for the user (required)"
+    )
+    persona_circle: str = Field(
+        ..., min_length=1, max_length=255, description="Persona circle to uniquely identify persona (required)"
     )
 
     @validator("workflow_id")
@@ -77,8 +80,12 @@ class WorkflowRunRequest(BaseModel):
     def sanitize_principal_sub(cls, v: str) -> str:
         return security.sanitize_string(v, 255)
 
-    @validator("persona")
-    def sanitize_persona(cls, v: str) -> str:
+    @validator("persona_title")
+    def sanitize_persona_title(cls, v: str) -> str:
+        return security.sanitize_string(v, 255)
+
+    @validator("persona_circle")
+    def sanitize_persona_circle(cls, v: str) -> str:
         return security.sanitize_string(v, 255)
 
 
@@ -170,10 +177,9 @@ def handle_post_workflow_runs(
                     "id": user_claims.get(
                         "sub", body.principal_sub
                     ),  # Use token sub, fallback to body
+                    "persona": body.persona_title,  # In AuthZEN, 'persona' field contains the title
+                    "circle": body.persona_circle,
                 }
-
-                # Add selected persona to principal_user (now required)
-                principal_user["persona"] = body.persona
             except Exception:
                 # If token decode fails, use principal_sub from body (backward compatibility)
                 principal_user = {

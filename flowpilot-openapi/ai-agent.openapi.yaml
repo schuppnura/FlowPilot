@@ -177,6 +177,12 @@ components:
           type: boolean
           description: If true, simulate execution without side effects
           default: true
+        persona:
+          type: string
+          description: User's selected persona title (e.g., "traveler", "travel-agent")
+        persona_circle:
+          type: string
+          description: Persona circle to uniquely identify persona when user has multiple with same title
       required: [principal_sub, dry_run]
 
     AgentRunRequest:
@@ -192,6 +198,12 @@ components:
         dry_run:
           type: boolean
           default: true
+        persona:
+          type: string
+          description: User's selected persona title
+        persona_circle:
+          type: string
+          description: Persona circle for disambiguation
       required: [principal_sub, dry_run]
 
     AgentAdvice:

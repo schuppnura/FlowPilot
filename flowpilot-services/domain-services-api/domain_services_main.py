@@ -68,8 +68,11 @@ class CreateWorkflowRequest(BaseModel):
         ..., min_length=1, max_length=255, description="Principal subject"
     )
     start_date: str = Field(..., description="ISO 8601 date string (YYYY-MM-DD)")
-    persona: str = Field(
-        ..., min_length=1, max_length=255, description="Selected persona for the user (required)"
+    persona_title: str = Field(
+        ..., min_length=1, max_length=255, description="Selected persona title for the user (required)"
+    )
+    persona_circle: str = Field(
+        ..., min_length=1, max_length=255, description="Persona circle to uniquely identify persona (required)"
     )
     domain: str | None = Field(
         None, min_length=1, max_length=255, description="Domain hint for policy selection (e.g., 'travel', 'nursing')"
@@ -87,8 +90,12 @@ class CreateWorkflowRequest(BaseModel):
     def validate_start_date(cls, v: str) -> str:
         return security.validate_iso_date(v, "start_date")
 
-    @validator("persona")
-    def sanitize_persona(cls, v: str) -> str:
+    @validator("persona_title")
+    def sanitize_persona_title(cls, v: str) -> str:
+        return security.sanitize_string(v, 255)
+
+    @validator("persona_circle")
+    def sanitize_persona_circle(cls, v: str) -> str:
         return security.sanitize_string(v, 255)
 
     @validator("domain")
@@ -221,13 +228,14 @@ def handle_post_workflows(
         user_token = auth_header.replace("Bearer ", "") if auth_header.startswith("Bearer ") else None
         
         # Log persona value for debugging
-        print(f"[DEBUG] Creating workflow: persona from body={repr(body.persona)}, type={type(body.persona).__name__}", flush=True)
+        print(f"[DEBUG] Creating workflow: persona_title={repr(body.persona_title)}, persona_circle={repr(body.persona_circle)}", flush=True)
         
         # Check authorization before creating workflow
         service.check_authorization(
             action="create",
             user_sub=body.principal_sub,
-            user_persona=body.persona,
+            user_persona_title=body.persona_title,
+            user_persona_circle=body.persona_circle,
             user_token=user_token,
             domain=body.domain,
         )
@@ -237,7 +245,8 @@ def handle_post_workflows(
             template_id=body.template_id,
             owner_sub=body.principal_sub,
             start_date=body.start_date,
-            persona=body.persona,
+            persona_title=body.persona_title,
+            persona_circle=body.persona_circle,
             domain=body.domain,
         )
         print(f"[DEBUG] Workflow created: {result.get('workflow_id')}", flush=True)
@@ -286,7 +295,8 @@ def handle_post_workflows(
 def handle_get_workflow(
     request: Request,
     workflow_id: str,
-    persona: str,  # MANDATORY for authorization
+    persona_title: str,  # MANDATORY for authorization
+    persona_circle: str,  # MANDATORY for authorization
     token_claims: dict = Depends(security.verify_token),
 ) -> dict[str, Any]:
     # Return one workflow record with authorization check
@@ -304,20 +314,26 @@ def handle_get_workflow(
                 status_code=401, detail="Invalid token: missing sub claim"
             )
         
-        # Validate persona is provided
-        if not persona or not persona.strip():
+        # Validate persona_title and persona_circle are provided
+        if not persona_title or not persona_title.strip():
             raise HTTPException(
-                status_code=400, detail="persona query parameter is required for authorization"
+                status_code=400, detail="persona_title query parameter is required for authorization"
+            )
+        if not persona_circle or not persona_circle.strip():
+            raise HTTPException(
+                status_code=400, detail="persona_circle query parameter is required for authorization"
             )
 
         # Extract raw token from request header for service-to-service calls
         auth_header = request.headers.get("authorization", "")
         user_token = auth_header[7:] if auth_header.lower().startswith("bearer ") else None
 
-        authz_decision = service.check_read_authorization(
+        authz_decision = service.check_authorization(
+            action="read",
             workflow_id=workflow_id,
             user_sub=user_sub,
-            user_persona=persona,
+            user_persona_title=persona_title,
+            user_persona_circle=persona_circle,
             user_token=user_token,
         )
 
@@ -353,7 +369,8 @@ def handle_get_workflow(
 def handle_get_workflow_items(
     request: Request,
     workflow_id: str,
-    persona: str,  # MANDATORY for authorization
+    persona_title: str,  # MANDATORY for authorization
+    persona_circle: str,  # MANDATORY for authorization
     user_sub: str = None,
     token_claims: dict = Depends(security.verify_token),
 ) -> dict[str, Any]:
@@ -367,10 +384,14 @@ def handle_get_workflow_items(
         # Validate path parameter
         workflow_id = security.validate_id(workflow_id, "workflow_id", max_length=255)
         
-        # Validate persona is provided
-        if not persona or not persona.strip():
+        # Validate persona_title and persona_circle are provided
+        if not persona_title or not persona_title.strip():
             raise HTTPException(
-                status_code=400, detail="persona query parameter is required for authorization"
+                status_code=400, detail="persona_title query parameter is required for authorization"
+            )
+        if not persona_circle or not persona_circle.strip():
+            raise HTTPException(
+                status_code=400, detail="persona_circle query parameter is required for authorization"
             )
 
         # Check authorization
@@ -387,17 +408,16 @@ def handle_get_workflow_items(
                     status_code=401, detail="Invalid token: missing sub claim"
                 )
 
-        # Use the provided persona
-        user_persona = persona
-
         # Extract raw token from request header for service-to-service calls
         auth_header = request.headers.get("authorization", "")
         user_token = auth_header[7:] if auth_header.lower().startswith("bearer ") else None
 
-        authz_decision = service.check_read_authorization(
+        authz_decision = service.check_authorization(
+            action="read",
             workflow_id=workflow_id,
             user_sub=user_sub,
-            user_persona=user_persona,
+            user_persona_title=persona_title,
+            user_persona_circle=persona_circle,
             user_token=user_token,
         )
 

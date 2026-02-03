@@ -150,7 +150,7 @@ export function MyAccountPanel() {
       
       // Auto-select the first persona for workflows
       if (isFirstPersona) {
-        setSelectedPersona(personaData.title);
+        setSelectedPersona({ title: personaData.title, circle: personaData.circle });
       }
       
       // Reload personas in AppStateContext so other tabs see the new persona
@@ -236,10 +236,16 @@ export function MyAccountPanel() {
                   <PersonaListItem
                     key={persona.persona_id}
                     persona={persona}
-                    isSelected={persona.title === selectedPersona}
+                    isSelected={(() => {
+                      const isSelected = selectedPersona !== null &&
+                        persona.title === selectedPersona.title &&
+                        persona.circle === selectedPersona.circle;
+                      console.log(`PersonaListItem ${persona.title}/${persona.circle}: isSelected=${isSelected}, selectedPersona=`, selectedPersona);
+                      return isSelected;
+                    })()}
                     onSelect={(id) => {
                       const p = personasDetailed.find((p) => p.persona_id === id);
-                      if (p) setSelectedPersona(p.title);
+                      if (p) setSelectedPersona({ title: p.title, circle: p.circle });
                     }}
                     onViewDetails={handleViewDetails}
                     onEdit={handleEdit}

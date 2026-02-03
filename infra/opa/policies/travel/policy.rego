@@ -114,11 +114,8 @@ allow_delete if {
 # This is used by the web-app to warn users about invalid personas
 # No workflow/resource required - only validates persona attributes in context.principal
 allow_validate_persona if {
-  # Principal must have a persona specified
-  principal_persona := input.context.principal.persona
-  principal_persona != ""
-  
   # Persona must be active and within valid time range
+  # Note: authz-api guarantees persona_title is non-empty
   valid_persona
 }
 
@@ -189,24 +186,13 @@ reasons[code] if {
 
 reasons[code] if {
   input.action.name == "read"
-  principal_id := input.context.principal.id
-  owner_id := input.resource.properties.owner.id
-  principal_id != owner_id
+  input.context.principal.id != input.resource.properties.owner.id
   not input.action.name in input.context.delegation.delegated_actions
   code := "read.no_read_delegation"
 }
 
 reasons[code] if {
   input.action.name == "validate_persona"
-  principal_persona := input.context.principal.persona
-  principal_persona == ""
-  code := "validate_persona.no_persona"
-}
-
-reasons[code] if {
-  input.action.name == "validate_persona"
-  principal_persona := input.context.principal.persona
-  principal_persona != ""
   not valid_persona
   code := "validate_persona.persona_invalid"
 }
@@ -221,16 +207,13 @@ reasons[code] if {
 authorized_principal if {
   # For create actions, there's no existing resource/owner
   # Any authenticated principal (user with valid token) can attempt to create
+  # Note: authz-api guarantees principal.id is non-empty
   input.action.name == "create"
-  principal_id := input.context.principal.id
-  principal_id != ""
 }
 
 authorized_principal if {
   # Owner accessing their own resource (directly or via agent)
-  principal_id := input.context.principal.id
-  owner_id := input.resource.properties.owner.id
-  principal_id == owner_id
+  input.context.principal.id == input.resource.properties.owner.id
 }
 
 authorized_principal if {
@@ -271,48 +254,34 @@ valid_delegation_personas_for_action contains persona if {
 
 appropriate_persona_for_action if {
   # For create actions, there's no existing resource/owner to compare against
-  # Just verify the principal has selected a persona
+  # Note: authz-api guarantees persona_title is non-empty
   input.action.name == "create"
-  principal_persona := input.context.principal.persona
-  principal_persona != ""
 }
 
 appropriate_persona_for_action if {
   # If acting on behalf of someone else (via delegation), must use a delegation persona
-  principal_id := input.context.principal.id
-  owner_id := input.resource.properties.owner.id
-  principal_id != owner_id
-  principal_persona := input.context.principal.persona
-  principal_persona != ""
-  valid_delegation_personas_for_action[principal_persona]
+  input.context.principal.id != input.resource.properties.owner.id
+  valid_delegation_personas_for_action[input.context.principal.persona_title]
 }
 
 appropriate_persona_for_action if {
-  # If acting as owner, must use the same owner's persona
-  principal_id := input.context.principal.id
-  owner_id := input.resource.properties.owner.id
-  principal_id == owner_id
-  owner_persona := input.resource.properties.owner.persona
-  principal_persona := input.context.principal.persona
-  principal_persona == owner_persona
-  principal_persona != ""
+  # If acting as owner, must use the same persona (title + circle)
+  input.context.principal.id == input.resource.properties.owner.id
+  input.context.principal.persona_title == input.resource.properties.owner.persona_title
+  input.context.principal.persona_circle == input.resource.properties.owner.persona_circle
 }
 
 # Read access: check allowed-actions and delegation
 allow_read if {
   action_allowed_for_persona  # Persona must have 'read' in allowed-actions
   # Owner can always read their own workflows
-  principal_id := input.context.principal.id
-  owner_id := input.resource.properties.owner.id
-  principal_id == owner_id
+  input.context.principal.id == input.resource.properties.owner.id
 }
 
 allow_read if {
   action_allowed_for_persona  # Persona must have 'read' in allowed-actions
   # Anyone with a delegation chain containing 'read' action can read
-  principal_id := input.context.principal.id
-  owner_id := input.resource.properties.owner.id
-  principal_id != owner_id
+  input.context.principal.id != input.resource.properties.owner.id
   input.action.name in input.context.delegation.delegated_actions
 }
 
@@ -363,15 +332,12 @@ acceptable_risk if {
 # Allowed-actions check - ensures the requested action is in the persona's allowed-actions
 # This is the CRUDX enforcement mechanism based on persona_config in manifest.yaml
 action_allowed_for_persona if {
-  principal_persona := input.context.principal.persona
-  requested_action := input.action.name
-  
-  # Find the persona configuration
+  # Find the persona configuration by title
   some persona in persona_titles
-  persona.title == principal_persona
+  persona.title == input.context.principal.persona_title
   
   # Check if requested action is in the persona's allowed-actions
-  requested_action in persona["allowed-actions"]
+  input.action.name in persona["allowed-actions"]
 }
 
 # Persona validity check - ensures the acting principal's persona is active and within valid time range

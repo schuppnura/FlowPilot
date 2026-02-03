@@ -138,11 +138,12 @@ class FlowPilotService:
         template_id: str,
         owner_sub: str,
         start_date: str,
-        persona: str,  # REQUIRED - persona must be specified when creating workflows
+        persona_title: str,  # REQUIRED - persona title must be specified when creating workflows
+        persona_circle: str,  # REQUIRED - persona circle must be specified
         domain: str | None = None,
     ) -> dict[str, Any]:
         # Create a workflow and itinerary items from a template
-        # IMPORTANT: persona parameter is now required (no longer optional)
+        # IMPORTANT: Both persona_title and persona_circle are now required
         # side effect: stores a new workflow in memory.
         template_id = require_non_empty_string(template_id, "template_id")
         owner_sub = require_non_empty_string(owner_sub, "owner_sub")
@@ -194,19 +195,19 @@ class FlowPilotService:
         # Use provided domain or fall back to config default
         workflow_domain = domain if domain else self._config.get("domain", "travel")
         
-        print(f"[DEBUG] Storing workflow {workflow_id} with persona={repr(persona)}", flush=True)
+        print(f"[DEBUG] Storing workflow {workflow_id} with persona_title={repr(persona_title)}, persona_circle={repr(persona_circle)}", flush=True)
         workflow: dict[str, Any] = {
             "workflow_id": workflow_id,
             "template_id": template_id,
             "owner_sub": owner_sub,
-            "owner_persona": persona,  # Store the persona used when creating the workflow
+            "owner_persona_title": persona_title,  # Store the persona title
+            "owner_persona_circle": persona_circle,  # Store the persona circle
             "domain": workflow_domain,  # Store domain for policy_hint routing
             "created_at": created_at,
             "departure_date": start_date,  # Use the start_date parameter provided by the user
             "items": items,
         }
         self._workflows[workflow_id] = workflow
-        print(f"[DEBUG] Workflow stored. Retrieving to verify: owner_persona={repr(self._workflows[workflow_id].get('owner_persona'))}", flush=True)
 
         return {
             "workflow_id": workflow_id,
@@ -261,7 +262,8 @@ class FlowPilotService:
         self,
         action: str,
         user_sub: str,
-        user_persona: str | None = None,
+        user_persona_title: str,
+        user_persona_circle: str,
         user_token: str | None = None,
         workflow_id: str | None = None,
         domain: str | None = None,
@@ -274,7 +276,8 @@ class FlowPilotService:
         # Args:
         #   action: The action to check (create, read, update, delete, execute)
         #   user_sub: User subject ID
-        #   user_persona: User's selected persona
+        #   user_persona_title: User's selected persona title (required)
+        #   user_persona_circle: User's selected persona circle (required)
         #   user_token: Optional user token for authentication
         #   workflow_id: Optional workflow ID (required for read/update/delete/execute, not for create)
         #   domain: Optional domain override (defaults to config domain)
@@ -285,13 +288,13 @@ class FlowPilotService:
         else:
             workflow = None
         
-        # Build principal_user object (no claims - only id and persona)
+        # Build principal_user object (no claims - only id, persona title, and circle)
         principal_user: dict[str, Any] = {
             "type": "user",
             "id": user_sub,
+            "persona": user_persona_title,  # Persona title (not full persona record)
+            "circle": user_persona_circle,
         }
-        if user_persona:
-            principal_user["persona"] = user_persona
         
         # Call authz-api - let OPA make all policy decisions
         # Pass workflow=None for create action
@@ -319,18 +322,6 @@ class FlowPilotService:
             "reason_codes": reason_codes,
             "advice": advice,
         }
-    
-    def check_read_authorization(
-        self, workflow_id: str, user_sub: str, user_persona: str | None = None, user_token: str | None = None
-    ) -> dict[str, Any]:
-        # Convenience method for read authorization (backward compatibility)
-        return self.check_authorization(
-            action="read",
-            user_sub=user_sub,
-            user_persona=user_persona,
-            user_token=user_token,
-            workflow_id=workflow_id,
-        )
 
     def get_workflow(self, workflow_id: str) -> dict[str, Any]:
         # Return a workflow record
@@ -533,14 +524,16 @@ class FlowPilotService:
             workflow_id = str(workflow.get("workflow_id", ""))
             effective_domain = workflow.get("domain") or workflow_domain or domain
             owner_sub = str(workflow.get("owner_sub", ""))
-            owner_persona = workflow.get("owner_persona")
+            owner_persona_title = workflow.get("owner_persona_title")  # Get persona title from workflow
+            owner_persona_circle = workflow.get("owner_persona_circle")  # Get persona circle from workflow
             departure_date = workflow.get("departure_date")
         else:
             # For create action - no workflow yet
             workflow_id = ""
             effective_domain = workflow_domain or domain
             owner_sub = principal_user.get("id", "")
-            owner_persona = principal_user.get("persona")
+            owner_persona_title = principal_user.get("persona")  # Get persona title from principal
+            owner_persona_circle = principal_user.get("circle")  # Get persona circle from principal
             departure_date = None
 
         # Build resource properties
@@ -575,11 +568,13 @@ class FlowPilotService:
             if airline_risk_score is not None:
                 resource_properties["airline_risk_score"] = airline_risk_score
 
-        # Add owner to resource properties
+        # Add owner to resource properties (persona means title here in AuthZEN context)
         if owner_sub:
             owner_dict: dict[str, Any] = {"type": "user", "id": owner_sub}
-            if owner_persona:
-                owner_dict["persona"] = str(owner_persona)
+            if owner_persona_title:
+                owner_dict["persona"] = str(owner_persona_title)  # In AuthZEN, 'persona' field contains the title
+            if owner_persona_circle:
+                owner_dict["circle"] = str(owner_persona_circle)
             resource_properties["owner"] = owner_dict
 
         url = build_url(authz_base_url, "/v1/evaluate")

@@ -62,6 +62,7 @@ export interface AgentRunRequest {
   principal_sub: string;
   dry_run: boolean;
   persona?: string;
+  persona_circle?: string;
 }
 
 export interface CreateWorkflowRequest {
@@ -69,6 +70,7 @@ export interface CreateWorkflowRequest {
   principal_sub: string;
   start_date: string;
   persona?: string;
+  persona_circle?: string;
   domain?: string;
 }
 

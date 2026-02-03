@@ -28,17 +28,17 @@ export function PanelHeader({ onSignInClick }: PanelHeaderProps) {
     );
   }
 
-  const currentPersona = selectedPersona || (personas.length > 0 ? personas[0] : null);
+  const currentPersonaTitle = selectedPersona?.title || (personas.length > 0 ? personas[0] : null);
   const currentWorkflow = workflows.find((w) => w.workflow_id === selectedWorkflowId);
 
   return (
     <div className="flex items-center justify-end gap-4 mb-4">
       {/* Current Persona Display */}
-      {currentPersona && (
+      {currentPersonaTitle && (
         <div className="flex items-center gap-2 text-sm">
           <span className="font-medium text-gray-600">Current Persona:</span>
           <span className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg font-medium">
-            {currentPersona}
+            {currentPersonaTitle}{selectedPersona ? `/${selectedPersona.circle}` : ''}
           </span>
         </div>
       )}

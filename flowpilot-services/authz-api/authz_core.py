@@ -264,9 +264,9 @@ def fetch_persona(persona_id: str) -> dict[str, Any]:
         raise RuntimeError(f"Failed to fetch persona {persona_id}: {e}") from e
 
 
-def fetch_persona_by_user_and_title(user_sub: str, persona_title: str) -> dict[str, Any]:
+def fetch_persona_by_user_and_title(user_sub: str, persona_title: str, persona_circle: str | None = None) -> dict[str, Any]:
     # Fetch persona by user_sub and title from persona-api.
-    # Returns the persona matching the title, regardless of status.
+    # Returns the persona matching the title (and optionally circle), regardless of status.
     #
     # IMPORTANT: This function is a Policy Information Point (PIP) - it fetches data
     # but does NOT make policy decisions. It returns the persona regardless of status
@@ -275,6 +275,7 @@ def fetch_persona_by_user_and_title(user_sub: str, persona_title: str) -> dict[s
     # Args:
     #     user_sub: User subject ID
     #     persona_title: Persona title (e.g., "traveler", "travel-agent")
+    #     persona_circle: Optional persona circle for disambiguation when user has multiple personas with same title
     #
     # Returns:
     #     Dictionary with persona attributes (same as fetch_persona)
@@ -295,12 +296,18 @@ def fetch_persona_by_user_and_title(user_sub: str, persona_title: str) -> dict[s
         personas_data = http_get_json(url=url, headers=headers)
         personas = personas_data.get("personas", [])
 
-        # Find first persona with matching title (regardless of status)
-        # Let OPA policy decide if the persona status is acceptable for the requested action
+        # STRICT REQUIREMENT: circle parameter must always be provided
+        if persona_circle is None:
+            raise RuntimeError(
+                f"Missing required parameter: 'circle' must be provided when fetching persona. "
+                f"User: {user_sub}, Title: {persona_title}"
+            )
+        
+        # Find persona with matching title AND circle
         for persona in personas:
-            if persona.get("title") == persona_title:
+            if persona.get("title") == persona_title and persona.get("circle") == persona_circle:
                 return persona
-
+        
         # No matching persona found
         return {}
     except RuntimeError as e:
@@ -383,7 +390,7 @@ def build_opa_subject(authzen_request: dict[str, Any]) -> dict[str, Any]:
         authzen_request: AuthZEN-compliant request
     
     Returns:
-        Subject dict with {type, id, persona}
+        Subject dict with {type, id, persona} where persona is the persona title
     
     Raises:
         ValueError: If required subject fields are missing
@@ -401,18 +408,18 @@ def build_opa_subject(authzen_request: dict[str, Any]) -> dict[str, Any]:
     # Extract subject.type (optional, defaults to "user")
     subject_type = request_subject.get("type", "user")
     
-    # Validate and extract subject.properties.persona (required for users, optional for agents)
+    # Validate and extract subject.properties.persona (persona title - required for users, optional for agents)
     subject_properties = request_subject.get("properties", {})
     if not isinstance(subject_properties, dict):
         raise ValueError("Request must be AuthZEN compliant: subject.properties must be a dictionary")
     
     subject_persona = subject_properties.get("persona")
     
-    # For agents/services, persona is optional (type is sufficient to identify them)
-    # For users, persona is required
+    # For agents/services, persona title is optional (type is sufficient to identify them)
+    # For users, persona title is required
     if subject_type == "user":
         if not subject_persona:
-            raise ValueError("Request must contain subject.properties.persona for user subjects")
+            raise ValueError("Request must contain subject.properties.persona (persona title) for user subjects")
         
         # Handle list format (take first element)
         if isinstance(subject_persona, list):
@@ -420,9 +427,9 @@ def build_opa_subject(authzen_request: dict[str, Any]) -> dict[str, Any]:
                 raise ValueError("Request must contain non-empty subject.properties.persona")
             subject_persona = subject_persona[0]
         
-        # Ensure persona is a non-empty string
+        # Ensure persona title is a non-empty string
         if not isinstance(subject_persona, str) or not subject_persona.strip():
-            raise ValueError("Request must contain a string for subject.properties.persona")
+            raise ValueError("Request must contain a string for subject.properties.persona (persona title)")
         subject_persona = subject_persona.strip()
     
     result = {
@@ -430,7 +437,7 @@ def build_opa_subject(authzen_request: dict[str, Any]) -> dict[str, Any]:
         "id": subject_id,
     }
     
-    # Only include persona if it's present (required for users, optional for agents)
+    # Only include persona title if it's present (required for users, optional for agents)
     if subject_persona:
         result["persona"] = subject_persona
     
@@ -512,7 +519,8 @@ def build_opa_resource(
     # Fetch owner's persona and augment resource.properties.owner
     if owner_id:
         owner_persona_id = owner_props.get("persona_id")
-        owner_persona_title = owner_props.get("persona")
+        owner_persona_title = owner_props.get("persona")  # AuthZEN uses 'persona' field for title
+        owner_persona_circle = owner_props.get("circle")
         workflow_id = enriched_properties.get("workflow_id") or resource_from_request.get("id")
         
         # Fetch owner's persona from persona-api (raises RuntimeError on failure)
@@ -520,16 +528,24 @@ def build_opa_resource(
         if owner_persona_id:
             owner_persona = fetch_persona(str(owner_persona_id))
         elif owner_persona_title:
-            owner_persona = fetch_persona_by_user_and_title(owner_id, str(owner_persona_title))
+            owner_persona = fetch_persona_by_user_and_title(
+                owner_id, str(owner_persona_title), str(owner_persona_circle) if owner_persona_circle else None
+            )
         
         # Augment owner with policy-specific attributes (NOT metadata)
-        # IMPORTANT: Preserve existing owner fields (id, type, persona) from request
+        # IMPORTANT: Rename persona/circle to persona_title/persona_circle for OPA
         if owner_persona:
             # Add policy-specific persona attributes to owner (e.g. autobook settings)
-            # This only adds NEW fields, preserving existing ones like persona
             for attr in persona_attributes:
                 if attr.name in owner_persona:
                     enriched_properties["owner"][attr.name] = owner_persona[attr.name]
+        
+        # Rename AuthZEN fields to OPA-expected field names
+        # AuthZEN: owner.persona (title) + owner.circle → OPA: owner.persona_title + owner.persona_circle
+        if "persona" in enriched_properties["owner"]:
+            enriched_properties["owner"]["persona_title"] = enriched_properties["owner"].pop("persona")
+        if "circle" in enriched_properties["owner"]:
+            enriched_properties["owner"]["persona_circle"] = enriched_properties["owner"].pop("circle")
     
     # Update resource with augmented properties
     resource["properties"] = enriched_properties
@@ -544,7 +560,7 @@ def build_opa_context(
     
     Logic flow:
     1. Extract and validate principal (REQUIRED - fail if missing/incomplete)
-    2. Enrich principal with persona metadata (REQUIRED - fail if persona not found)
+    2. Enrich principal with persona metadata using persona_title + persona_circle
     3. Extract owner from resource (may be None for CREATE actions)
     4. Compute delegation if principal != owner
     
@@ -565,7 +581,8 @@ def build_opa_context(
         raise RuntimeError("Principal is required in context")
     
     principal_id = principal_from_request.get("id")
-    principal_persona_title = principal_from_request.get("persona")
+    principal_persona_title = principal_from_request.get("persona")  # AuthZEN uses 'persona' field for title
+    principal_persona_circle = principal_from_request.get("circle")
     
     if not principal_id:
         raise RuntimeError("Principal must have an 'id'")
@@ -576,8 +593,8 @@ def build_opa_context(
     enriched_principal = dict(principal_from_request)
 
     principal_persona = fetch_persona_by_user_and_title(
-        str(principal_id), str(principal_persona_title)
-    )    
+        str(principal_id), str(principal_persona_title), str(principal_persona_circle) if principal_persona_circle else None
+    )
     if principal_persona:
         # Persona found - enrich with metadata
         enriched_principal["persona_status"] = principal_persona.get("status", "")
@@ -589,6 +606,13 @@ def build_opa_context(
         enriched_principal["persona_status"] = "not_found"
         enriched_principal["persona_valid_from"] = ""
         enriched_principal["persona_valid_till"] = ""
+    
+    # Rename AuthZEN fields to OPA-expected field names
+    # AuthZEN: principal.persona (title) + principal.circle → OPA: principal.persona_title + principal.persona_circle
+    if "persona" in enriched_principal:
+        enriched_principal["persona_title"] = enriched_principal.pop("persona")
+    if "circle" in enriched_principal:
+        enriched_principal["persona_circle"] = enriched_principal.pop("circle")
     
     # Step 3: Extract owner from resource (may be None for CREATE actions)
     resource_from_request = authzen_request.get("resource") or {}

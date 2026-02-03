@@ -70,6 +70,9 @@ paths:
                 value:
                   template_id: template_all_ok
                   principal_sub: 1460e175-74f9-43af-aac3-7b4fc0547f05
+                  start_date: "2026-03-15"
+                  persona_title: traveler
+                  persona_circle: corsica
       responses:
         "200":
           description: Created workflow
@@ -108,6 +111,20 @@ paths:
           schema:
             type: string
             example: t_85244fb6
+        - name: persona_title
+          in: query
+          required: true
+          schema:
+            type: string
+            example: traveler
+          description: User's persona title for authorization
+        - name: persona_circle
+          in: query
+          required: true
+          schema:
+            type: string
+            example: corsica
+          description: User's persona circle for authorization
       responses:
         "200":
           description: Workflow details
@@ -136,6 +153,27 @@ paths:
           schema:
             type: string
             example: t_85244fb6
+        - name: persona_title
+          in: query
+          required: true
+          schema:
+            type: string
+            example: traveler
+          description: User's persona title for authorization
+        - name: persona_circle
+          in: query
+          required: true
+          schema:
+            type: string
+            example: corsica
+          description: User's persona circle for authorization
+        - name: user_sub
+          in: query
+          required: false
+          schema:
+            type: string
+            example: 1460e175-74f9-43af-aac3-7b4fc0547f05
+          description: Optional user subject for service-to-service calls
       responses:
         "200":
           description: Item list
@@ -275,9 +313,24 @@ components:
       properties:
         template_id:
           type: string
+          description: ID of the workflow template to use
         principal_sub:
           type: string
-      required: [template_id, principal_sub]
+          description: User subject identifier
+        start_date:
+          type: string
+          format: date
+          description: ISO 8601 date string (YYYY-MM-DD) for workflow start
+        persona_title:
+          type: string
+          description: User's selected persona title (e.g., "traveler", "travel-agent")
+        persona_circle:
+          type: string
+          description: Persona circle to uniquely identify persona when user has multiple with same title
+        domain:
+          type: string
+          description: Domain hint for policy selection (e.g., "travel", "nursing")
+      required: [template_id, principal_sub, start_date, persona_title, persona_circle]
 
     Trip:
       type: object

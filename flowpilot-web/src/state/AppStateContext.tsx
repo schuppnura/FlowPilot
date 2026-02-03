@@ -15,12 +15,17 @@ import type {
   DelegationResponse,
 } from '../types/models';
 
+interface SelectedPersona {
+  title: string;
+  circle: string;
+}
+
 interface AppState {
   // User info
   principalSub: string | null;
   username: string | null;
   personas: string[];
-  selectedPersona: string | null;
+  selectedPersona: SelectedPersona | null;
 
   // Workflows
   workflows: Workflow[];
@@ -55,7 +60,7 @@ interface AppState {
 
 interface AppStateContextType extends AppState {
   // Actions
-  setSelectedPersona: (persona: string | null) => void;
+  setSelectedPersona: (persona: SelectedPersona | null) => void;
   setSelectedWorkflowId: (workflowId: string | null) => void;
   setSelectedWorkflowTemplateId: (templateId: string | null) => void;
   setWorkflowStartDate: (date: Date) => void;
@@ -143,34 +148,55 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
     console.log('AppStateContext: Reloading personas from API...');
     try {
-      const personas = await userProfileClientRef.current.listPersonas();
-      console.log('AppStateContext: Loaded personas from API:', personas);
+      // Fetch detailed personas (with title, circle, etc.)
+      const personasDetailed = await userProfileClientRef.current.getPersonasDetailed();
+      console.log('AppStateContext: Loaded detailed personas from API:', personasDetailed);
+      
+      // Also keep titles array for backward compatibility
+      const personas = Array.from(new Set(personasDetailed.map(p => p.title)));
+      
       setState((prev) => {
         const newState = { ...prev, personas };
+        
         // Preserve user's manual selection if it's still valid
-        if (prev.selectedPersona && personas.includes(prev.selectedPersona)) {
-          console.log('AppStateContext: Keeping current persona selection:', prev.selectedPersona);
-          // Keep the existing selection, don't change it
-          return newState;
+        if (prev.selectedPersona) {
+          const stillValid = personasDetailed.some(
+            p => p.title === prev.selectedPersona!.title && p.circle === prev.selectedPersona!.circle
+          );
+          if (stillValid) {
+            console.log('AppStateContext: Keeping current persona selection:', prev.selectedPersona);
+            return newState;
+          }
         }
         
         // Only auto-select if there's no valid selection:
         // - If only one persona, select it
         // - If multiple personas, prefer traveler/business-traveler over delegation personas
-        if (personas.length === 1) {
-          newState.selectedPersona = personas[0];
-          console.log('AppStateContext: Auto-selected persona (single):', personas[0]);
-        } else if (personas.length > 1 && !prev.selectedPersona) {
+        if (personasDetailed.length === 1) {
+          newState.selectedPersona = {
+            title: personasDetailed[0].title,
+            circle: personasDetailed[0].circle,
+          };
+          console.log('AppStateContext: Auto-selected persona (single):', newState.selectedPersona);
+        } else if (personasDetailed.length > 1 && !prev.selectedPersona) {
           // Prefer traveler personas over delegation personas for workflow operations
-          const travelerPersonas = personas.filter(p => p === 'traveler' || p === 'business-traveler');
+          const travelerPersonas = personasDetailed.filter(
+            p => p.title === 'traveler' || p.title === 'business-traveler'
+          );
           if (travelerPersonas.length > 0) {
-            newState.selectedPersona = travelerPersonas[0];
-            console.log('AppStateContext: Auto-selected traveler persona:', travelerPersonas[0]);
+            newState.selectedPersona = {
+              title: travelerPersonas[0].title,
+              circle: travelerPersonas[0].circle,
+            };
+            console.log('AppStateContext: Auto-selected traveler persona:', newState.selectedPersona);
           } else {
-            newState.selectedPersona = personas[0];
-            console.log('AppStateContext: Auto-selected first persona (no traveler found):', personas[0]);
+            newState.selectedPersona = {
+              title: personasDetailed[0].title,
+              circle: personasDetailed[0].circle,
+            };
+            console.log('AppStateContext: Auto-selected first persona:', newState.selectedPersona);
           }
-        } else if (personas.length === 0) {
+        } else if (personasDetailed.length === 0) {
           // No personas found
           newState.selectedPersona = null;
           console.log('AppStateContext: No personas found, cleared selection');
@@ -272,14 +298,14 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({ ...prev, loading: true, errorMessage: '' }));
     try {
       const currentState = stateRef.current;
-      // Always use selected persona, or first one if multiple exist, or single one
-      const persona = currentState.selectedPersona || 
-                     (currentState.personas.length > 0 ? currentState.personas[0] : undefined);
-      if (!persona) {
+      // Always use selected persona title, or first one if available
+      const personaTitle = currentState.selectedPersona?.title || 
+                          (currentState.personas.length > 0 ? currentState.personas[0] : undefined);
+      if (!personaTitle) {
         throw new Error('No persona available. Please ensure your account has a persona assigned.');
       }
-      console.log('selectWorkflow: Using persona:', persona);
-      const items = await domainClientRef.current.fetchWorkflowItems(workflowId, persona);
+      console.log('selectWorkflow: Using persona:', personaTitle, '(full:', currentState.selectedPersona, ')');
+      const items = await domainClientRef.current.fetchWorkflowItems(workflowId, personaTitle);
       setState((prev) => ({
         ...prev,
         selectedWorkflowId: workflowId,
@@ -303,10 +329,10 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       // Reload workflows and select the new one
       const workflows = await domainClientRef.current.fetchWorkflows();
       const currentState = stateRef.current;
-      // Always use selected persona, or first one if multiple exist, or single one
-      const persona = currentState.selectedPersona || 
-                     (currentState.personas.length > 0 ? currentState.personas[0] : undefined);
-      const items = await domainClientRef.current.fetchWorkflowItems(workflowId, persona);
+      // Always use selected persona title, or first one if available
+      const personaTitle = currentState.selectedPersona?.title || 
+                          (currentState.personas.length > 0 ? currentState.personas[0] : undefined);
+      const items = await domainClientRef.current.fetchWorkflowItems(workflowId, personaTitle);
       setState((prev) => ({
         ...prev,
         workflows,
@@ -678,18 +704,20 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({ ...prev, loading: true, errorMessage: '', statusMessage: '' }));
     try {
       const currentState = stateRef.current;
-      // Always use selected persona, or first one if multiple exist, or single one
-      const persona = currentState.selectedPersona || 
-                     (currentState.personas.length > 0 ? currentState.personas[0] : undefined);
-      console.log('runAgent: Using persona:', persona, '(selectedPersona:', currentState.selectedPersona, ', personas:', currentState.personas, ')');
-      if (!persona) {
+      // Always use selected persona title, or first one if available
+      const personaTitle = currentState.selectedPersona?.title || 
+                          (currentState.personas.length > 0 ? currentState.personas[0] : undefined);
+      const personaCircle = currentState.selectedPersona?.circle;
+      console.log('runAgent: Using persona:', personaTitle, '(selectedPersona:', currentState.selectedPersona, ', personas:', currentState.personas, ')');
+      if (!personaTitle) {
         throw new Error('No persona available. Please ensure your account has a persona assigned.');
       }
       const result = await agentClientRef.current.runAgent({
         workflow_id: workflowId,
         principal_sub: user.uid,
         dry_run: dryRun,
-        persona,
+        persona: personaTitle,
+        persona_circle: personaCircle,
       });
       
       // Check for workflow-level authorization error
@@ -801,7 +829,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       
       // Reload workflow items to show updated status (only for actual booking, not dry run)
       if (!dryRun) {
-        const items = await domainClientRef.current.fetchWorkflowItems(workflowId, persona);
+        const items = await domainClientRef.current.fetchWorkflowItems(workflowId, personaTitle);
         setState((prev) => ({
           ...prev,
           workflowItems: items,

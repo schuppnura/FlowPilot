@@ -49,13 +49,15 @@ def list_workflow_items(
     config: dict[str, Any],
     workflow_id: str,
     principal_user_id: str = None,
-    principal_persona: str = None,
+    principal_persona_title: str = None,
+    principal_persona_circle: str = None,
     user_token: str = None,
 ) -> list[WorkflowItem]:
     # List workflow items from the workflow service
     # assumption: response contains an 'items' list of dicts.
     # principal_user_id: user's UUID for authorization (passed as query parameter)
-    # principal_persona: user's persona for authorization (passed as query parameter)
+    # principal_persona_title: user's persona title for authorization (passed as query parameter)
+    # principal_persona_circle: user's persona circle for authorization (passed as query parameter)
     require_non_empty_string(workflow_id, "workflow_id")
 
     base_url = require_non_empty_string(
@@ -67,13 +69,15 @@ def list_workflow_items(
     )
     timeout_seconds = int(config.get("request_timeout_seconds", 10))
 
-    # Build URL with user_sub and persona query parameters if provided
+    # Build URL with user_sub, persona_title, and persona_circle query parameters if provided
     base_url_with_path = build_url(base_url, template.format(workflow_id=workflow_id))
     query_params = []
     if principal_user_id:
         query_params.append(f"user_sub={principal_user_id}")
-    if principal_persona:
-        query_params.append(f"persona={principal_persona}")
+    if principal_persona_title:
+        query_params.append(f"persona_title={principal_persona_title}")
+    if principal_persona_circle:
+        query_params.append(f"persona_circle={principal_persona_circle}")
 
     if query_params:
         separator = "&" if "?" in base_url_with_path else "?"
@@ -169,12 +173,13 @@ def _call_authz_for_workflow(
     workflow_id = str(workflow.get("workflow_id", ""))
     workflow_domain = workflow.get("domain", "travel")
     owner_sub = str(workflow.get("owner_sub", ""))
-    owner_persona = workflow.get("owner_persona")
+    owner_persona_title = workflow.get("owner_persona_title")  # Get persona title from workflow
+    owner_persona_circle = workflow.get("owner_persona_circle")  # Get persona circle from workflow
     departure_date = workflow.get("departure_date")
     
-    # Validate that owner_persona is present (required for authz checks)
-    if not owner_persona:
-        raise ValueError(f"Workflow {workflow_id} is missing owner_persona - cannot perform authorization check")
+    # Validate that owner_persona_title is present (required for authz checks)
+    if not owner_persona_title:
+        raise ValueError(f"Workflow {workflow_id} is missing owner_persona_title - cannot perform authorization check")
     
     # Build resource properties
     resource_properties: dict[str, Any] = {
@@ -186,11 +191,13 @@ def _call_authz_for_workflow(
     if departure_date:
         resource_properties["departure_date"] = departure_date
     
-    # Add owner to resource properties
+    # Add owner to resource properties (persona means title here in AuthZEN context)
     if owner_sub:
         owner_dict: dict[str, Any] = {"type": "user", "id": owner_sub}
-        if owner_persona:
-            owner_dict["persona"] = str(owner_persona)
+        if owner_persona_title:
+            owner_dict["persona"] = str(owner_persona_title)  # In AuthZEN, 'persona' field contains the title
+        if owner_persona_circle:
+            owner_dict["circle"] = str(owner_persona_circle)
         resource_properties["owner"] = owner_dict
     
     # Build AuthZEN request
@@ -272,12 +279,20 @@ def check_workflow_execution_authorization(
             "advice": [{"type": "error", "message": "Principal ID is required"}],
         }
     
-    principal_persona = principal_user.get("persona", "").strip()
-    if not principal_persona:
+    principal_persona_title = principal_user.get("persona", "").strip()  # In AuthZEN, 'persona' contains the title
+    if not principal_persona_title:
         return {
             "decision": "deny",
-            "reason_codes": ["missing_principal_persona"],
-            "advice": [{"type": "error", "message": "Principal persona is required"}],
+            "reason_codes": ["missing_principal_persona_title"],
+            "advice": [{"type": "error", "message": "Principal persona title is required"}],
+        }
+    
+    principal_persona_circle = principal_user.get("circle", "").strip()
+    if not principal_persona_circle:
+        return {
+            "decision": "deny",
+            "reason_codes": ["missing_principal_persona_circle"],
+            "advice": [{"type": "error", "message": "Principal persona circle is required"}],
         }
     
     if not user_token:
@@ -295,8 +310,9 @@ def check_workflow_execution_authorization(
     
     headers = {"Authorization": f"Bearer {user_token}"}
     
-    # Build query parameters with persona (required by domain-services API)
-    params = {"persona": principal_persona}
+    # Build query parameters with persona title (required by domain-services API)
+    # Note: API still uses 'persona' param name for backward compatibility, but it means title
+    params = {"persona": principal_persona_title}
     
     try:
         # Fetch workflow metadata
@@ -530,7 +546,8 @@ def execute_workflow_run(
             config=config,
             workflow_id=workflow_id,
             principal_user_id=principal_user.get("id"),
-            principal_persona=principal_user.get("persona"),
+            principal_persona_title=principal_user.get("persona"),  # In AuthZEN, 'persona' field contains the title
+            principal_persona_circle=principal_user.get("circle"),
             user_token=user_token,
         )
     except (ValueError, RuntimeError) as exc:
