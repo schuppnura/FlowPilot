@@ -185,10 +185,17 @@ def handle_post_workflow_runs(
                 principal_user = {
                     "type": "user",
                     "id": body.principal_sub,
+                    "persona": body.persona_title,  # In AuthZEN, 'persona' field contains the title
+                    "circle": body.persona_circle,
                 }
         else:
             # No token provided, use principal_sub from body
-            principal_user = {"type": "user", "id": body.principal_sub}
+            principal_user = {
+                "type": "user",
+                "id": body.principal_sub,
+                "persona": body.persona_title,  # In AuthZEN, 'persona' field contains the title
+                "circle": body.persona_circle,
+            }
 
         workflow_id = normalize_workflow_id(workflow_id=body.workflow_id)
 
