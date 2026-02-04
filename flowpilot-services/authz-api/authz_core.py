@@ -533,8 +533,8 @@ def build_opa_resource(
     # Fetch owner's persona and augment resource.properties.owner
     if owner_id:
         owner_persona_id = owner_props.get("persona_id")
-        owner_persona_title = owner_props.get("persona")  # AuthZEN uses 'persona' field for title
-        owner_persona_circle = owner_props.get("circle")
+        owner_persona_title = owner_props.get("persona_title")  # Explicit persona title
+        owner_persona_circle = owner_props.get("persona_circle")
         workflow_id = enriched_properties.get("workflow_id") or resource_from_request.get("id")
         
         # Fetch owner's persona from persona-api (raises RuntimeError on failure)
@@ -554,12 +554,8 @@ def build_opa_resource(
                 if attr.name in owner_persona:
                     enriched_properties["owner"][attr.name] = owner_persona[attr.name]
         
-        # Rename AuthZEN fields to OPA-expected field names
-        # AuthZEN: owner.persona (title) + owner.circle → OPA: owner.persona_title + owner.persona_circle
-        if "persona" in enriched_properties["owner"]:
-            enriched_properties["owner"]["persona_title"] = enriched_properties["owner"].pop("persona")
-        if "circle" in enriched_properties["owner"]:
-            enriched_properties["owner"]["persona_circle"] = enriched_properties["owner"].pop("circle")
+        # Fields are already in correct format (persona_title, persona_circle)
+        # No renaming needed
     
     # Update resource with augmented properties
     resource["properties"] = enriched_properties
@@ -595,8 +591,8 @@ def build_opa_context(
         raise RuntimeError("Principal is required in context")
     
     principal_id = principal_from_request.get("id")
-    principal_persona_title = principal_from_request.get("persona")  # AuthZEN uses 'persona' field for title
-    principal_persona_circle = principal_from_request.get("circle")
+    principal_persona_title = principal_from_request.get("persona_title")  # Explicit persona title
+    principal_persona_circle = principal_from_request.get("persona_circle")
     
     if not principal_id:
         raise RuntimeError("Principal must have an 'id'")
@@ -621,12 +617,8 @@ def build_opa_context(
         enriched_principal["persona_valid_from"] = ""
         enriched_principal["persona_valid_till"] = ""
     
-    # Rename AuthZEN fields to OPA-expected field names
-    # AuthZEN: principal.persona (title) + principal.circle → OPA: principal.persona_title + principal.persona_circle
-    if "persona" in enriched_principal:
-        enriched_principal["persona_title"] = enriched_principal.pop("persona")
-    if "circle" in enriched_principal:
-        enriched_principal["persona_circle"] = enriched_principal.pop("circle")
+    # Fields are already in correct format (persona_title, persona_circle)
+    # No renaming needed
     
     # Step 3: Extract owner from resource (may be None for CREATE actions)
     resource_from_request = authzen_request.get("resource") or {}

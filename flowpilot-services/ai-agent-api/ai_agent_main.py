@@ -161,41 +161,32 @@ def handle_post_workflow_runs(
             user_token = auth_header[7:]  # Remove "Bearer " prefix
 
         # Decode user token to extract principal information (AuthZEN: disassemble token)
-        principal_user: dict[str, Any] | None = None
-        if user_token:
-            try:
-                user_claims = security.verify_token_string(user_token)
-                # Create principal-user object (AuthZEN format)
-                # Note: Excluding PII (email, preferred_username) for privacy
-                # Note: Autobook attributes are fetched by authz-api for the resource owner, not passed here
-                # Note: No claims field needed - identity is in principal_user.id
-
-                # Include persona from request body if provided (selected persona)
-                # The token contains all personas, but the request body has the selected one
-                principal_user = {
-                    "type": "user",
-                    "id": user_claims.get(
-                        "sub", body.principal_sub
-                    ),  # Use token sub, fallback to body
-                    "persona": body.persona_title,  # In AuthZEN, 'persona' field contains the title
-                    "circle": body.persona_circle,
-                }
-            except Exception:
-                # If token decode fails, use principal_sub from body (backward compatibility)
-                principal_user = {
-                    "type": "user",
-                    "id": body.principal_sub,
-                    "persona": body.persona_title,  # In AuthZEN, 'persona' field contains the title
-                    "circle": body.persona_circle,
-                }
-        else:
-            # No token provided, use principal_sub from body
-            principal_user = {
-                "type": "user",
-                "id": body.principal_sub,
-                "persona": body.persona_title,  # In AuthZEN, 'persona' field contains the title
-                "circle": body.persona_circle,
-            }
+        # SECURITY: Fail-closed - if token verification fails, reject the request
+        if not user_token:
+            raise HTTPException(
+                status_code=401,
+                detail="Missing authentication token - user token is required for workflow execution"
+            )
+        
+        try:
+            user_claims = security.verify_token_string(user_token)
+        except Exception as e:
+            # SECURITY: Token verification failed - do NOT fall back to request body
+            # Reject immediately to prevent authentication bypass
+            raise HTTPException(
+                status_code=401,
+                detail=f"Token verification failed: {str(e) if INCLUDE_ERROR_DETAILS else 'Invalid token'}"
+            ) from e
+        
+        # Create principal-user object with explicit persona_title and persona_circle
+        # Note: Excluding PII (email, preferred_username) for privacy
+        # Note: Autobook attributes are fetched by authz-api for the resource owner, not passed here
+        principal_user = {
+            "type": "user",
+            "id": user_claims.get("sub", body.principal_sub),  # Use token sub, fallback to body
+            "persona_title": body.persona_title,
+            "persona_circle": body.persona_circle,
+        }
 
         workflow_id = normalize_workflow_id(workflow_id=body.workflow_id)
 

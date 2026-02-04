@@ -279,7 +279,7 @@ def check_workflow_execution_authorization(
             "advice": [{"type": "error", "message": "Principal ID is required"}],
         }
     
-    principal_persona_title = principal_user.get("persona", "").strip()  # In AuthZEN, 'persona' contains the title
+    principal_persona_title = principal_user.get("persona_title", "").strip()
     if not principal_persona_title:
         return {
             "decision": "deny",
@@ -287,7 +287,7 @@ def check_workflow_execution_authorization(
             "advice": [{"type": "error", "message": "Principal persona title is required"}],
         }
     
-    principal_persona_circle = principal_user.get("circle", "").strip()
+    principal_persona_circle = principal_user.get("persona_circle", "").strip()
     if not principal_persona_circle:
         return {
             "decision": "deny",
@@ -548,8 +548,8 @@ def execute_workflow_run(
             config=config,
             workflow_id=workflow_id,
             principal_user_id=principal_user.get("id"),
-            principal_persona_title=principal_user.get("persona"),  # In AuthZEN, 'persona' field contains the title
-            principal_persona_circle=principal_user.get("circle"),
+            principal_persona_title=principal_user.get("persona_title"),
+            principal_persona_circle=principal_user.get("persona_circle"),
             user_token=user_token,
         )
     except (ValueError, RuntimeError) as exc:

@@ -251,7 +251,6 @@ valid_delegation_personas_for_action contains persona if {
 
 appropriate_persona_for_action if {
   # For create actions, there's no existing resource/owner to compare against
-  # Note: authz-api guarantees persona_title is non-empty
   input.action.name == "create"
 }
 
