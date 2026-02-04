@@ -48,9 +48,17 @@ export class DomainServicesClient {
 
   async fetchWorkflowItems(
     workflowId: string,
-    persona?: string
+    personaTitle?: string,
+    personaCircle?: string
   ): Promise<WorkflowItem[]> {
-    const params = persona ? { persona } : {};
+    const params: Record<string, string> = {};
+    if (personaTitle) {
+      params.persona_title = personaTitle;
+      // Include persona_circle only if it has a value
+      if (personaCircle !== undefined && personaCircle !== null) {
+        params.persona_circle = personaCircle;
+      }
+    }
     const response = await this.client.get<WorkflowItemsResponse>(
       `/v1/workflows/${workflowId}/items`,
       { params }

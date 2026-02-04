@@ -301,11 +301,12 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       // Always use selected persona title, or first one if available
       const personaTitle = currentState.selectedPersona?.title || 
                           (currentState.personas.length > 0 ? currentState.personas[0] : undefined);
+      const personaCircle = currentState.selectedPersona?.circle;
       if (!personaTitle) {
         throw new Error('No persona available. Please ensure your account has a persona assigned.');
       }
-      console.log('selectWorkflow: Using persona:', personaTitle, '(full:', currentState.selectedPersona, ')');
-      const items = await domainClientRef.current.fetchWorkflowItems(workflowId, personaTitle);
+      console.log('selectWorkflow: Using persona:', personaTitle, '/', personaCircle, '(full:', currentState.selectedPersona, ')');
+      const items = await domainClientRef.current.fetchWorkflowItems(workflowId, personaTitle, personaCircle);
       setState((prev) => ({
         ...prev,
         selectedWorkflowId: workflowId,
@@ -332,7 +333,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       // Always use selected persona title, or first one if available
       const personaTitle = currentState.selectedPersona?.title || 
                           (currentState.personas.length > 0 ? currentState.personas[0] : undefined);
-      const items = await domainClientRef.current.fetchWorkflowItems(workflowId, personaTitle);
+      const personaCircle = currentState.selectedPersona?.circle;
+      const items = await domainClientRef.current.fetchWorkflowItems(workflowId, personaTitle, personaCircle);
       setState((prev) => ({
         ...prev,
         workflows,
