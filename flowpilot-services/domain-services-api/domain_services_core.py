@@ -292,8 +292,8 @@ class FlowPilotService:
         principal_user: dict[str, Any] = {
             "type": "user",
             "id": user_sub,
-            "persona": user_persona_title,  # Persona title (not full persona record)
-            "circle": user_persona_circle,
+            "persona_title": user_persona_title,
+            "persona_circle": user_persona_circle,
         }
         
         # Call authz-api - let OPA make all policy decisions
@@ -530,8 +530,8 @@ class FlowPilotService:
             workflow_id = ""
             effective_domain = workflow_domain or domain
             owner_sub = principal_user.get("id", "")
-            owner_persona_title = principal_user.get("persona")  # Get persona title from principal
-            owner_persona_circle = principal_user.get("circle")  # Get persona circle from principal
+            owner_persona_title = principal_user.get("persona_title")  # Get persona title from principal
+            owner_persona_circle = principal_user.get("persona_circle")  # Get persona circle from principal
             departure_date = None
 
         # Build resource properties
@@ -566,13 +566,13 @@ class FlowPilotService:
             if airline_risk_score is not None:
                 resource_properties["airline_risk_score"] = airline_risk_score
 
-        # Add owner to resource properties (persona means title here in AuthZEN context)
+        # Add owner to resource properties with explicit persona_title and persona_circle
         if owner_sub:
             owner_dict: dict[str, Any] = {"type": "user", "id": owner_sub}
             if owner_persona_title:
-                owner_dict["persona"] = str(owner_persona_title)  # In AuthZEN, 'persona' field contains the title
+                owner_dict["persona_title"] = str(owner_persona_title)
             if owner_persona_circle:
-                owner_dict["circle"] = str(owner_persona_circle)
+                owner_dict["persona_circle"] = str(owner_persona_circle)
             resource_properties["owner"] = owner_dict
 
         url = build_url(authz_base_url, "/v1/evaluate")
