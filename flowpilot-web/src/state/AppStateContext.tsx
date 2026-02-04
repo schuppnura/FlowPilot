@@ -716,7 +716,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         workflow_id: workflowId,
         principal_sub: user.uid,
         dry_run: dryRun,
-        persona: personaTitle,
+        persona_title: personaTitle,
         persona_circle: personaCircle,
       });
       

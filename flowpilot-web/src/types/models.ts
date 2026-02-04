@@ -61,7 +61,7 @@ export interface AgentRunRequest {
   workflow_id: string;
   principal_sub: string;
   dry_run: boolean;
-  persona?: string;
+  persona_title?: string;
   persona_circle?: string;
 }
 
