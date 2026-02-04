@@ -25,6 +25,7 @@ interface AppState {
   principalSub: string | null;
   username: string | null;
   personas: string[];
+  personasDetailed: Array<{title: string; circle: string}>;
   selectedPersona: SelectedPersona | null;
 
   // Workflows
@@ -96,6 +97,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     principalSub: null,
     username: null,
     personas: [],
+    personasDetailed: [],
     selectedPersona: null,
     workflows: [],
     selectedWorkflowId: null,
@@ -156,7 +158,11 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       const personas = Array.from(new Set(personasDetailed.map(p => p.title)));
       
       setState((prev) => {
-        const newState = { ...prev, personas };
+        const newState = { 
+          ...prev, 
+          personas,
+          personasDetailed: personasDetailed.map(p => ({ title: p.title, circle: p.circle }))
+        };
         
         // Preserve user's manual selection if it's still valid
         if (prev.selectedPersona) {
@@ -298,11 +304,20 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({ ...prev, loading: true, errorMessage: '' }));
     try {
       const currentState = stateRef.current;
-      // Always use selected persona title, or first one if available
-      const personaTitle = currentState.selectedPersona?.title || 
-                          (currentState.personas.length > 0 ? currentState.personas[0] : undefined);
-      const personaCircle = currentState.selectedPersona?.circle;
-      if (!personaTitle) {
+      // Use selected persona or fallback to first detailed persona
+      let personaTitle: string | undefined;
+      let personaCircle: string | undefined;
+      
+      if (currentState.selectedPersona) {
+        personaTitle = currentState.selectedPersona.title;
+        personaCircle = currentState.selectedPersona.circle;
+      } else if (currentState.personasDetailed.length > 0) {
+        // Fallback to first detailed persona
+        personaTitle = currentState.personasDetailed[0].title;
+        personaCircle = currentState.personasDetailed[0].circle;
+      }
+      
+      if (!personaTitle || !personaCircle) {
         throw new Error('No persona available. Please ensure your account has a persona assigned.');
       }
       console.log('selectWorkflow: Using persona:', personaTitle, '/', personaCircle, '(full:', currentState.selectedPersona, ')');
@@ -330,10 +345,22 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       // Reload workflows and select the new one
       const workflows = await domainClientRef.current.fetchWorkflows();
       const currentState = stateRef.current;
-      // Always use selected persona title, or first one if available
-      const personaTitle = currentState.selectedPersona?.title || 
-                          (currentState.personas.length > 0 ? currentState.personas[0] : undefined);
-      const personaCircle = currentState.selectedPersona?.circle;
+      // Use selected persona or fallback to first detailed persona
+      let personaTitle: string | undefined;
+      let personaCircle: string | undefined;
+      
+      if (currentState.selectedPersona) {
+        personaTitle = currentState.selectedPersona.title;
+        personaCircle = currentState.selectedPersona.circle;
+      } else if (currentState.personasDetailed.length > 0) {
+        // Fallback to first detailed persona
+        personaTitle = currentState.personasDetailed[0].title;
+        personaCircle = currentState.personasDetailed[0].circle;
+      }
+      
+      if (!personaTitle || !personaCircle) {
+        throw new Error('No persona available. Please ensure your account has a persona assigned.');
+      }
       const items = await domainClientRef.current.fetchWorkflowItems(workflowId, personaTitle, personaCircle);
       setState((prev) => ({
         ...prev,
@@ -706,12 +733,21 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({ ...prev, loading: true, errorMessage: '', statusMessage: '' }));
     try {
       const currentState = stateRef.current;
-      // Always use selected persona title, or first one if available
-      const personaTitle = currentState.selectedPersona?.title || 
-                          (currentState.personas.length > 0 ? currentState.personas[0] : undefined);
-      const personaCircle = currentState.selectedPersona?.circle;
-      console.log('runAgent: Using persona:', personaTitle, '(selectedPersona:', currentState.selectedPersona, ', personas:', currentState.personas, ')');
-      if (!personaTitle) {
+      // Use selected persona or fallback to first detailed persona
+      let personaTitle: string | undefined;
+      let personaCircle: string | undefined;
+      
+      if (currentState.selectedPersona) {
+        personaTitle = currentState.selectedPersona.title;
+        personaCircle = currentState.selectedPersona.circle;
+      } else if (currentState.personasDetailed.length > 0) {
+        // Fallback to first detailed persona
+        personaTitle = currentState.personasDetailed[0].title;
+        personaCircle = currentState.personasDetailed[0].circle;
+      }
+      
+      console.log('runAgent: Using persona:', personaTitle, '/', personaCircle, '(selectedPersona:', currentState.selectedPersona, ')');
+      if (!personaTitle || !personaCircle) {
         throw new Error('No persona available. Please ensure your account has a persona assigned.');
       }
       const result = await agentClientRef.current.runAgent({
