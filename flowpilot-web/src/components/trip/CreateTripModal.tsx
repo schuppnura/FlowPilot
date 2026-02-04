@@ -46,7 +46,7 @@ export function CreateTripModal({ isOpen, onClose }: CreateTripModalProps) {
       template_id: selectedTemplateId,
       principal_sub: principalSub,
       start_date: startDate,
-      persona: personaTitle,
+      persona_title: personaTitle,
       persona_circle: personaCircle,
     });
 

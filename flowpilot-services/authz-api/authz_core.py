@@ -276,7 +276,7 @@ def fetch_persona(persona_id: str) -> dict[str, Any]:
 
 
 @lru_cache(maxsize=_PERSONA_CACHE_SIZE)
-def fetch_persona_by_user_and_title(user_sub: str, persona_title: str, persona_circle: str | None = None) -> dict[str, Any]:
+def fetch_persona_by_triplet(user_sub: str, persona_title: str, persona_circle: str) -> dict[str, Any]:
     # Fetch persona by user_sub and title from persona-api with LRU caching.
     # Returns the persona matching the title (and optionally circle), regardless of status.
     #
@@ -542,7 +542,7 @@ def build_opa_resource(
         if owner_persona_id:
             owner_persona = fetch_persona(str(owner_persona_id))
         elif owner_persona_title:
-            owner_persona = fetch_persona_by_user_and_title(
+            owner_persona = fetch_persona_by_triplet(
                 owner_id, str(owner_persona_title), str(owner_persona_circle) if owner_persona_circle else None
             )
         
@@ -606,7 +606,7 @@ def build_opa_context(
     # Step 2: Enrich principal with persona metadata
     enriched_principal = dict(principal_from_request)
 
-    principal_persona = fetch_persona_by_user_and_title(
+    principal_persona = fetch_persona_by_triplet(
         str(principal_id), str(principal_persona_title), str(principal_persona_circle) if principal_persona_circle else None
     )
     if principal_persona:

@@ -69,7 +69,7 @@ export interface CreateWorkflowRequest {
   template_id: string;
   principal_sub: string;
   start_date: string;
-  persona?: string;
+  persona_title?: string;
   persona_circle?: string;
   domain?: string;
 }

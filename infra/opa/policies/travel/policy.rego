@@ -63,7 +63,7 @@ allow if {
 
 allow if {
   input.action.name == "validate_persona"
-  allow_validate_persona
+  valid_persona
 }
 
 # Create action: check allowed-actions, authorization, and persona validity
@@ -113,11 +113,8 @@ allow_delete if {
 # Validate persona action: check if persona is valid (status=active, within time range)
 # This is used by the web-app to warn users about invalid personas
 # No workflow/resource required - only validates persona attributes in context.principal
-allow_validate_persona if {
-  # Persona must be active and within valid time range
-  # Note: authz-api guarantees persona_title is non-empty
-  valid_persona
-}
+# Note: authz-api guarantees persona_title is non-empty
+# Uses valid_persona directly (no intermediate rule needed)
 
 # Reason codes for create, execute, update, and delete
 reasons[code] if {
