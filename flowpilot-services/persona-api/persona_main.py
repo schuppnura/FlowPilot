@@ -79,7 +79,6 @@ class PersonaResponse(BaseModel):
     user_sub: str
     title: str
     circle: str
-    scope: list[str]
     valid_from: str
     valid_till: str
     status: str
@@ -101,7 +100,6 @@ class CreatePersonaRequest(BaseModel):
     
     title: str = Field(..., min_length=1, max_length=50, description="Persona title")
     circle: str = Field(..., min_length=1, max_length=100, description="Circle/community/business unit")
-    scope: list[str] | None = Field(None, description="List of actions (can be empty)")
     valid_from: str | None = Field(None, description="When persona becomes active (ISO 8601)")
     valid_till: str | None = Field(None, description="When persona expires (ISO 8601)")
     status: str | None = Field(None, description="Status (active, inactive, suspended, expired)")
@@ -116,7 +114,6 @@ class UpdatePersonaRequest(BaseModel):
     
     title: str | None = Field(None, min_length=1, max_length=50, description="Persona title")
     circle: str | None = Field(None, min_length=1, max_length=100, description="Circle/community/business unit")
-    scope: list[str] | None = Field(None, description="List of actions")
     valid_from: str | None = Field(None, description="When persona becomes active (ISO 8601)")
     valid_till: str | None = Field(None, description="When persona expires (ISO 8601)")
     status: str | None = Field(None, description="Status (active, inactive, suspended, expired)")
@@ -206,7 +203,7 @@ def extract_persona_attributes(
     Returns:
         Dictionary with all attributes ready for service call
     """
-    standard_attrs = {"title", "circle", "scope", "valid_from", "valid_till", "status"}
+    standard_attrs = {"title", "circle", "valid_from", "valid_till", "status"}
     
     # Build kwargs with optional identifiers
     kwargs: dict[str, Any] = {}

@@ -67,7 +67,6 @@ class PersonaDB:
         user_sub: str,
         title: str,
         circle: str,
-        scope: list[str] | None = None,
         valid_from: str | None = None,
         valid_till: str | None = None,
         status: str | None = None,
@@ -83,7 +82,6 @@ class PersonaDB:
             user_sub: User subject ID (owner)
             title: Persona title (e.g., "traveler")
             circle: Circle/community/business unit (e.g., "family", "acme-corp")
-            scope: List of actions (defaults to ["read", "execute"])
             valid_from: When persona becomes active (ISO 8601, defaults to now)
             valid_till: When persona expires (ISO 8601, defaults to 365 days from now)
             status: Status (active, inactive, suspended, revoked). Defaults to "active" if not provided.
@@ -96,9 +94,6 @@ class PersonaDB:
         # This enforces uniqueness: each user can have multiple personas per title but unique per (title, circle)
         persona_id = f"{user_sub}_{title}_{circle}"
         now = datetime.now(timezone.utc).isoformat()
-
-        if scope is None:
-            scope = ["read", "execute"]
 
         if valid_from is None:
             valid_from = now
@@ -128,7 +123,6 @@ class PersonaDB:
             "user_sub": user_sub,
             "title": title,
             "circle": circle,
-            "scope": scope,
             "valid_from": valid_from,
             "valid_till": valid_till,
             "status": status,
@@ -191,7 +185,6 @@ class PersonaDB:
         persona_id: str,
         title: str | None = None,
         circle: str | None = None,
-        scope: list[str] | None = None,
         valid_from: str | None = None,
         valid_till: str | None = None,
         status: str | None = None,
@@ -204,7 +197,6 @@ class PersonaDB:
             persona_id: Persona ID
             title: Optional new title
             circle: Optional new circle
-            scope: Optional new scope
             valid_from: Optional new valid_from
             valid_till: Optional new valid_till
             status: Optional new status
@@ -226,8 +218,6 @@ class PersonaDB:
             updates["title"] = title
         if circle is not None:
             updates["circle"] = circle
-        if scope is not None:
-            updates["scope"] = scope
         if valid_from is not None:
             updates["valid_from"] = valid_from
         if valid_till is not None:

@@ -248,7 +248,6 @@ def fetch_persona(persona_id: str) -> dict[str, Any]:
     #       - persona_id: string (UUID)
     #       - user_sub: string (owner of persona)
     #       - title: string (e.g., "traveler", "travel-agent")
-    #       - scope: list of strings (actions)
     #       - valid_from: string (ISO 8601)
     #       - valid_till: string (ISO 8601)
     #       - status: string ("active", "inactive", etc.)

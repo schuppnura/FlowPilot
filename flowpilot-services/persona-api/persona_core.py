@@ -69,7 +69,6 @@ class Persona:
     user_sub: str
     title: str
     circle: str
-    scope: list[str]
     valid_from: str
     valid_till: str
     status: str
@@ -102,7 +101,6 @@ class PersonaService:
         user_sub: str,
         title: str,
         circle: str,
-        scope: list[str] | None = None,
         valid_from: str | None = None,
         valid_till: str | None = None,
         status: str | None = None,
@@ -115,7 +113,6 @@ class PersonaService:
             user_sub: User subject ID
             title: Persona title
             circle: Circle/community/business unit (e.g., "family", "acme-corp")
-            scope: List of actions (defaults to [])
             valid_from: When persona becomes active (ISO 8601)
             valid_till: When persona expires (ISO 8601)
             status: Status (active, inactive, suspended, revoked). Defaults to "active" if not provided.
@@ -150,10 +147,6 @@ class PersonaService:
         # Note: Duplicate title check removed - database layer now enforces uniqueness
         # via composite document ID (user_sub_title) and returns existing persona if duplicate
 
-        # Validate scope (can be empty list or None)
-        if scope is None:
-            scope = []
-
         # Apply defaults and coerce custom attributes from manifest
         # custom_attributes contains all policy-specific attributes passed by caller
         processed_attrs, validation_error = persona_config.apply_defaults_and_coerce_attributes(
@@ -171,7 +164,6 @@ class PersonaService:
             "user_sub": user_sub,
             "title": title,
             "circle": circle,
-            "scope": scope,
             "valid_from": valid_from,
             "valid_till": valid_till,
             "status": status,
@@ -232,7 +224,6 @@ class PersonaService:
         user_sub: str,
         title: str | None = None,
         circle: str | None = None,
-        scope: list[str] | None = None,
         valid_from: str | None = None,
         valid_till: str | None = None,
         status: str | None = None,
@@ -246,7 +237,6 @@ class PersonaService:
             user_sub: User subject ID (for ownership validation)
             title: Optional new title
             circle: Optional new circle
-            scope: Optional new scope
             valid_from: Optional new valid_from
             valid_till: Optional new valid_till
             status: Optional new status
@@ -308,7 +298,6 @@ class PersonaService:
             "persona_id": persona_id,
             "title": title,
             "circle": circle,
-            "scope": scope,
             "valid_from": valid_from,
             "valid_till": valid_till,
             "status": status,

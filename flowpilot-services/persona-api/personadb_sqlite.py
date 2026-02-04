@@ -8,7 +8,6 @@
 # - user_sub (string): Owner of persona
 # - title (string): Persona title (e.g., "traveler", "travel-agent")
 # - circle (string): Circle/community/business unit (e.g., "family", "acme-corp")
-# - scope (JSON array): Actions (e.g., ["read", "execute"])
 # - valid_from (ISO 8601): When persona becomes active
 # - valid_till (ISO 8601): When persona expires
 # - status (string): "active", "inactive", "suspended", "revoked"
@@ -71,7 +70,6 @@ class PersonaDB:
                     user_sub TEXT NOT NULL,
                     title TEXT NOT NULL,
                     circle TEXT NOT NULL,
-                    scope TEXT NOT NULL DEFAULT '["read", "execute"]',
                     valid_from TEXT NOT NULL,
                     valid_till TEXT NOT NULL,
                     status TEXT NOT NULL DEFAULT 'active',
@@ -126,7 +124,6 @@ class PersonaDB:
             "user_sub": row["user_sub"],
             "title": row["title"],
             "circle": row["circle"],
-            "scope": json.loads(row["scope"]) if row["scope"] else ["read", "execute"],
             "valid_from": row["valid_from"],
             "valid_till": row["valid_till"],
             "status": row["status"],
@@ -143,7 +140,6 @@ class PersonaDB:
         user_sub: str,
         title: str,
         circle: str,
-        scope: list[str] | None = None,
         valid_from: str | None = None,
         valid_till: str | None = None,
         status: str | None = None,
@@ -159,7 +155,6 @@ class PersonaDB:
             user_sub: User subject ID (owner)
             title: Persona title (e.g., "traveler")
             circle: Circle/community/business unit (e.g., "family", "acme-corp")
-            scope: List of actions (defaults to ["read", "execute"])
             valid_from: When persona becomes active (ISO 8601, defaults to now)
             valid_till: When persona expires (ISO 8601, defaults to 365 days from now)
             status: Status (active, inactive, suspended, revoked). Defaults to "active" if not provided.
@@ -172,10 +167,6 @@ class PersonaDB:
         # This enforces uniqueness: each user can have multiple personas per title but unique per (title, circle)
         persona_id = f"{user_sub}_{title}_{circle}"
         now = datetime.now(timezone.utc).isoformat()
-
-        if scope is None:
-            scope = ["read", "execute"]
-        scope_json = json.dumps(scope)
 
         if valid_from is None:
             valid_from = now
@@ -211,17 +202,16 @@ class PersonaDB:
             conn.execute(
                 """
                 INSERT INTO personas (
-                    persona_id, user_sub, title, circle, scope, valid_from, valid_till,
+                    persona_id, user_sub, title, circle, valid_from, valid_till,
                     status, created_at, updated_at, consent, autobook_price,
                     autobook_leadtime, autobook_risklevel
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 (
                     persona_id,
                     user_sub,
                     title,
                     circle,
-                    scope_json,
                     valid_from,
                     valid_till,
                     status,
@@ -302,7 +292,6 @@ class PersonaDB:
         persona_id: str,
         title: str | None = None,
         circle: str | None = None,
-        scope: list[str] | None = None,
         valid_from: str | None = None,
         valid_till: str | None = None,
         status: str | None = None,
@@ -318,7 +307,6 @@ class PersonaDB:
             persona_id: Persona ID
             title: Optional new title
             circle: Optional new circle
-            scope: Optional new scope
             valid_from: Optional new valid_from
             valid_till: Optional new valid_till
             status: Optional new status
@@ -350,9 +338,6 @@ class PersonaDB:
             if circle is not None:
                 updates.append("circle = ?")
                 params.append(circle)
-            if scope is not None:
-                updates.append("scope = ?")
-                params.append(json.dumps(scope))
             if valid_from is not None:
                 updates.append("valid_from = ?")
                 params.append(valid_from)

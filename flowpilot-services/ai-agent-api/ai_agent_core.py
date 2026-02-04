@@ -191,13 +191,13 @@ def _call_authz_for_workflow(
     if departure_date:
         resource_properties["departure_date"] = departure_date
     
-    # Add owner to resource properties (persona means title here in AuthZEN context)
+    # Add owner to resource properties
     if owner_sub:
         owner_dict: dict[str, Any] = {"type": "user", "id": owner_sub}
         if owner_persona_title:
-            owner_dict["persona"] = str(owner_persona_title)  # In AuthZEN, 'persona' field contains the title
+            owner_dict["persona_title"] = str(owner_persona_title)
         if owner_persona_circle:
-            owner_dict["circle"] = str(owner_persona_circle)
+            owner_dict["persona_circle"] = str(owner_persona_circle)
         resource_properties["owner"] = owner_dict
     
     # Build AuthZEN request
