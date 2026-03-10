@@ -1916,26 +1916,26 @@ Just operating at machine speed.</p>
 <h2 id="multiple-policies-one-platform">Multiple Policies, One Platform</h2>
 <p>FlowPilot supports multiple authorization policies side-by-side:</p>
 <ul>
-<li><strong>Travel Policy</strong> - Autonomous booking with cost, risk, and lead time constraints</li>
-<li><strong>Nursing Policy</strong> - Healthcare workflows with certification and patient load limits</li>
-<li><strong>Custom Policies</strong> - Define your own with typed attributes and validation rules</li>
+<li>Travel Policy - Autonomous booking with cost, risk, and lead time constraints</li>
+<li>Nursing Policy - Healthcare workflows with certification and patient load limits</li>
+<li>Custom Policies - Define your own with typed attributes and validation rules</li>
 </ul>
 <p>Policies are automatically selected based on resource type or explicit hints, with manifest-driven configuration for attributes, defaults, and validation.</p>
 <h2 id="the-travel-booking-metaphor">The Travel Booking Metaphor</h2>
-<p>The concrete domain used is <strong>travel booking</strong>, but this is deliberately a metaphor for a generic "workflow execution" problem involving users, agents, and delegated authority.</p>
+<p>The concrete domain used in this git repo is <strong>travel booking</strong>, but this is deliberately a metaphor for a generic "workflow execution" problem involving users, agents, and delegated authority.</p>
 <ul>
-<li><strong>Trips / Itineraries</strong> are workflows</li>
-<li><strong>Booking steps</strong> are workflow items</li>
-<li><strong>Travelers</strong> can delegate actions to travel agents and AI agents</li>
-<li><strong>Auto-execution preferences</strong> drive policy-driven constraints</li>
+<li>Trips / Itineraries are workflows</li>
+<li>Booking steps are workflow items</li>
+<li>Travelers can delegate actions to travel agents and AI agents</li>
+<li>Auto-execution preferences drive policy-driven constraints</li>
 </ul>
 <p>This maps cleanly to other domains:</p>
 <ul>
-<li><strong>Medical record handling</strong> - Role-based access with patient consent and caring relationships</li>
-<li><strong>Case management</strong> - Workflow delegation between case workers</li>
-<li><strong>Financial approvals</strong> - Multi-level approval workflows, power of attorney, custody and mandates</li>
-<li><strong>Enterprise automation</strong> - AI agents executing tasks within policy constraints</li>
-<li><strong>Agent-based task execution</strong> - Autonomous agents with user-defined limits</li>
+<li>Medical record handling - Role-based access with patient consent and caring relationships</li>
+<li>Case management - Workflow delegation between case workers</li>
+<li>Financial approvals - Multi-level approval workflows, power of attorney, custody and mandates</li>
+<li>Enterprise automation - AI agents executing tasks within policy constraints</li>
+<li>Agent-based task execution** - Autonomous agents with user-defined limits</li>
 </ul>
 <h3 id="why-not-just-use-oauthoidc">Why Not Just Use OAuth/OIDC?</h3>
 <p>OAuth/OIDC handles <strong>authentication</strong> (who are you?), but FlowPilot handles <strong>authorization</strong> (what can you do?):</p>
