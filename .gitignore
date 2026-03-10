@@ -148,7 +148,6 @@ service-account*.json
 /site
 
 # Internal documentation and logs (not for public release)
-flowpilot-docs/
 project-docs/
 mylog.txt
 debug_test.py
