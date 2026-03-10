@@ -1832,7 +1832,29 @@
 
 
 <h1 id="flowpilot">FlowPilot</h1>
-<p><strong>Authorization-as-a-Service for Agentic Workflows</strong></p>
+<p>Nura has long advocated an authorization model that has proven to be both administration-friendly and effective.
+Interestingly, it now also turns out to be a very natural fit for agentic AI.</p>
+<p>When you treat AI agents as assistants or operators, authorization should follow the same principles we use for people.</p>
+<p>The model is actually quite simple:</p>
+<ul>
+<li>Persona — actors operate in a defined role or capacity</li>
+<li>Delegation — authority can be granted to another actor</li>
+<li>Policy — actions are constrained by rules</li>
+<li>Consent — the authority to act must be granted explicitly</li>
+</ul>
+<p>These principles apply equally to humans and AI agents.
+At the authorization layer, both are simply actors participating in a trust chain.</p>
+<blockquote>
+<p>A human can delegate to another human or to an AI agent.
+An AI agent can act within that delegated scope, or even delegate further where policy allows.</p>
+</blockquote>
+<p>The only real difference is time scale.</p>
+<p>A human delegation might last days or months.
+An AI agent might receive authorization for less than a second — just long enough to execute a specific action.</p>
+<p>Same principles.
+Same governance model.
+Just operating at machine speed.</p>
+<p>To enable others to experiment with this authorization model, we offer FlowPilot as open source.</p>
 <p>FlowPilot is an authorization platform that handles complex access control for applications with AI agents, delegated authority, and multi-persona workflows.</p>
 <blockquote>
 <p>With FlowPilot, AI agents don't assume authority; they obtain it explicitly and under tight control</p>
