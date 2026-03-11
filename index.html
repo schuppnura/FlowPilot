@@ -505,10 +505,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#why-this-matters" class="md-nav__link">
+  <a href="#goals" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why This Matters
+        Goals
       
     </span>
   </a>
@@ -527,6 +527,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#the-travel-booking-metaphor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Travel Booking Metaphor
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#multiple-policies-one-platform" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -538,10 +549,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#the-travel-booking-metaphor" class="md-nav__link">
+  <a href="#policy-governance" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The Travel Booking Metaphor
+        Policy Governance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-not-just-use-oauthoidc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why Not Just Use OAuth/OIDC?
       
     </span>
   </a>
@@ -1864,7 +1886,7 @@ Just operating at machine speed.</p>
 <li>FlowPilot evaluates policies, personas, delegation chains, and contextual constraints at runtime</li>
 <li>Your AI agents, services and apps enforce the returned decision consistently and deterministically</li>
 </ol>
-<h2 id="why-this-matters">Why This Matters</h2>
+<h2 id="goals">Goals</h2>
 <p>Agentic AI automates decisions, trigger actions, and operates with a level of autonomy that was previously reserved for humans. Yet most authorization models still assume that access is static, implicit, and largely context-free.</p>
 <p>That assumption no longer holds.</p>
 <p>When software can act, the relevant question is no longer “who has access?”, but who is acting, in which capacity, on whose behalf, and under which conditions. Without making those elements explicit, automation becomes difficult to trust, hard to audit, and risky to operate.</p>
@@ -1902,14 +1924,6 @@ Just operating at machine speed.</p>
 </blockquote>
 <p>FlowPilot is designed to consume externally defined policy representations and compile them into executable authorization rules that can be evaluated deterministically at runtime. Its scope is the enforcement layer: evaluating personas, delegation chains, scopes, constraints, and context efficiently and explainably when an action is requested.</p>
 <p>In other words, FlowPilot does not seek to define what policies should mean across industries. Instead, FlowPilot focuses narrowly on one problem: making authorization decisions explicit, explainable, and enforceable in systems where actions matter and with a model that is easy to grasp and maintain. And doing this safely, consistently, efficiently and at scale in real systems.</p>
-<h2 id="multiple-policies-one-platform">Multiple Policies, One Platform</h2>
-<p>FlowPilot supports multiple authorization policies side-by-side:</p>
-<ul>
-<li>Travel Policy - Autonomous booking with cost, risk, and lead time constraints</li>
-<li>Nursing Policy - Healthcare workflows with certification and patient load limits</li>
-<li>Custom Policies - Define your own with typed attributes and validation rules</li>
-</ul>
-<p>Policies are automatically selected based on resource type or explicit hints, with manifest-driven configuration for attributes, defaults, and validation.</p>
 <h2 id="the-travel-booking-metaphor">The Travel Booking Metaphor</h2>
 <p>The concrete domain used in this git repo is <strong>travel booking</strong>, but this is deliberately a metaphor for a generic "workflow execution" problem involving users, agents, and delegated authority.</p>
 <ul>
@@ -1926,7 +1940,24 @@ Just operating at machine speed.</p>
 <li>Enterprise automation - AI agents executing tasks within policy constraints</li>
 <li>Agent-based task execution** - Autonomous agents with user-defined limits</li>
 </ul>
-<h3 id="why-not-just-use-oauthoidc">Why Not Just Use OAuth/OIDC?</h3>
+<h2 id="multiple-policies-one-platform">Multiple Policies, One Platform</h2>
+<p>FlowPilot supports multiple authorization policies side-by-side:</p>
+<ul>
+<li>Travel Policy - Autonomous booking with cost, risk, and lead time constraints</li>
+<li>Nursing Policy - Healthcare workflows with certification and patient load limits</li>
+<li>Custom Policies - Define your own with typed attributes and validation rules</li>
+</ul>
+<p>Policies are automatically selected based on resource type or explicit hints, with manifest-driven configuration for attributes, defaults, and validation.</p>
+<h2 id="policy-governance">Policy Governance</h2>
+<p>FlowPilot demonstrates a <strong>GitOps-based policy governance model</strong> where:</p>
+<ol>
+<li><strong>Policies are code</strong> - OPA Rego policies live in version control</li>
+<li><strong>Changes are auditable</strong> - Every policy change has a git commit hash</li>
+<li><strong>Deployments are validated</strong> - Automated tests prevent broken policies from reaching production</li>
+<li><strong>Rollbacks are instant</strong> - Zero-downtime rollback to previous policy versions</li>
+<li><strong>History is preserved</strong> - Complete audit trail of all policy deployments</li>
+</ol>
+<h2 id="why-not-just-use-oauthoidc">Why Not Just Use OAuth/OIDC?</h2>
 <p>OAuth/OIDC handles <strong>authentication</strong> (who are you?), but FlowPilot handles <strong>authorization</strong> (what can you do?):</p>
 <ul>
 <li>OAuth: "This is Alice"</li>
@@ -2007,15 +2038,6 @@ Just operating at machine speed.</p>
 <li>Production-safe error handling</li>
 <li>Zero PII exposure to the back-end services (other than the authz-api and user-profile-api)</li>
 </ul>
-<h3 id="policy-governance">Policy Governance</h3>
-<p>FlowPilot demonstrates a <strong>GitOps-based policy governance model</strong> where:</p>
-<ol>
-<li><strong>Policies are code</strong> - OPA Rego policies live in version control</li>
-<li><strong>Changes are auditable</strong> - Every policy change has a git commit hash</li>
-<li><strong>Deployments are validated</strong> - Automated tests prevent broken policies from reaching production</li>
-<li><strong>Rollbacks are instant</strong> - Zero-downtime rollback to previous policy versions</li>
-<li><strong>History is preserved</strong> - Complete audit trail of all policy deployments</li>
-</ol>
 <h2 id="next-steps">Next Steps</h2>
 <p><strong>For Policy Governance, Auditors, Security/Privacy Officers:</strong> Start with the <a href="development/policies/">Policy Guide</a> for authoring and reviewing policies.</p>
 <p><strong>For Architects and Developers:</strong> Start with the <a href="development/personas/">Personas Guide</a> to add FlowPilot to your application.</p>
