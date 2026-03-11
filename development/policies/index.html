@@ -1973,10 +1973,12 @@ This means a <em>fail-closed by default</em>, so the decision is <code>deny</cod
 <a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a><span class="w">  </span><span class="n">allow_validate_persona</span>
 <a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a><span class="p">}</span>
 </code></pre></div>
-This routes the decision to different rule sets depending on the requested action:
-- <code>execute</code>, <code>update</code>, <code>delete</code> require full authorization gates
-- <code>read</code> has simpler requirements (no ABAC checks)
-- <code>validate_persona</code> validates persona status without requiring a workflow/resource</p>
+This routes the decision to different rule sets depending on the requested action:</p>
+<ul>
+<li><code>execute</code>, <code>update</code>, <code>delete</code> require full authorization gates</li>
+<li><code>read</code> has simpler requirements (no ABAC checks)</li>
+<li><code>validate_persona</code> validates persona status without requiring a workflow/resource</li>
+</ul>
 <p><strong>Decisions Gates</strong> are specified as follows:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">allow_execute</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="n">authorized_principal</span><span class="w"> </span><span class="c1"># Anti-spoofing and delegation check</span>
