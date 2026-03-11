@@ -1998,10 +1998,12 @@ This routes the decision to different rule sets depending on the requested actio
 <p>What this does:</p>
 <ul>
 <li>Prevents principal spoofing (acting as someone else without permission)</li>
-<li>Allows 2 scenarios:</li>
-<li><strong>Owner access</strong> - Principal is the owner (covers both direct user access and agent activated by owner)</li>
-<li><strong>Delegated access</strong> - Valid delegation chain exists with required action permissions</li>
 </ul>
+<p>Allows 2 scenarios:</p>
+<ol>
+<li>Owner access - Principal is the owner (covers both direct user access and agent activated by owner)</li>
+<li>Delegated access - Valid delegation chain exists with required action permissions</li>
+</ol>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">authorized_principal</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="c1"># Any authenticated principal (user with valid token) can attempt to create</span>
 <a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;create&quot;</span>
@@ -2020,7 +2022,7 @@ This routes the decision to different rule sets depending on the requested actio
 </code></pre></div>
 <p><strong>Authz-API role:</strong></p>
 <ul>
-<li>Queries <strong>delegation-api</strong> to get delegation information</li>
+<li>Queries <code>delegation-api</code> to get delegation information</li>
 <li>Includes <code>context.delegation.delegated_actions</code> array (empty if no delegation exists)</li>
 <li>Includes <code>context.delegation.delegation_chain</code> (empty if no delegation exists)</li>
 <li>Note: <code>delegation.valid</code> field is NOT sent to OPA - it's redundant since <code>delegated_actions</code> is empty when no valid path exists</li>
