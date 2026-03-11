@@ -1995,6 +1995,13 @@ This routes the decision to different rule sets depending on the requested actio
 - If any gate fails, <code>allow_execute</code> is false</p>
 <p><strong>Authz-API role:</strong> Interprets <code>allow = false</code> as a deny decision. It also includes <code>action.name</code> in the OPA input based on the PEP's request. Provides all data needed for gate evaluation (more below)</p>
 <h3 id="anti-spoofing-checks">Anti-Spoofing Checks</h3>
+<p><strong>What this does:</strong></p>
+<ul>
+<li>Prevents principal spoofing (acting as someone else without permission)</li>
+<li>Allows 2 scenarios:</li>
+<li><strong>Owner access</strong> - Principal is the owner (covers both direct user access and agent activated by owner)</li>
+<li><strong>Delegated access</strong> - Valid delegation chain exists with required action permissions</li>
+</ul>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">authorized_principal</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="c1"># Any authenticated principal (user with valid token) can attempt to create</span>
 <a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;create&quot;</span>
@@ -2011,13 +2018,6 @@ This routes the decision to different rule sets depending on the requested actio
 <a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">delegation</span><span class="p">.</span><span class="n">delegated_actions</span>
 <a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a><span class="p">}</span>
 </code></pre></div>
-<p><strong>What this does:</strong></p>
-<ul>
-<li>Prevents principal spoofing (acting as someone else without permission)</li>
-<li>Allows 2 scenarios:</li>
-<li><strong>Owner access</strong> - Principal is the owner (covers both direct user access and agent activated by owner)</li>
-<li><strong>Delegated access</strong> - Valid delegation chain exists with required action permissions</li>
-</ul>
 <p><strong>Authz-API role:</strong></p>
 <ul>
 <li>Queries <strong>delegation-api</strong> to get delegation information</li>
@@ -2030,6 +2030,13 @@ This routes the decision to different rule sets depending on the requested actio
 <li>Enriches <code>context.principal</code> with persona metadata (status, validity timestamps, attributes)</li>
 </ul>
 <h3 id="appropriate-persona-for-delegation">Appropriate Persona for Delegation</h3>
+<p><strong>What this does:</strong></p>
+<ul>
+<li>Validates that the user's business role (<em>persona</em>) is appropriate for the action</li>
+<li>Delegated users must have agent personas (<code>travel-agent</code>, etc.)</li>
+<li>Owners must match their own persona</li>
+<li>This checks the <strong>type</strong> of persona, not its validity status or time range</li>
+</ul>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="k">import</span><span class="w"> </span><span class="k">data</span><span class="p">.</span><span class="n">travel</span><span class="p">.</span><span class="n">delegation_personas</span>
 <a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="k">import</span><span class="w"> </span><span class="k">data</span><span class="p">.</span><span class="n">travel</span><span class="p">.</span><span class="n">persona_titles</span>
 <a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
@@ -2065,13 +2072,6 @@ This routes the decision to different rule sets depending on the requested actio
 <a id="__codelineno-11-33" name="__codelineno-11-33" href="#__codelineno-11-33"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">principal</span><span class="p">.</span><span class="n">persona_circle</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">persona_circle</span>
 <a id="__codelineno-11-34" name="__codelineno-11-34" href="#__codelineno-11-34"></a><span class="p">}</span>
 </code></pre></div>
-<p><strong>What this does:</strong></p>
-<ul>
-<li>Validates that the user's business role (<em>persona</em>) is appropriate for the action</li>
-<li>Delegated users must have agent personas (<code>travel-agent</code>, etc.)</li>
-<li>Owners must match their own persona</li>
-<li>This checks the <strong>type</strong> of persona, not its validity status or time range</li>
-</ul>
 <p><strong>Authz-API role:</strong></p>
 <ul>
 <li>Extracts <code>persona</code> from JWT custom claims</li>
@@ -2080,6 +2080,14 @@ This routes the decision to different rule sets depending on the requested actio
 </ul>
 <p>Important: The <code>owner.persona</code> field contains the persona <strong>title</strong> (e.g., "traveler"), while the full persona data (with autobook attributes, status, and temporal validity) is fetched from persona-api and merged into <code>resource.properties.owner</code>. See <a href="../personas/">Personas Guide</a> for more details.</p>
 <h3 id="read-authorization">Read Authorization</h3>
+<p><strong>What this does:</strong></p>
+<ul>
+<li>Owner access: Resource owner can always read their own resources</li>
+<li>Delegation required: Non-owners MUST have explicit delegation with read permission</li>
+<li>Persona validation: Delegated readers must have appropriate persona (agent or invitation personas)</li>
+<li>No ABAC checks: Read actions skip consent, cost, risk, and lead time checks</li>
+<li>AI-agent support: AI agents can read when acting as owner or with delegation</li>
+</ul>
 <p>Read access follows simpler authorization rules compared to execute actions. The persona used for reading doesn't matter - if you have delegation with 'read' action, you can read. This treats 'delegation' and 'invitation' identically - both are just delegations with 'read' scope. No ABAC checks (cost, risk, lead time) are required - only identity and delegation validation.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">allow_read</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span><span class="n">action_allowed_for_persona</span><span class="w">  </span><span class="c1"># Persona must have &#39;read&#39; in allowed-actions</span>
@@ -2094,14 +2102,6 @@ This routes the decision to different rule sets depending on the requested actio
 <a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">delegation</span><span class="p">.</span><span class="n">delegated_actions</span>
 <a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a><span class="p">}</span>
 </code></pre></div>
-<p><strong>What this does:</strong></p>
-<ul>
-<li><strong>Owner access:</strong> Resource owner can always read their own resources</li>
-<li><strong>Delegation required:</strong> Non-owners MUST have explicit delegation with read permission</li>
-<li><strong>Persona validation:</strong> Delegated readers must have appropriate persona (agent or invitation personas)</li>
-<li><strong>No ABAC checks:</strong> Read actions skip consent, cost, risk, and lead time checks</li>
-<li><strong>AI-agent support:</strong> AI agents can read when acting as owner or with delegation</li>
-</ul>
 <p><strong>Key Differences from Execute:</strong></p>
 <ul>
 <li>No <code>has_consent</code> check (consent only applies to autonomous execution)</li>
@@ -2159,15 +2159,15 @@ This routes the decision to different rule sets depending on the requested actio
 <li>When no principal provided in request: creates <code>context.principal</code> from owner data</li>
 </ul>
 <h3 id="user-consent-check">User Consent Check</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">has_consent</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">autobook_consent</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="k">true</span>
-<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="p">}</span>
-</code></pre></div>
 <p><strong>What this does:</strong></p>
 <ul>
 <li>Requires explicit user opt-in for autonomous booking</li>
 <li>Consent is per-user, not per-workflow</li>
 </ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">has_consent</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">autobook_consent</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="k">true</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="p">}</span>
+</code></pre></div>
 <p><strong>Authz-API role:</strong></p>
 <ul>
 <li>Fetches persona from persona-api</li>
@@ -2177,6 +2177,16 @@ This routes the decision to different rule sets depending on the requested actio
 <p><strong>Important:</strong> Autobook consent is <strong>per-persona</strong>, not per-user. A user with multiple personas can have different consent settings for each.</p>
 <h3 id="user-preferences-check">User Preferences Check</h3>
 <p>A user can set constraits to the AI-agent about when it can act autonomously.</p>
+<p><strong>What this does:</strong></p>
+<ul>
+<li>Ensures booking cost doesn't exceed user's configured limit</li>
+<li>Cost limit is per-user preference</li>
+<li>Checks airline risk score against user's tolerance</li>
+<li>Allows execution if risk score is missing (optional field)</li>
+<li>Denies if risk exceeds configured threshold</li>
+<li>Requires minimum advance notice before departure</li>
+<li>Prevents last-minute autonomous bookings</li>
+</ul>
 <p>In the use case of "travel", this reflects the risk a traveler is willing to take in terms of cost, transport risk, and time to change their mind.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="n">within_cost_limit</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span><span class="c1"># Skip if planned_price is absent</span>
@@ -2210,16 +2220,6 @@ This routes the decision to different rule sets depending on the requested actio
 <a id="__codelineno-15-30" name="__codelineno-15-30" href="#__codelineno-15-30"></a><span class="w">  </span><span class="n">delta_days</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">autobook_leadtime</span>
 <a id="__codelineno-15-31" name="__codelineno-15-31" href="#__codelineno-15-31"></a><span class="p">}</span>
 </code></pre></div>
-<p><strong>What this does:</strong></p>
-<ul>
-<li>Ensures booking cost doesn't exceed user's configured limit</li>
-<li>Cost limit is per-user preference</li>
-<li>Checks airline risk score against user's tolerance</li>
-<li>Allows execution if risk score is missing (optional field)</li>
-<li>Denies if risk exceeds configured threshold</li>
-<li>Requires minimum advance notice before departure</li>
-<li>Prevents last-minute autonomous bookings</li>
-</ul>
 <p><strong>Authz-API role:</strong></p>
 <ul>
 <li>Extracts <code>planned_price</code> from workflow item resource</li>
@@ -2231,7 +2231,16 @@ This routes the decision to different rule sets depending on the requested actio
 <li>Converts and normalizes prices, risk scores and times</li>
 </ul>
 <h3 id="deny-reason-codes">Deny Reason Codes</h3>
-<p>The policy provides a structured reason code for every denial scenario. Reason codes follow the gate evaluation order:</p>
+<p>The policy provides a structured reason code for every denial scenario.</p>
+<p><strong>What this does:</strong></p>
+<ul>
+<li>Provides structured reason codes for denials</li>
+<li>Each failed gate has a corresponding reason</li>
+<li>Reasons follow gate evaluation order (fail-fast)</li>
+<li>Supports debugging and audit trails</li>
+<li>Enables client-side error messages</li>
+</ul>
+<p>Reason codes follow the gate evaluation order:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="n">reasons</span><span class="p">[</span><span class="n">code</span><span class="p">]</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;execute&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;update&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;delete&quot;</span><span class="p">]</span>
 <a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">  </span><span class="k">not</span><span class="w"> </span><span class="n">authorized_principal</span>
@@ -2333,14 +2342,6 @@ This routes the decision to different rule sets depending on the requested actio
 </tr>
 </tbody>
 </table>
-<p><strong>What this does:</strong></p>
-<ul>
-<li>Provides structured reason codes for denials</li>
-<li>Each failed gate has a corresponding reason</li>
-<li>Reasons follow gate evaluation order (fail-fast)</li>
-<li>Supports debugging and audit trails</li>
-<li>Enables client-side error messages</li>
-</ul>
 <p><strong>Authz-API role:</strong></p>
 <ul>
 <li>Collects <code>reasons</code> array from OPA response</li>
