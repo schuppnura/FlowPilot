@@ -2291,7 +2291,7 @@ This routes the decision to different rule sets depending on the requested actio
 </tr>
 </tbody>
 </table>
-<p>Note that <code>subject.properties.persona</code> represents the <code>persona</code> that the user is currently working with (in case they have more than one <code>persona</code>). It thus must be provided by the PEP that knows the context of the user.</p>
+<p>Note that <code>subject.properties.persona</code> represents the <code>persona</code> that the user is currently working with. It thus must be provided by the PEP that knows the context of the current user.</p>
 <p>Note that <code>resource.properties.owner.persona</code> represents the <code>persona</code> that the original owner used when they created the workflow. It thus must also be provided by the PEP that remembers the context of the workflow creation.</p>
 <h3 id="deny-reason-codes">Deny Reason Codes</h3>
 <p>To allow OPA to return a structured reason code for every denial scenario, additional 'rules' connect a <code>deny</code>with a reason.</p>
