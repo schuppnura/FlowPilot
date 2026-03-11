@@ -1994,7 +1994,7 @@ This routes the decision to different rule sets depending on the requested actio
 - Each gate is a separate rule evaluated independently
 - If any gate fails, <code>allow_execute</code> is false</p>
 <p><strong>Authz-API role:</strong> Interprets <code>allow = false</code> as a deny decision. It also includes <code>action.name</code> in the OPA input based on the PEP's request. Provides all data needed for gate evaluation (more below)</p>
-<h3 id="anti-spoofing-checks">Anti-Spoofing Checks</h3>
+<h3 id="rule-1-anti-spoofing-checks">Rule 1: Anti-Spoofing Checks</h3>
 <p>What this does:</p>
 <ul>
 <li>Prevents principal spoofing (acting as someone else without permission)</li>
@@ -2031,7 +2031,7 @@ This routes the decision to different rule sets depending on the requested actio
 <li>If not provided: creates principal from owner information (agent acting for owner)</li>
 <li>Enriches <code>context.principal</code> with persona metadata (status, validity timestamps, attributes)</li>
 </ul>
-<h3 id="appropriate-persona-for-delegation">Appropriate Persona for Delegation</h3>
+<h3 id="rule-2-appropriate-persona-for-delegation">Rule 2: Appropriate Persona for Delegation</h3>
 <p>What this does:</p>
 <ul>
 <li>Validates that the user's business role (<em>persona</em>) is appropriate for the action</li>
@@ -2076,12 +2076,12 @@ This routes the decision to different rule sets depending on the requested actio
 </code></pre></div>
 <p><strong>Authz-API role:</strong></p>
 <ul>
-<li>Extracts <code>persona</code> from JWT custom claims</li>
-<li>Fetches complete persona object from persona-api (includes autobook attributes, status, validity)</li>
+<li>Extracts <code>persona</code> from the AuthZEN document</li>
+<li>Fetches complete persona object from <code>persona-api</code> (includes autobook attributes, status, validity)</li>
 <li>Includes both <code>subject.properties.persona</code> and enriched <code>owner</code> object in OPA input</li>
 </ul>
 <p>Important: The <code>owner.persona</code> field contains the persona <strong>title</strong> (e.g., "traveler"), while the full persona data (with autobook attributes, status, and temporal validity) is fetched from persona-api and merged into <code>resource.properties.owner</code>. See <a href="../personas/">Personas Guide</a> for more details.</p>
-<h3 id="read-authorization">Read Authorization</h3>
+<h3 id="rule-3-read-authorization">Rule 3: Read Authorization</h3>
 <p>Read access follows simpler authorization rules compared to execute actions. The persona used for reading doesn't matter - if you have delegation with 'read' action, you can read. This treats 'delegation' and 'invitation' identically - both are just delegations with 'read' scope. No ABAC checks (cost, risk, lead time) are required - only identity and delegation validation.</p>
 <p>Note that the policy requires explicit delegation for all non-owner access. Having a matching persona is not a sufficient but only a necessary coniditon. In fact, it is checked after first delegation is confirmed, and is not a bypass mechanism.</p>
 <p>What this does:</p>
@@ -2107,7 +2107,7 @@ This routes the decision to different rule sets depending on the requested actio
 </code></pre></div>
 <p><strong>Key Differences from Execute:</strong></p>
 <ul>
-<li>No <code>has_consent</code> check (consent only applies to autonomous execution)</li>
+<li>No <code>has_consent</code> check (consent in this context only applies to autonomous execution)</li>
 <li>No <code>within_cost_limit</code>, <code>acceptable_risk</code>, or <code>sufficient_advance</code> checks</li>
 <li>Simpler persona requirements (agent personas OR invitation personas)</li>
 <li>Still requires delegation for non-owners</li>
@@ -2118,7 +2118,7 @@ This routes the decision to different rule sets depending on the requested actio
 <li>No persona attribute fetching needed (only persona title required)</li>
 <li>Returns structured deny with reason codes if validation fails</li>
 </ul>
-<h3 id="persona-validity-check">Persona Validity Check</h3>
+<h3 id="rule-4-persona-validity-check">Rule 4: Persona Validity Check</h3>
 <p>In addition to checking the persona <strong>type</strong> is appropriate, the policy enforces that the acting principal's persona is currently valid. This combines status and temporal checks:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">valid_persona</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">principal</span><span class="p">.</span><span class="n">persona_status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;active&quot;</span>
@@ -2159,7 +2159,7 @@ This routes the decision to different rule sets depending on the requested actio
 <li>Policy-specific attributes (when applicable)</li>
 <li>When no principal provided in request: creates <code>context.principal</code> from owner data</li>
 </ul>
-<h3 id="user-consent-check">User Consent Check</h3>
+<h3 id="rule-5-user-consent-check">Rule 5: User Consent Check</h3>
 <p>What this does:</p>
 <ul>
 <li>Requires explicit user opt-in for autonomous booking</li>
@@ -2176,7 +2176,7 @@ This routes the decision to different rule sets depending on the requested actio
 <li>Extracts <code>autobook_consent</code> boolean from persona record</li>
 <li>Includes in <code>resource.properties.owner.autobook_consent</code></li>
 </ul>
-<h3 id="user-preferences-check">User Preferences Check</h3>
+<h3 id="rule-6-user-preferences-check">Rule 6: User Preferences Check</h3>
 <p>A user can set constraits to the AI-agent about when it can act autonomously.</p>
 <p>What this does:</p>
 <ul>
@@ -2366,7 +2366,7 @@ This routes the decision to different rule sets depending on the requested actio
 </tr>
 <tr>
 <td><code>subject.properties.persona</code></td>
-<td>JWT custom claims</td>
+<td>AuthZEN request</td>
 <td>Authz-API</td>
 </tr>
 <tr>
@@ -2426,7 +2426,7 @@ This routes the decision to different rule sets depending on the requested actio
 </tr>
 <tr>
 <td><code>context.principal</code></td>
-<td>AuthZEN request or JWT</td>
+<td>AuthZEN request</td>
 <td>PEP / Authz-API</td>
 </tr>
 </tbody>
