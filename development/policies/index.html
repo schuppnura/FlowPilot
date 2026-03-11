@@ -2178,6 +2178,7 @@ This routes the decision to different rule sets depending on the requested actio
 </ul>
 <h3 id="rule-6-user-preferences-check">Rule 6: User Preferences Check</h3>
 <p>A user can set constraits to the AI-agent about when it can act autonomously.</p>
+<p>In the use case of "travel", this reflects the risk a traveler is willing to take in terms of cost, transport risk, and time to change their mind.</p>
 <p>What this does:</p>
 <ul>
 <li>Ensures booking cost doesn't exceed user's configured limit</li>
@@ -2188,7 +2189,6 @@ This routes the decision to different rule sets depending on the requested actio
 <li>Requires minimum advance notice before departure</li>
 <li>Prevents last-minute autonomous bookings</li>
 </ul>
-<p>In the use case of "travel", this reflects the risk a traveler is willing to take in terms of cost, transport risk, and time to change their mind.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="n">within_cost_limit</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span><span class="c1"># Skip if planned_price is absent</span>
 <a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">  </span><span class="k">not</span><span class="w"> </span><span class="s2">&quot;planned_price&quot;</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">object</span><span class="p">.</span><span class="n">keys</span><span class="p">(</span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">)</span>
