@@ -1835,7 +1835,7 @@
 <li>Backend microservices (represented by <code>domain-services-api</code>)</li>
 <li>Web app and mobile/desktop app</li>
 </ul>
-<p>Even thouhg it is sometimes tempting to do a check in-line locally, the demo shows that PEPs <em>must not</em> contain inline authorization logic such as:
+<p>Even though it is often tempting to do a check in-line locally, the demo shows that PEPs <em>must not</em> contain inline authorization logic such as:
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># WRONG - PEP making policy decisions</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">if</span> <span class="n">condition1</span> <span class="ow">and</span> <span class="n">condition2</span><span class="p">:</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="c1"># Proceed with action</span>
