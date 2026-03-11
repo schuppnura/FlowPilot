@@ -1854,7 +1854,7 @@
 <li>Policy changes don't require code changes in PEPs</li>
 <li>Application services stay simple and focused on business behavior</li>
 </ul>
-<h3 id="notes-on-opa-and-rego">Notes on OPA and Rego</h3>
+<h3 id="policy-language">Policy Language</h3>
 <p>OPA is a <strong>CNCF Graduated</strong> project (graduated January 29, 2021), which signals maturity, governance, and production readiness. However, it is not a formal international standard.</p>
 <ul>
 <li>OPA is open source and published under the Apache License 2.0</li>
@@ -1948,7 +1948,7 @@ This routes the decision to different rule sets depending on the requested actio
 <li>Simpler persona requirements (agent personas OR invitation personas)</li>
 <li>Still requires delegation for non-owners</li>
 </ul>
-<h3 id="rule-1-anti-spoofing-checks">Rule 1: Anti-Spoofing Checks</h3>
+<h3 id="rule-1-check-anti-spoofing">Rule 1: Check Anti-Spoofing</h3>
 <p>What this does:</p>
 <ul>
 <li>Prevents principal spoofing (acting as someone else without permission)</li>
@@ -1980,7 +1980,7 @@ This routes the decision to different rule sets depending on the requested actio
 <li>If not provided: injects principal from owner information (agent acting for owner)</li>
 <li>Enriches <code>context.principal</code> with persona metadata (status, validity timestamps, attributes)</li>
 </ul>
-<h3 id="rule-2-appropriate-persona-for-delegation">Rule 2: Appropriate Persona for Delegation</h3>
+<h3 id="rule-2-check-persona-for-delegation">Rule 2: Check Persona for Delegation</h3>
 <p>What this does:</p>
 <ul>
 <li>Validates that the user's business role (<em>persona</em>) is appropriate for the action</li>
@@ -2025,7 +2025,7 @@ This routes the decision to different rule sets depending on the requested actio
 <li>Includes both <code>subject.properties.persona</code> and enriched <code>owner</code> object in OPA input</li>
 </ul>
 <p>Important: The <code>owner.persona</code> field contains the persona <strong>title</strong> (e.g., "traveler"), while the full persona data (with autobook attributes, status, and temporal validity) is fetched from persona-api and merged into <code>resource.properties.owner</code>. See <a href="../personas/">Personas Guide</a> for more details.</p>
-<h3 id="rule-3-persona-validity-check">Rule 3: Persona Validity Check</h3>
+<h3 id="rule-3-check-persona-validity">Rule 3: Check Persona Validity</h3>
 <p>In addition to checking the persona <strong>type</strong> is appropriate, the policy enforces that the acting principal's persona is currently valid. This combines status and temporal checks:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">valid_persona</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">principal</span><span class="p">.</span><span class="n">persona_status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;active&quot;</span>
@@ -2066,7 +2066,7 @@ This routes the decision to different rule sets depending on the requested actio
 <li>Policy-specific attributes (when applicable)</li>
 <li>When no principal provided in request: creates <code>context.principal</code> from owner data</li>
 </ul>
-<h3 id="rule-4-user-auto-execute-consent-check">Rule 4: User Auto-execute Consent Check</h3>
+<h3 id="rule-4-check-user-auto-execute-consent">Rule 4: Check User Auto-execute Consent</h3>
 <p>What this does:</p>
 <ul>
 <li>Requires explicit user opt-in for autonomous booking</li>
@@ -2083,7 +2083,7 @@ This routes the decision to different rule sets depending on the requested actio
 <li>Extracts <code>autobook_consent</code> boolean from persona record</li>
 <li>Includes in <code>resource.properties.owner.autobook_consent</code></li>
 </ul>
-<h3 id="rule-5-user-auto-execute-constraints-check">Rule 5: User Auto-execute Constraints Check</h3>
+<h3 id="rule-5-check-user-auto-execute-constraints">Rule 5: Check User Auto-execute Constraints</h3>
 <p>A user can set constraits to the AI-agent about when it can act autonomously.</p>
 <p>In the use case of "travel", this reflects the risk a traveler is willing to take in terms of cost, transport risk, and time to change their mind.</p>
 <p>What this does:</p>
