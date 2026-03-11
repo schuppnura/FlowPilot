@@ -602,6 +602,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#rule-2-check-persona-validity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rule 2: Check Persona Validity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#policy-architecture" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1948,7 +1959,7 @@ This routes the decision to different rule sets depending on the requested actio
 <li>Simpler persona requirements (agent personas OR invitation personas)</li>
 <li>Still requires delegation for non-owners</li>
 </ul>
-<h3 id="rule-1-check-anti-spoofing">Rule 1: Check Anti-Spoofing</h3>
+<h3 id="rule-1-check-spoofing-attempt">Rule 1: Check Spoofing Attempt</h3>
 <p>What this does:</p>
 <ul>
 <li>Prevents principal spoofing (acting as someone else without permission)</li>
@@ -1980,61 +1991,16 @@ This routes the decision to different rule sets depending on the requested actio
 <li>If not provided: injects principal from owner information (agent acting for owner)</li>
 <li>Enriches <code>context.principal</code> with persona metadata (status, validity timestamps, attributes)</li>
 </ul>
-<h3 id="rule-2-check-persona-for-delegation">Rule 2: Check Persona for Delegation</h3>
-<p>What this does:</p>
-<ul>
-<li>Validates that the user's business role (<em>persona</em>) is appropriate for the action</li>
-<li>Delegated users must have agent personas (<code>travel-agent</code>, etc.)</li>
-<li>Owners must match their own persona</li>
-<li>This checks the <strong>type</strong> of persona, not its validity status or time range</li>
-</ul>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">import</span><span class="w"> </span><span class="k">data</span><span class="p">.</span><span class="n">travel</span><span class="p">.</span><span class="n">delegation_personas</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="k">import</span><span class="w"> </span><span class="k">data</span><span class="p">.</span><span class="n">travel</span><span class="p">.</span><span class="n">persona_titles</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">valid_delegation_personas_for_action</span><span class="w"> </span><span class="k">contains</span><span class="w"> </span><span class="n">persona</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">  </span><span class="c1"># Delegation personas can execute/update/delete on behalf of owner</span>
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">  </span><span class="n">action</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span>
-<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">  </span><span class="n">action</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;execute&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;update&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;delete&quot;</span><span class="p">]</span>
-<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">  </span><span class="n">persona</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="n">delegation_personas</span><span class="p">[</span><span class="n">action</span><span class="p">][</span><span class="n">_</span><span class="p">]</span>
-<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="p">}</span>
-<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>
-<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="n">valid_delegation_personas_for_action</span><span class="w"> </span><span class="k">contains</span><span class="w"> </span><span class="n">persona</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="w">  </span><span class="c1"># Service personas are always valid for execute/update/delete actions</span>
-<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="w">  </span><span class="n">action</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span>
-<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="w">  </span><span class="n">action</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;execute&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;update&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;delete&quot;</span><span class="p">]</span>
-<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="w">  </span><span class="n">persona</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="p">{</span><span class="s2">&quot;ai-agent&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;domain-services&quot;</span><span class="p">}[</span><span class="n">_</span><span class="p">]</span>
-<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="p">}</span>
-<a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a>
-<a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a><span class="n">appropriate_persona_for_action</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a><span class="w">  </span><span class="c1"># If acting on behalf of someone else (via delegation), must use a delegation persona</span>
-<a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">principal</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">id</span>
-<a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a><span class="w">  </span><span class="n">valid_delegation_personas_for_action</span><span class="p">[</span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">principal</span><span class="p">.</span><span class="n">persona_title</span><span class="p">]</span>
-<a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a><span class="p">}</span>
-<a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a>
-<a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a><span class="n">appropriate_persona_for_action</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a><span class="w">  </span><span class="c1"># If acting as owner, must use the same persona (title + circle)</span>
-<a id="__codelineno-7-26" name="__codelineno-7-26" href="#__codelineno-7-26"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">principal</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">id</span>
-<a id="__codelineno-7-27" name="__codelineno-7-27" href="#__codelineno-7-27"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">principal</span><span class="p">.</span><span class="n">persona_title</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">persona_title</span>
-<a id="__codelineno-7-28" name="__codelineno-7-28" href="#__codelineno-7-28"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">principal</span><span class="p">.</span><span class="n">persona_circle</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">persona_circle</span>
-<a id="__codelineno-7-29" name="__codelineno-7-29" href="#__codelineno-7-29"></a><span class="p">}</span>
-</code></pre></div>
-<p><strong>Authz-API role:</strong></p>
-<ul>
-<li>Extracts <code>persona</code> from the AuthZEN document</li>
-<li>Fetches complete persona object from <code>persona-api</code> (includes autobook attributes, status, validity)</li>
-<li>Includes both <code>subject.properties.persona</code> and enriched <code>owner</code> object in OPA input</li>
-</ul>
-<p>Important: The <code>owner.persona</code> field contains the persona <strong>title</strong> (e.g., "traveler"), while the full persona data (with autobook attributes, status, and temporal validity) is fetched from persona-api and merged into <code>resource.properties.owner</code>. See <a href="../personas/">Personas Guide</a> for more details.</p>
-<h3 id="rule-3-check-persona-validity">Rule 3: Check Persona Validity</h3>
+<h2 id="rule-2-check-persona-validity">Rule 2: Check Persona Validity</h2>
 <p>In addition to checking the persona <strong>type</strong> is appropriate, the policy enforces that the acting principal's persona is currently valid. This combines status and temporal checks:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">valid_persona</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">principal</span><span class="p">.</span><span class="n">persona_status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;active&quot;</span>
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span><span class="n">valid_from</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="n">time</span><span class="p">.</span><span class="n">parse_rfc3339_ns</span><span class="p">(</span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">principal</span><span class="p">.</span><span class="n">persona_valid_from</span><span class="p">)</span>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">  </span><span class="n">valid_till</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="n">time</span><span class="p">.</span><span class="n">parse_rfc3339_ns</span><span class="p">(</span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">principal</span><span class="p">.</span><span class="n">persona_valid_till</span><span class="p">)</span>
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">  </span><span class="n">now</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="n">time</span><span class="p">.</span><span class="n">now_ns</span><span class="p">()</span>
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">  </span><span class="n">now</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">valid_from</span>
-<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">  </span><span class="n">now</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">valid_till</span>
-<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">valid_persona</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">principal</span><span class="p">.</span><span class="n">persona_status</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;active&quot;</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span><span class="n">valid_from</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="n">time</span><span class="p">.</span><span class="n">parse_rfc3339_ns</span><span class="p">(</span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">principal</span><span class="p">.</span><span class="n">persona_valid_from</span><span class="p">)</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span><span class="n">valid_till</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="n">time</span><span class="p">.</span><span class="n">parse_rfc3339_ns</span><span class="p">(</span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">principal</span><span class="p">.</span><span class="n">persona_valid_till</span><span class="p">)</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">  </span><span class="n">now</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="n">time</span><span class="p">.</span><span class="n">now_ns</span><span class="p">()</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">  </span><span class="n">now</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">valid_from</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">  </span><span class="n">now</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">valid_till</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="p">}</span>
 </code></pre></div>
 <p>This rule ensures:</p>
 <ol>
@@ -2066,7 +2032,52 @@ This routes the decision to different rule sets depending on the requested actio
 <li>Policy-specific attributes (when applicable)</li>
 <li>When no principal provided in request: creates <code>context.principal</code> from owner data</li>
 </ul>
-<h3 id="rule-4-check-user-auto-execute-consent">Rule 4: Check User Auto-execute Consent</h3>
+<h3 id="rule-3-check-persona-for-delegation">Rule 3: Check Persona for Delegation</h3>
+<p>What this does:</p>
+<ul>
+<li>Validates that the user's business role (<em>persona</em>) is appropriate for the action</li>
+<li>Delegated users must have agent personas (<code>travel-agent</code>, etc.)</li>
+<li>Owners must match their own persona</li>
+<li>This checks the <strong>type</strong> of persona, not its validity status or time range</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">import</span><span class="w"> </span><span class="k">data</span><span class="p">.</span><span class="n">travel</span><span class="p">.</span><span class="n">delegation_personas</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="k">import</span><span class="w"> </span><span class="k">data</span><span class="p">.</span><span class="n">travel</span><span class="p">.</span><span class="n">persona_titles</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">valid_delegation_personas_for_action</span><span class="w"> </span><span class="k">contains</span><span class="w"> </span><span class="n">persona</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">  </span><span class="c1"># Delegation personas can execute/update/delete on behalf of owner</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">  </span><span class="n">action</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">  </span><span class="n">action</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;execute&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;update&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;delete&quot;</span><span class="p">]</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">  </span><span class="n">persona</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="n">delegation_personas</span><span class="p">[</span><span class="n">action</span><span class="p">][</span><span class="n">_</span><span class="p">]</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="p">}</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="n">valid_delegation_personas_for_action</span><span class="w"> </span><span class="k">contains</span><span class="w"> </span><span class="n">persona</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="w">  </span><span class="c1"># Service personas are always valid for execute/update/delete actions</span>
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="w">  </span><span class="n">action</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span>
+<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="w">  </span><span class="n">action</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;execute&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;update&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;delete&quot;</span><span class="p">]</span>
+<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="w">  </span><span class="n">persona</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="p">{</span><span class="s2">&quot;ai-agent&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;domain-services&quot;</span><span class="p">}[</span><span class="n">_</span><span class="p">]</span>
+<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a><span class="p">}</span>
+<a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a>
+<a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a><span class="n">appropriate_persona_for_action</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a><span class="w">  </span><span class="c1"># If acting on behalf of someone else (via delegation), must use a delegation persona</span>
+<a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">principal</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">id</span>
+<a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a><span class="w">  </span><span class="n">valid_delegation_personas_for_action</span><span class="p">[</span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">principal</span><span class="p">.</span><span class="n">persona_title</span><span class="p">]</span>
+<a id="__codelineno-8-22" name="__codelineno-8-22" href="#__codelineno-8-22"></a><span class="p">}</span>
+<a id="__codelineno-8-23" name="__codelineno-8-23" href="#__codelineno-8-23"></a>
+<a id="__codelineno-8-24" name="__codelineno-8-24" href="#__codelineno-8-24"></a><span class="n">appropriate_persona_for_action</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-8-25" name="__codelineno-8-25" href="#__codelineno-8-25"></a><span class="w">  </span><span class="c1"># If acting as owner, must use the same persona (title + circle)</span>
+<a id="__codelineno-8-26" name="__codelineno-8-26" href="#__codelineno-8-26"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">principal</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">id</span>
+<a id="__codelineno-8-27" name="__codelineno-8-27" href="#__codelineno-8-27"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">principal</span><span class="p">.</span><span class="n">persona_title</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">persona_title</span>
+<a id="__codelineno-8-28" name="__codelineno-8-28" href="#__codelineno-8-28"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">principal</span><span class="p">.</span><span class="n">persona_circle</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">persona_circle</span>
+<a id="__codelineno-8-29" name="__codelineno-8-29" href="#__codelineno-8-29"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>Authz-API role:</strong></p>
+<ul>
+<li>Extracts <code>persona</code> from the AuthZEN document</li>
+<li>Fetches complete persona object from <code>persona-api</code> (includes autobook attributes, status, validity)</li>
+<li>Includes both <code>subject.properties.persona</code> and enriched <code>owner</code> object in OPA input</li>
+</ul>
+<p>Important: The <code>owner.persona</code> field contains the persona <strong>title</strong> (e.g., "traveler"), while the full persona data (with autobook attributes, status, and temporal validity) is fetched from persona-api and merged into <code>resource.properties.owner</code>. See <a href="../personas/">Personas Guide</a> for more details.</p>
+<h4 id="rule-4-check-user-auto-execute-consent">Rule 4: Check User Auto-execute Consent</h4>
 <p>What this does:</p>
 <ul>
 <li>Requires explicit user opt-in for autonomous booking</li>
