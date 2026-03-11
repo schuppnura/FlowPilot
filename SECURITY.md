@@ -64,12 +64,12 @@ When deploying FlowPilot in production:
 4. **Secrets Management**
    - Never commit secrets to version control
    - Use environment variables or secret management systems
-   - Rotate Keycloak admin credentials immediately
+   - Rotate IdP admin credentials immediately
    - Generate new client secrets for all OIDC clients
-   - Update ***REMOVED*** configuration with production-grade settings
+   - Update IdP configuration with production-grade settings
 
 5. **Database Security**
-   - Use strong authentication for ***REMOVED*** directory DB
+   - Use strong authentication for the directory DB
    - Encrypt data at rest
    - Regular backups with encryption
    - Limit database access to only necessary services
@@ -112,7 +112,7 @@ When deploying FlowPilot in production:
 FlowPilot implements several security best practices:
 
 1. **Authorization Architecture**
-   - Centralized policy decision point (PDP) with ***REMOVED***
+   - Centralized policy decision point (PDP) with OPA/Rego
    - Policy enforcement points (PEP) at domain service boundaries
    - Relationship-based access control (ReBAC) for delegation
    - Explicit authorization checks for every operation
@@ -140,8 +140,6 @@ We recommend:
 - Monitoring security advisories for:
   - Python packages (requirements.txt)
   - Docker base images
-  - Keycloak
-  - ***REMOVED***
   - Swift dependencies
 
 ## Security Contacts

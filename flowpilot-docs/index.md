@@ -27,23 +27,21 @@ Same principles.
 Same governance model.
 Just operating at machine speed.
 
-To enable others to experiment with this authorization model, we offer FlowPilot as open source.
+To enable others to experiment with this authorization model, we offer FlowPilot as open source authorization platform for the age of agentic AI.
 
-FlowPilot is an authorization platform that handles complex access control for applications with AI agents, delegated authority, and multi-persona workflows.
-
-> With FlowPilot, AI agents don't assume authority; they obtain it explicitly and under tight control
+> With FlowPilot, AI agents don't assume authority; they obtain it explicitly and under tight control. At scale.
 
 ## What is FlowPilot?
 
-FlowPilot provides **Authorization-as-a-Service for AI agents** that need:
+FlowPilot is an Open Source library (see https://github.com/schuppnura/FlowPilot) for **Authorization-as-a-Service for AI agents** that need:
 
-- **Policy-based Authorization** - Control what agents can do on behalf of users with declarative policies
-- **Persona-based Policies** - Same user, different roles (traveler, agent, admin)
-- **Persona-based Delegation** - Users delegate authority to agents or other users
-- **Privacy-First Design** - No PII proliferation, minimal token claims
-- **Sovereign Deployment** - Self-hosting and sovereignty as a key principle
+1.  Policy-based Authorization - Control what agents can do on behalf of users with declarative policies
+2.  Persona-based Policies - Same user, different roles (traveler, agent, admin)
+3.  Persona-based Delegation - Users delegate authority to agents or other users
+4.  Privacy-First Design - No PII proliferation, minimal token claims
+5.  Sovereign Deployment - Self-hosting and sovereignty as a key principle
 
-## How It Works
+It works as follows:
 
 1.	You define baseline policy, personas, and delegation rules in FlowPilot
 2.	Users refine these rules by delegating trust and setting scope, duration, and delegation constraints
@@ -51,7 +49,7 @@ FlowPilot provides **Authorization-as-a-Service for AI agents** that need:
 4.	FlowPilot evaluates policies, personas, delegation chains, and contextual constraints at runtime
 5.	Your AI agents, services and apps enforce the returned decision consistently and deterministically
 
-## Why This Matters
+## Goals
 
 Agentic AI automates decisions, trigger actions, and operates with a level of autonomy that was previously reserved for humans. Yet most authorization models still assume that access is static, implicit, and largely context-free.
 
@@ -63,9 +61,19 @@ When software can act, the relevant question is no longer “who has access?”,
 
 FlowPilot addresses this by treating authorization as a first-class concern. Actions are evaluated in context, combining identity, active persona, delegation scope, and policy constraints. If these elements do not align, the action does not proceed. There is no implicit privilege and no assumption that authority transfers automatically.
 
+**Using AI for rule authoring**
+
+FlowPilot follows a policy-as-code approach. Authorization logic is expressed declaratively and treated like any other critical system artifact: it is versionable, testable, reviewable, and deployable alongside application code or infrastructure configuration. This allows governance to evolve transparently, supports automated regression testing, and makes behavior reproducible across environments.
+
+Because policies are explicit and machine-readable, FlowPilot is designed to work naturally with GenAI. GenAI can be used to draft initial policy rules, refine constraints, and translate high-level intent into concrete authorization logic. It can also assist in generating test cases and regression scenarios that validate expected behavior across personas, delegations, and edge conditions.
+
+> While AI helps author the rules, FlowPilot enforces them continuously at runtime
+
+While FlowPilot embraces GenAI for authoring and validation, all authorization decisions remain deterministic, policy-driven, and fully explainable. Decisions are enforced early and consistently, and every outcome can be expressed in human terms, supporting auditability, operational clarity, and trust.
+
 **Personas as a natural model**
 
-A central concept in FlowPilot is the persona. People and systems do not merely authenticate; they act in a defined capacity. A persona represents an explicit operating context and determines which actions are permitted at a given moment. The same individual may act in multiple personas, but privileges never blend across them. Switching persona immediately changes what the system will allow.
+A central concept in security administration with FlowPilot is the persona. People and systems do not merely authenticate; they act in a defined capacity. A persona represents an explicit operating context and determines which actions are permitted at a given moment. The same individual may act in multiple personas, but privileges never blend across them. Switching persona immediately changes what the system will allow.
 
 This model feels natural because it mirrors how people already think about responsibility. Acting as a traveler, an assistant, or a manager is intuitive. Assigning a persona, revoking one when someone changes role or leaves, or temporarily acting in a different capacity requires little explanation. Governance becomes a matter of managing clearly defined capacities rather than maintaining abstract permission sets.
 
@@ -85,16 +93,6 @@ Trust in FlowPilot is contextual and conditional. A delegated persona may act on
 
 Crucially, the ability to extend trust further can itself be governed. Users can decide whether a delegate may sub-delegate, to which personas, and under which constraints. This allows trust to be composed without becoming uncontrolled. FlowPilot enforces these trust relationships continuously at runtime, ensuring that authority remains explicit, auditable, and aligned with the intent of the person who granted it.
 
-**Using AI for rule authoring**
-
-FlowPilot follows a policy-as-code approach. Authorization logic is expressed declaratively and treated like any other critical system artifact: it is versionable, testable, reviewable, and deployable alongside application code or infrastructure configuration. This allows governance to evolve transparently, supports automated regression testing, and makes behavior reproducible across environments.
-
-Because policies are explicit and machine-readable, FlowPilot is designed to work naturally with GenAI. GenAI can be used to draft initial policy rules, refine constraints, and translate high-level intent into concrete authorization logic. It can also assist in generating test cases and regression scenarios that validate expected behavior across personas, delegations, and edge conditions.
-
-> While AI helps author the rules, FlowPilot enforces them continuously at runtime
-
-While FlowPilot embraces GenAI for authoring and validation, all authorization decisions remain deterministic, policy-driven, and fully explainable. Decisions are enforced early and consistently, and every outcome can be expressed in human terms, supporting auditability, operational clarity, and trust.
-
 ## Non-Goals
 
 FlowPilot is not intended to replace identity providers, authentication mechanisms, or directory services. It does not attempt to be a general workflow engine or a UI framework.
@@ -107,35 +105,44 @@ FlowPilot is designed to consume externally defined policy representations and c
 
 In other words, FlowPilot does not seek to define what policies should mean across industries. Instead, FlowPilot focuses narrowly on one problem: making authorization decisions explicit, explainable, and enforceable in systems where actions matter and with a model that is easy to grasp and maintain. And doing this safely, consistently, efficiently and at scale in real systems.
 
+## Policy Governance
+
+FlowPilot demonstrates a **GitOps-based policy governance model** where:
+
+1. **Policies are code** - OPA Rego policies live in version control
+2. **Changes are auditable** - Every policy change has a git commit hash
+3. **Deployments are validated** - Automated tests prevent broken policies from reaching production
+4. **Rollbacks are instant** - Zero-downtime rollback to previous policy versions
+5. **History is preserved** - Complete audit trail of all policy deployments
+
+## The Travel Booking Metaphor
+
+The concrete domain used in this git repo is **travel booking**, but this is deliberately a metaphor for a generic "workflow execution" problem involving users, agents, and delegated authority.
+
+- Trips / Itineraries are workflows
+- Booking steps are workflow items
+- Travelers can delegate actions to travel agents and AI agents
+- Auto-execution preferences drive policy-driven constraints
+
+This maps cleanly to other domains:
+
+- Medical record handling - Role-based access with patient consent and caring relationships
+- Case management - Workflow delegation between case workers
+- Financial approvals - Multi-level approval workflows, power of attorney, custody and mandates
+- Enterprise automation - AI agents executing tasks within policy constraints
+- Agent-based task execution** - Autonomous agents with user-defined limits
 
 ## Multiple Policies, One Platform
 
 FlowPilot supports multiple authorization policies side-by-side:
 
-- **Travel Policy** - Autonomous booking with cost, risk, and lead time constraints
-- **Nursing Policy** - Healthcare workflows with certification and patient load limits
-- **Custom Policies** - Define your own with typed attributes and validation rules
+- Travel Policy - Autonomous booking with cost, risk, and lead time constraints
+- Nursing Policy - Healthcare workflows with certification and patient load limits
+- Custom Policies - Define your own with typed attributes and validation rules
 
 Policies are automatically selected based on resource type or explicit hints, with manifest-driven configuration for attributes, defaults, and validation.
 
-## The Travel Booking Metaphor
-
-The concrete domain used is **travel booking**, but this is deliberately a metaphor for a generic "workflow execution" problem involving users, agents, and delegated authority.
-
-- **Trips / Itineraries** are workflows
-- **Booking steps** are workflow items
-- **Travelers** can delegate actions to travel agents and AI agents
-- **Auto-execution preferences** drive policy-driven constraints
-
-This maps cleanly to other domains:
-
-- **Medical record handling** - Role-based access with patient consent and caring relationships
-- **Case management** - Workflow delegation between case workers
-- **Financial approvals** - Multi-level approval workflows, power of attorney, custody and mandates
-- **Enterprise automation** - AI agents executing tasks within policy constraints
-- **Agent-based task execution** - Autonomous agents with user-defined limits
-
-### Why Not Just Use OAuth/OIDC?
+## Why Not Just Use OAuth/OIDC?
 
 OAuth/OIDC handles **authentication** (who are you?), but FlowPilot handles **authorization** (what can you do?):
 
@@ -225,16 +232,6 @@ Personas (business roles) are passed as request parameters selected by the user,
 - Security headers on all responses
 - Production-safe error handling
 - Zero PII exposure to the back-end services (other than the authz-api and user-profile-api)
-
-### Policy Governance
-
-FlowPilot demonstrates a **GitOps-based policy governance model** where:
-
-1. **Policies are code** - OPA Rego policies live in version control
-2. **Changes are auditable** - Every policy change has a git commit hash
-3. **Deployments are validated** - Automated tests prevent broken policies from reaching production
-4. **Rollbacks are instant** - Zero-downtime rollback to previous policy versions
-5. **History is preserved** - Complete audit trail of all policy deployments
 
 ## Next Steps
 
