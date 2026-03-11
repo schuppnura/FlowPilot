@@ -1829,10 +1829,12 @@
 <li><strong>Never evaluates authorization logic locally</strong></li>
 <li><strong>Must delegate ALL authorization decisions to authz-api/OPA</strong> (including owner checks)</li>
 </ul>
-<p>PEPs in the FlowPilot demo:
-- Agentic AI components (ai-agent-api)
-- Backend microservices (domain-services-api)
-- Web app and mobile/desktop app</p>
+<p>PEPs in the FlowPilot demo:</p>
+<ul>
+<li>Agentic AI components (ai-agent-api)</li>
+<li>Backend microservices (domain-services-api)</li>
+<li>Web app and mobile/desktop app</li>
+</ul>
 <p><strong>Critical PEP Requirement:</strong></p>
 <p>PEPs MUST NOT contain inline authorization logic such as:
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># ❌ WRONG - PEP making policy decisions</span>
@@ -1845,11 +1847,13 @@
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">&quot;decision&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;allow&quot;</span><span class="p">:</span>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="c1"># Proceed with action</span>
 </code></pre></div></p>
-<p>This ensures:
-- Single source of truth for all policy decisions
-- Consistent policy enforcement across all services
-- Complete audit trail of authorization decisions
-- Policy changes don't require code changes in PEPs</p>
+<p>This ensures:</p>
+<ul>
+<li>Single source of truth for all policy decisions</li>
+<li>Consistent policy enforcement across all services</li>
+<li>Complete audit trail of authorization decisions</li>
+<li>Policy changes don't require code changes in PEPs</li>
+</ul>
 <p>This separation ensures that:</p>
 <ul>
 <li>Policies remain clean, declarative, and testable</li>
