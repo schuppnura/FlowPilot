@@ -1868,7 +1868,7 @@
 <p>In practice, this means Rego policies are portable across OPA deployments, while remaining tightly aligned with the OPA project’s evolution.</p>
 <h2 id="policy-construction">Policy Construction</h2>
 <h3 id="decision-framework">Decision framework</h3>
-<p><strong>Allowed actions</strong> are specified as follows:</p>
+<p><strong>Allowed actions</strong> are the following:</p>
 <ul>
 <li><code>execute</code> - Execute workflow items (book travel)</li>
 <li><code>update</code> - Update workflow items (update an itinerary)</li>
@@ -1879,7 +1879,7 @@
 <p><div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">default</span><span class="w"> </span><span class="n">allow</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">false</span>
 </code></pre></div>
 This means a <em>fail-closed by default</em>, so the decision is <code>deny</code> unless explicitly allowed.</p>
-<p><strong>Decision routing</strong> is specified as follows:</p>
+<p><strong>Decision routing</strong> to obtain an <code>allow</code> goes as follows:</p>
 <p><div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">allow</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;execute&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;update&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;delete&quot;</span><span class="p">]</span>
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="n">allow_execute</span>
@@ -1900,7 +1900,7 @@ This routes the decision to different rule sets depending on the requested actio
 <li><code>create</code> has the simplest requirement: it only needs an authenticated user</li>
 </ul>
 <h3 id="execute-authorization">Execute Authorization</h3>
-<p>The <code>execute</code>, <code>update</code>, and <code>delete</code> nactions go through 7 gates that <em>all must pass</em> before the decision is <code>allow</code></p>
+<p>The <code>execute</code>, <code>update</code> and <code>delete</code> actions go through 7 gates that <em>all must pass</em> before the decision is <code>allow</code></p>
 <ul>
 <li>Each gate is a separate rule evaluated independently</li>
 <li>If any gate fails, <code>allow_execute</code> is false</li>
