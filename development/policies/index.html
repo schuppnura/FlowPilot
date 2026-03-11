@@ -1871,10 +1871,10 @@
 <p><strong>Allowed actions</strong> are specified as follows:</p>
 <ul>
 <li><code>execute</code> - Execute workflow items (book travel)</li>
-<li><code>update</code> - Update workflow items</li>
-<li><code>delete</code> - Delete workflow items</li>
+<li><code>update</code> - Update workflow items (update an itinerary)</li>
+<li><code>delete</code> - Delete workflow items (delete trip items from an itinerary)</li>
 <li><code>read</code> - View workflows (read-only access)</li>
-<li><code>validate_persona</code> - Validate persona status and validity (used by UI/web-app)</li>
+<li><code>create</code>- Set up a new workflow (define a new trip)</li>
 </ul>
 <p><div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">default</span><span class="w"> </span><span class="n">allow</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">false</span>
 </code></pre></div>
@@ -1888,11 +1888,16 @@ This means a <em>fail-closed by default</em>, so the decision is <code>deny</cod
 <a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;read&quot;</span>
 <a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span><span class="n">allow_read</span>
 <a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="p">}</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="n">allow</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;create&quot;</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">  </span><span class="c1"># No further rule, i.e. any authenticated principal (user with valid token) can create</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="p">}</span>
 </code></pre></div>
 This routes the decision to different rule sets depending on the requested action:</p>
 <ul>
 <li><code>execute</code>, <code>update</code>, <code>delete</code> require full authorization gates</li>
 <li><code>read</code> has simpler requirements (no ABAC checks)</li>
+<li><code>create</code> has the simplest requirement: it only needs an authenticated user</li>
 </ul>
 <h3 id="execute-authorization">Execute Authorization</h3>
 <p>The <code>execute</code>, <code>update</code>, and <code>delete</code> nactions go through 7 gates that <em>all must pass</em> before the decision is <code>allow</code></p>
@@ -1954,20 +1959,15 @@ This routes the decision to different rule sets depending on the requested actio
 <li>Delegated access - Valid delegation chain exists with required action permissions</li>
 </ol>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">authorized_principal</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="c1"># Any authenticated principal (user with valid token) can attempt to create</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;create&quot;</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="c1"># Owner accessing their own resource (directly or via agent)</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">principal</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">id</span>
 <a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="p">}</span>
 <a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
 <a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="n">authorized_principal</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">  </span><span class="c1"># Owner accessing their own resource (directly or via agent)</span>
-<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">principal</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">resource</span><span class="p">.</span><span class="n">properties</span><span class="p">.</span><span class="n">owner</span><span class="p">.</span><span class="n">id</span>
-<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="p">}</span>
-<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>
-<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="n">authorized_principal</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="w">  </span><span class="c1"># Valid delegation: any subject (regular user or ai-agent) with delegation</span>
-<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="w">  </span><span class="c1"># If the action is in delegated_actions, a delegation path must exist</span>
-<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">delegation</span><span class="p">.</span><span class="n">delegated_actions</span>
-<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="p">}</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">  </span><span class="c1"># Valid delegation: any subject (regular user or ai-agent) with delegation</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">  </span><span class="c1"># If the action is in delegated_actions, a delegation path must exist</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="w">  </span><span class="nb">input</span><span class="p">.</span><span class="n">action</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="nb">input</span><span class="p">.</span><span class="n">context</span><span class="p">.</span><span class="n">delegation</span><span class="p">.</span><span class="n">delegated_actions</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="p">}</span>
 </code></pre></div>
 <p><strong>Authz-API role:</strong></p>
 <ul>
