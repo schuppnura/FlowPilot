@@ -1861,9 +1861,11 @@
 <li>OPA is open source and published under the Apache License 2.0</li>
 <li><strong>Rego</strong>, the policy language used by OPA, is likewise not a formal standard</li>
 </ul>
-<p>The authoritative definition of Rego semantics and behavior is provided by the OPA project itself:
-  - The OPA documentation serves as the canonical language reference
-  - Built-in functions are defined, versioned, and maintained by OPA</p>
+<p>The authoritative definition of Rego semantics and behavior is provided by the OPA project itself:</p>
+<ul>
+<li>The OPA documentation serves as the canonical language reference</li>
+<li>Built-in functions are defined, versioned, and maintained by OPA</li>
+</ul>
 <p>In practice, this means Rego policies are portable across OPA deployments, while remaining tightly aligned with the OPA project’s evolution.</p>
 <h2 id="policy-architecture">Policy Architecture</h2>
 <p>FlowPilot supports <strong>multiple policies</strong> with dynamic selection based on resource type or explicit hints. Each policy is a self-contained package with:</p>
