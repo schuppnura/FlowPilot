@@ -32,6 +32,11 @@ allow if {
 }
 
 allow if {
+  input.action.name == "create"
+  valid_persona  # Any authenticated principal with a valid persona can create
+}
+
+allow if {
   input.action.name == "validate_persona"
   allow_validate_persona
 }
@@ -49,6 +54,7 @@ allow_execute if {
 
 # Read action
 allow_read if {
+  valid_persona
   principal_id := input.subject.id
   owner_id := input.resource.properties.owner.id
   principal_id == owner_id
@@ -56,11 +62,13 @@ allow_read if {
 
 # Service accounts (ai-agent, domain-services) need to read workflows to decide which items to execute
 allow_read if {
+  valid_persona
   service_personas := {"ai-agent", "domain-services"}
   input.subject.properties.persona in service_personas
 }
 
 allow_read if {
+  valid_persona
   principal_id := input.subject.id
   owner_id := input.resource.properties.owner.id
   principal_id != owner_id
@@ -341,9 +349,9 @@ acceptable_risk if {
 
 # Persona validity check
 valid_persona if {
-  input.resource.properties.owner.persona_status == "active"
-  valid_from := time.parse_rfc3339_ns(input.resource.properties.owner.persona_valid_from)
-  valid_till := time.parse_rfc3339_ns(input.resource.properties.owner.persona_valid_till)
+  input.context.principal.persona_status == "active"
+  valid_from := time.parse_rfc3339_ns(input.context.principal.persona_valid_from)
+  valid_till := time.parse_rfc3339_ns(input.context.principal.persona_valid_till)
   now := time.now_ns()
   now >= valid_from
   now <= valid_till

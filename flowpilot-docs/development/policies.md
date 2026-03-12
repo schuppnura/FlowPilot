@@ -41,13 +41,13 @@ FlowPilot deliberately separates authorization responsibilities across three lay
 - Never evaluates authorization logic locally
 - Must delegate ALL authorization decisions to authz-api/OPA (including owner checks)
 
-The FlowPilot demo has a number of different PEPs:
+The FlowPilot reference implementation has a number of different PEPs:
 
 - AI Agent runners (represented by `ai-agent-api`)
 - Backend microservices (represented by `domain-services-api`)
 - Web app and mobile/desktop app
 
-Even though it is often tempting to do a check in-line locally, the demo shows that PEPs *must not* contain inline authorization logic such as:
+Even though it is often tempting to do a check in-line locally, the reference implementation shows that PEPs *must not* contain inline authorization logic such as:
 ```python
 # WRONG - PEP making policy decisions
 if condition1 and condition2:
@@ -70,7 +70,7 @@ This model ensures:
 - Policy changes don't require code changes in PEPs
 - Application services stay simple and focused on business behavior
 
-### Notes on OPA and Rego
+### Policy Language
 
 OPA is a **CNCF Graduated** project (graduated January 29, 2021), which signals maturity, governance, and production readiness. However, it is not a formal international standard.
 
@@ -114,7 +114,7 @@ allow if {
 }
 allow if {
   input.action.name == "create"
-  # No further rule, i.e. any authenticated principal (user with valid token) can create
+  valid_persona  # Any authenticated principal with a valid persona can create
 }
 ```
 This routes the decision to different rule sets depending on the requested action:
@@ -181,7 +181,7 @@ allow_read if {
 - Still requires delegation for non-owners
 
 
-### Rule 1: Anti-Spoofing Checks
+### Rule 1: Check Spoofing Attempt
 
 What this does:
 
@@ -217,7 +217,53 @@ authorized_principal if {
 - Enriches `context.principal` with persona metadata (status, validity timestamps, attributes)
 
 
-### Rule 2: Appropriate Persona for Delegation
+### Rule 2: Check Persona Validity
+
+In addition to checking the persona **type** is appropriate, the policy enforces that the acting principal's persona is currently valid. This combines status and temporal checks:
+
+```rego
+valid_persona if {
+  input.context.principal.persona_status == "active"
+  valid_from := time.parse_rfc3339_ns(input.context.principal.persona_valid_from)
+  valid_till := time.parse_rfc3339_ns(input.context.principal.persona_valid_till)
+  now := time.now_ns()
+  now >= valid_from
+  now <= valid_till
+}
+```
+
+This rule ensures:
+
+1. Status is `active` - Persona is not suspended, inactive, or expired
+2. Within time range - Current time is between `valid_from` and `valid_till`
+
+Possible persona statuses:
+
+- `active` - Normal operational state (only valid status)
+- `pending` - Persona assignment is pending approval
+- `inactive` - Disabled by user
+- `suspended` - Temporarily disabled  
+- `revoked` - Disabled by user-admin
+
+**Use cases:**
+
+- Time-limited personas (temporary roles, seasonal access)
+- Trial periods with automatic expiration
+- Future-dated persona activation
+
+**Authz-API role for persona attributes:**
+
+- Fetches owner persona from persona-api
+- Extracts: `persona_status`, `valid_from`, `valid_till`, and all `autobook_*` fields
+- Merges into `resource.properties.owner` for OPA evaluation
+- Fetches principal persona (if principal ≠ owner or no principal provided)
+- Enriches `context.principal` with persona validity metadata:
+  - `persona_status`, `persona_valid_from`, `persona_valid_till`
+  - Policy-specific attributes (when applicable)
+- When no principal provided in request: creates `context.principal` from owner data
+
+
+### Rule 3: Check Persona for Delegation
 
 What this does:
 
@@ -267,53 +313,7 @@ appropriate_persona_for_action if {
 Important: The `owner.persona` field contains the persona **title** (e.g., "traveler"), while the full persona data (with autobook attributes, status, and temporal validity) is fetched from persona-api and merged into `resource.properties.owner`. See [Personas Guide](personas.md) for more details.
 
 
-### Rule 3: Persona Validity Check
-
-In addition to checking the persona **type** is appropriate, the policy enforces that the acting principal's persona is currently valid. This combines status and temporal checks:
-
-```rego
-valid_persona if {
-  input.context.principal.persona_status == "active"
-  valid_from := time.parse_rfc3339_ns(input.context.principal.persona_valid_from)
-  valid_till := time.parse_rfc3339_ns(input.context.principal.persona_valid_till)
-  now := time.now_ns()
-  now >= valid_from
-  now <= valid_till
-}
-```
-
-This rule ensures:
-
-1. Status is `active` - Persona is not suspended, inactive, or expired
-2. Within time range - Current time is between `valid_from` and `valid_till`
-
-Possible persona statuses:
-
-- `active` - Normal operational state (only valid status)
-- `pending` - Persona assignment is pending approval
-- `inactive` - Disabled by user
-- `suspended` - Temporarily disabled  
-- `revoked` - Disabled by user-admin
-
-**Use cases:**
-
-- Time-limited personas (temporary roles, seasonal access)
-- Trial periods with automatic expiration
-- Future-dated persona activation
-
-**Authz-API role for persona attributes:**
-
-- Fetches owner persona from persona-api
-- Extracts: `persona_status`, `valid_from`, `valid_till`, and all `autobook_*` fields
-- Merges into `resource.properties.owner` for OPA evaluation
-- Fetches principal persona (if principal ≠ owner or no principal provided)
-- Enriches `context.principal` with persona validity metadata:
-  - `persona_status`, `persona_valid_from`, `persona_valid_till`
-  - Policy-specific attributes (when applicable)
-- When no principal provided in request: creates `context.principal` from owner data
-
-
-### Rule 4: User Auto-execute Consent Check
+### Rule 4: Check User Auto-execute Consent
 
 What this does:
 
@@ -335,7 +335,7 @@ has_consent if {
 - Includes in `resource.properties.owner.autobook_consent`
 
 
-### Rule 5: User Auto-execute Constraints Check
+### Rule 5: Check User Auto-execute Constraints
 
 A user can set constraits to the AI-agent about when it can act autonomously.
 

@@ -117,7 +117,7 @@ FlowPilot demonstrates a **GitOps-based policy governance model** where:
 
 ## The Travel Booking Metaphor
 
-The concrete domain used in this git repo is **travel booking**, but this is deliberately a metaphor for a generic "workflow execution" problem involving users, agents, and delegated authority.
+The concrete domain used in this git repo is **travel booking**. This is deliberately a metaphor for a generic "workflow execution" problem involving users, agents, and delegated authority.
 
 - Trips / Itineraries are workflows
 - Booking steps are workflow items
