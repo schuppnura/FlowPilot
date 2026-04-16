@@ -946,7 +946,7 @@
 <a href="#__codelineno-6-18" id="__codelineno-6-18" name="__codelineno-6-18"></a><span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user"</span><span class="p">,</span>
 <a href="#__codelineno-6-19" id="__codelineno-6-19" name="__codelineno-6-19"></a><span class="w">      </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"1460e175-74f9-43af-aac3-7b4fc0547f05"</span><span class="p">,</span>
 <a href="#__codelineno-6-20" id="__codelineno-6-20" name="__codelineno-6-20"></a><span class="w">      </span><span class="nt">"persona"</span><span class="p">:</span><span class="w"> </span><span class="s2">"traveler"</span><span class="p">,</span>
-<a href="#__codelineno-6-21" id="__codelineno-6-21" name="__codelineno-6-21"></a><span class="w">      </span><span class="nt">"circle"</span><span class="p">:</span><span class="w"> </span><span class="s2">"corsica"</span>
+<a href="#__codelineno-6-21" id="__codelineno-6-21" name="__codelineno-6-21"></a><span class="w">      </span><span class="nt">"affiliation"</span><span class="p">:</span><span class="w"> </span><span class="s2">"corsica"</span>
 <a href="#__codelineno-6-22" id="__codelineno-6-22" name="__codelineno-6-22"></a><span class="w">    </span><span class="p">},</span>
 <a href="#__codelineno-6-23" id="__codelineno-6-23" name="__codelineno-6-23"></a><span class="w">    </span><span class="nt">"policy_hint"</span><span class="p">:</span><span class="w"> </span><span class="s2">"travel"</span>
 <a href="#__codelineno-6-24" id="__codelineno-6-24" name="__codelineno-6-24"></a><span class="w">  </span><span class="p">},</span>
@@ -969,10 +969,10 @@
 <li><code>type</code>: Principal type (typically "user")</li>
 <li><code>id</code>: User subject identifier (UUID)</li>
 <li><code>persona</code>: User's selected persona title (e.g., "traveler", "travel-agent")</li>
-<li><code>circle</code> (optional): Persona circle for disambiguation when a user has multiple personas with the same title</li>
+<li><code>affiliation</code> (optional): Persona affiliation for disambiguation when a user has multiple personas with the same title</li>
 </ul>
-<p><strong>Note on Persona Circle:</strong></p>
-<p>The <code>circle</code> attribute is used to uniquely identify a persona when a user has multiple personas with the same title. For example, a user might have two "traveler" personas - one for "corsica" and one for "corfu". The circle attribute enables the system to distinguish between them and fetch the correct persona attributes for policy evaluation.</p>
+<p><strong>Note on Persona affiliation:</strong></p>
+<p>The <code>affiliation</code> attribute is used to uniquely identify a persona when a user has multiple personas with the same title. For example, a user might have two "traveler" personas - one for "corsica" and one for "corfu". The affiliation attribute enables the system to distinguish between them and fetch the correct persona attributes for policy evaluation.</p>
 <h2 id="decision-flow">Decision Flow</h2>
 <ol>
 <li><strong>JWT Validation</strong>: Validate bearer token and extract claims</li>
@@ -1051,7 +1051,7 @@
 <a href="#__codelineno-8-27" id="__codelineno-8-27" name="__codelineno-8-27"></a><span class="s1">        "type": "user",</span>
 <a href="#__codelineno-8-28" id="__codelineno-8-28" name="__codelineno-8-28"></a><span class="s1">        "id": "user-uuid",</span>
 <a href="#__codelineno-8-29" id="__codelineno-8-29" name="__codelineno-8-29"></a><span class="s1">        "persona": "traveler",</span>
-<a href="#__codelineno-8-30" id="__codelineno-8-30" name="__codelineno-8-30"></a><span class="s1">        "circle": "corsica"</span>
+<a href="#__codelineno-8-30" id="__codelineno-8-30" name="__codelineno-8-30"></a><span class="s1">        "affiliation": "corsica"</span>
 <a href="#__codelineno-8-31" id="__codelineno-8-31" name="__codelineno-8-31"></a><span class="s1">      },</span>
 <a href="#__codelineno-8-32" id="__codelineno-8-32" name="__codelineno-8-32"></a><span class="s1">      "policy_hint": "travel"</span>
 <a href="#__codelineno-8-33" id="__codelineno-8-33" name="__codelineno-8-33"></a><span class="s1">    }</span>
